@@ -74,7 +74,7 @@ export default class StoryScreen extends Component {
                 style={styles.iconImage}></Image>
             </View>
             <View style={styles.appTitleTextContainer}>
-              <Text style={this.state.light_theme ? styles.lightappTitleText: styles.darkappTitleText}>Volunteering App</Text>
+              <Text style={this.state.light_theme ? styles.lightappTitleText: styles.darkappTitleText}>Working with Seniors</Text>
             </View>
           </View>
           <View style={styles.storyContainer}>
@@ -135,7 +135,7 @@ export default class StoryScreen extends Component {
                <View style={styles.actionContainer}>
                 <View style={styles.likeButton}>
                   <TouchableOpacity style = {{flexDirection:"row"}} onPress={()=>{
-                    this.props.navigation.navigate("feed")
+                    this.props.navigation.navigate("Working with Seniors")
                   }}>
                   <Ionicons name={'arrow-back-sharp'} size={RFValue(30)} color={'white'} />
                   </TouchableOpacity>
