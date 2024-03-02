@@ -74,7 +74,7 @@ export default class TScreen extends Component {
                 style={styles.iconImage}></Image>
             </View>
             <View style={styles.appTitleTextContainer}>
-              <Text style={this.state.light_theme ? styles.lightappTitleText: styles.darkappTitleText}>Volunteering App</Text>
+              <Text style={this.state.light_theme ? styles.lightappTitleText: styles.darkappTitleText}>Animal & Wildlife</Text>
             </View>
           </View>
           <View style={styles.storyContainer}>
@@ -135,7 +135,7 @@ export default class TScreen extends Component {
                <View style={styles.actionContainer}>
                 <View style={styles.likeButton}>
                   <TouchableOpacity style = {{flexDirection:"row"}} onPress={()=>{
-                    this.props.navigation.navigate("Tfeed")
+                    this.props.navigation.navigate("Animal & Wildlife")
                   }}>
                   <Ionicons name={'arrow-back-sharp'} size={RFValue(30)} color={'white'} />
                   </TouchableOpacity>

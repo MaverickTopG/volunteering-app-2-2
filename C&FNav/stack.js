@@ -1,6 +1,6 @@
 import React from 'react';
-import BottomTab from './tab';
-import TScreen from '../Technology/TScreen'
+import BottomTab from './tab.js';
+import VScreen from '../C&F/VScreen.js'
 import {createStackNavigator} from '@react-navigation/stack';
 
 const Stack = createStackNavigator();
@@ -8,8 +8,8 @@ const Stack = createStackNavigator();
 const StackNavigator = ()=> {
   return(
  <Stack.Navigator screenOptions = {{headerShown : false}}>
- <Stack.Screen name = "home" component = {BottomTab}/>
- <Stack.Screen name = "TScreen" component = {TScreen}/>
+ <Stack.Screen name = "Children & Family" component = {BottomTab}/>
+ <Stack.Screen name = "VScreen" component = {VScreen}/>
 </Stack.Navigator>
   )
 }

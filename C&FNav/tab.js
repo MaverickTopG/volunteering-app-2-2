@@ -1,6 +1,6 @@
 import React from 'react';
-import TAIStory from '../Technology/TAIStory';
-import TFeed from '../Technology/TFeed';
+import VAIStory from '../C&F/VAIStory.js';
+import VFeed from '../C&F/VFeed.js';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
@@ -47,7 +47,7 @@ export default class BottomTab extends React.Component {
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
-            if (route.name == 'feed') {
+            if (route.name == 'Children & Family') {
               iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Ordix') {
               iconName = focused ? 'add-circle' : 'add-circle-outline';
@@ -61,8 +61,8 @@ export default class BottomTab extends React.Component {
         activeColor={'#ee8249'}
         inactiveColor={'teal'}
         barStyle={this.state.light_theme ? styles.lightbottomTabStyle : styles.bottomTabStyle}>
-        <Tab.Screen name="feed" component={TFeed} />
-        <Tab.Screen name="Ordix" component={TAIStory} />
+        <Tab.Screen name="Children & Family" component={VFeed} />
+        <Tab.Screen name="Ordix" component={VAIStory} />
 
       </Tab.Navigator>
     );

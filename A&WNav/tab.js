@@ -1,6 +1,6 @@
 import React from 'react';
-import AIStory from '../screens/AIStory';
-import Feed from '../screens/Feed';
+import TAIStory from '../A&W/TAIStory';
+import TFeed from '../A&W/TFeed';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
@@ -47,7 +47,7 @@ export default class BottomTab extends React.Component {
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
-            if (route.name == 'Working with Seniors') {
+            if (route.name == 'Animal & Wildlife') {
               iconName = focused ? 'home' : 'home-outline';
             } else if (route.name === 'Ordix') {
               iconName = focused ? 'add-circle' : 'add-circle-outline';
@@ -61,8 +61,8 @@ export default class BottomTab extends React.Component {
         activeColor={'#ee8249'}
         inactiveColor={'teal'}
         barStyle={this.state.light_theme ? styles.lightbottomTabStyle : styles.bottomTabStyle}>
-        <Tab.Screen name="Working with Seniors" component={Feed} />
-        <Tab.Screen name="Ordix" component={AIStory} />
+        <Tab.Screen name="Animal & Wildlife" component={TFeed} />
+        <Tab.Screen name="Ordix" component={TAIStory} />
 
       </Tab.Navigator>
     );
