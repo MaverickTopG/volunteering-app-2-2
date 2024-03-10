@@ -7,6 +7,8 @@ import CustomSideBarMenu from '../screens/CustomSideBarMenu';
 const Drawer = createDrawerNavigator();
 import TStackNavigator from '../A&WNav/stack'
 import VStackNavigator from '../C&FNav/stack.js'
+import EStackNavigator from '../TechNav/stack.js'
+import LStackNavigator from '../LibraryNav/stack.js'
 
 const DrawerNavigator = ()=> {
   return(
@@ -18,6 +20,8 @@ const DrawerNavigator = ()=> {
  <Drawer.Screen name = "Animal & Wildlife" component = {TStackNavigator}/>
  <Drawer.Screen name = "Children and Family" component = {VStackNavigator}/>
  <Drawer.Screen name = "Working with Seniors" component = {StackNavigator}/>
+ <Drawer.Screen name = "Enviroment" component = {EStackNavigator}/>
+ <Drawer.Screen name = "Library Services" component = {LStackNavigator}/>
  <Drawer.Screen name = "Profile" component = {Profile}/>
  <Drawer.Screen name = "Logout" component = {Logout}/>
 </Drawer.Navigator>
