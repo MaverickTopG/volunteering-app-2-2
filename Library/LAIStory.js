@@ -7,7 +7,7 @@ export default class LAIStory extends React.Component{
   render(){
     return(
       <View>
-       export Chatbot
+       <Chatbot/>
       </View>
     )
   }

@@ -22,7 +22,6 @@ const DrawerNavigator = ()=> {
  <Drawer.Screen name = "Working with Seniors" component = {StackNavigator}/>
  <Drawer.Screen name = "Enviroment" component = {EStackNavigator}/>
  <Drawer.Screen name = "Library Services" component = {LStackNavigator}/>
- <Drawer.Screen name = "Profile" component = {Profile}/>
  <Drawer.Screen name = "Logout" component = {Logout}/>
 </Drawer.Navigator>
   )

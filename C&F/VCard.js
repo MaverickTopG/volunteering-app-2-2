@@ -14,6 +14,7 @@ import { RFValue } from "react-native-responsive-fontsize";
 import * as Font from "expo-font";
 import * as SplashScreen from 'expo-splash-screen';
 import firebase from 'firebase/auth';
+import database from 'firebase/database';
 
 SplashScreen.preventAutoHideAsync();
 
