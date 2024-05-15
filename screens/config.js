@@ -1,11 +1,20 @@
+// firebaseConfig.js
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
-export const firebaseConfig = {
-  apiKey: "AIzaSyDcdhH2J4NOblRPOXBCPk6wFJI_UtIlU80",
+const firebaseConfig = {
+  apiKey: "AIzaSyBRSUTf2mCRuAXV6mjqUk_5UWsql8Azr3g",
   authDomain: "storytelling-53b62.firebaseapp.com",
   databaseURL: "https://storytelling-53b62-default-rtdb.firebaseio.com",
-  projectId: "storytelling-53b62",
-  storageBucket: "storytelling-53b62.appspot.com",
-  messagingSenderId: "301707833510",
-  appId: "1:301707833510:web:40af73c184ff9b691cc467"
+  projectId: "volunteering-app-70788",
+  storageBucket: "volunteering-app-70788.appspot.com",
+  messagingSenderId: "94824584734",
+  appId: "1:94824584734:ios:b7c7039bfd3a1e31b6000f"
 };
 
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+export { auth, db };
