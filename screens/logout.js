@@ -1,17 +1,23 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import firebase from 'firebase/auth';
+import { View, Text, TouchableOpacity } from 'react-native';
+import styles from '../screens/styles';
+import { useAuth } from '../screens/AuthContext.js';
 
-export default class Logout extends React.Component {
-  componentDidMount() {
-    firebase.auth().signOut();
-    this.props.navigation.navigate('login')
-  }
-  render() {
-    return (
-      <View>
-        <Text> Logout Screen </Text>
-      </View>
-    )
-  }
-}
+const Logout = ({ navigation }) => {
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigation.replace('Login'); // Ensures user can't go back after logging out
+  };
+
+  return (
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.button} onPress={handleLogout}>
+        <Text style={styles.buttonText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+export default Logout;
