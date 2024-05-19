@@ -1,16 +1,13 @@
+// App.js
 import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import DrawerNavigator from './navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import Login from './screens/Login';
 import Register from './screens/Register';
-import Feed from './screens/Feed'
-import { registerRootComponent } from "expo";
-
-import { initializeApp } from 'firebase/app';
-import { firebaseConfig } from './screens/config';
-
-const app = initializeApp(firebaseConfig);
+import Feed from './screens/Feed';
+import { registerRootComponent } from 'expo';
+import { AuthProvider } from './screens/AuthContext'; // Import AuthProvider
 
 const Stack = createStackNavigator();
 
@@ -24,12 +21,16 @@ const StackNav = () => {
   );
 };
 
+const App = () => {
+  return (
+    <AuthProvider>
+      <NavigationContainer>
+        <StackNav />
+      </NavigationContainer>
+    </AuthProvider>
+  );
+};
+
 registerRootComponent(App);
 
-export default function App() {
-  return (
-    <NavigationContainer>
-      <StackNav />
-    </NavigationContainer>
-  );
-}
+export default App;
