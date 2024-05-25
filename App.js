@@ -1,13 +1,14 @@
 // App.js
 import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import DrawerNavigator from './navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
-import Login from './screens/Login';
-import Register from './screens/Register';
-import Feed from './screens/Feed';
+import DrawerNavigator from './navigation/drawer';
+import Login from './screens/Login.js'; 
+import Register from './screens/Register.js';
+import Feed from './screens/Feed.js';
+import Logout from './screens/logout.js';
+import { AuthProvider } from './screens/AuthContext.js';
 import { registerRootComponent } from 'expo';
-import { AuthProvider } from './screens/AuthContext'; // Import AuthProvider
 
 const Stack = createStackNavigator();
 
@@ -17,6 +18,7 @@ const StackNav = () => {
       <Stack.Screen name="dashboard" component={DrawerNavigator} />
       <Stack.Screen name="login" component={Login} />
       <Stack.Screen name="register" component={Register} />
+      <Stack.Screen name="logout" component={Logout} />
     </Stack.Navigator>
   );
 };

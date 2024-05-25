@@ -14,7 +14,7 @@ const Login = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>VAMOOS</Text>
+      <Text style={styles.title}>Volunteer App</Text>
       <TextInput
         style={styles.input}
         onChangeText={setEmail}

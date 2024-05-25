@@ -1,14 +1,19 @@
+// Logout.js
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import styles from '../screens/styles';
-import { useAuth } from '../screens/AuthContext.js';
+import { useAuth } from '../screens/AuthContext';
 
 const Logout = ({ navigation }) => {
   const { signOut } = useAuth();
 
   const handleLogout = async () => {
-    await signOut();
-    navigation.replace('Login'); // Ensures user can't go back after logging out
+    try {
+      await signOut();
+      navigation.replace('Login'); // Ensure this screen name matches the name in your navigator
+    } catch (error) {
+      console.error('Error signing out: ', error);
+    }
   };
 
   return (

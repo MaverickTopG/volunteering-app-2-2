@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import firebase from '../screens/firebase.js'; // Ensure this imports your firebase configuration correctly
+import { auth } from '../screens/firebase'; // Ensure this imports your firebase configuration correctly
 
 const AuthContext = createContext();
 
@@ -8,7 +8,7 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
       setUser(user);
       setLoading(false);
     });
@@ -16,15 +16,15 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   const signIn = (email, password) => {
-    return firebase.auth().signInWithEmailAndPassword(email, password);
+    return auth.signInWithEmailAndPassword(email, password);
   };
 
   const signUp = (email, password) => {
-    return firebase.auth().createUserWithEmailAndPassword(email, password);
+    return auth.createUserWithEmailAndPassword(email, password);
   };
 
   const signOut = () => {
-    return firebase.auth().signOut();
+    return auth.signOut();
   };
 
   return (
