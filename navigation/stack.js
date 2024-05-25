@@ -8,7 +8,7 @@ const Stack = createStackNavigator();
 const StackNavigator = ()=> {
   return(
  <Stack.Navigator screenOptions = {{headerShown : false}}>
- <Stack.Screen name = "Working with Seniors" component = {BottomTab}/>
+ <Stack.Screen name = "W & S" component = {BottomTab}/>
  <Stack.Screen name = "StoryScreen" component = {StoryScreen}/>
 </Stack.Navigator>
   )

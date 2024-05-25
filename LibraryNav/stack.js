@@ -9,7 +9,7 @@ const Stack = createStackNavigator();
 const StackNavigator = ()=> {
   return(
  <Stack.Navigator screenOptions = {{headerShown : false}}>
- <Stack.Screen name = "Library Services" component = {BottomTab}/>
+ <Stack.Screen name = "Library" component = {BottomTab}/>
  <Stack.Screen name = "LScreen" component = {LScreen}/>
 </Stack.Navigator>
   )
