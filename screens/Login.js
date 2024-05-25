@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, TextInput, Text, TouchableOpacity, Keyboard } from 'react-native';
 import styles from '../screens/styles';
 import { useAuth } from '../screens/AuthContext.js';
 
@@ -7,6 +7,22 @@ const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { signIn } = useAuth();
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      console.log('Keyboard shown');
+    });
+
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      console.log('Keyboard hidden');
+    });
+
+    // Cleanup function to remove listeners
+    return () => {
+      if (keyboardDidShowListener) keyboardDidShowListener.remove();
+      if (keyboardDidHideListener) keyboardDidHideListener.remove();
+    };
+  }, []);
 
   const handleLogin = () => {
     signIn(email, password);
