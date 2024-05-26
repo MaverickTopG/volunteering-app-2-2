@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Text, TouchableOpacity, Keyboard } from 'react-native';
+import { View, TextInput, Text, TouchableOpacity, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import styles from '../screens/styles';
 import { useAuth } from '../screens/AuthContext.js';
 
@@ -19,40 +19,53 @@ const Login = ({ navigation }) => {
 
     // Cleanup function to remove listeners
     return () => {
-      if (keyboardDidShowListener) keyboardDidShowListener.remove();
-      if (keyboardDidHideListener) keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
     };
   }, []);
 
   const handleLogin = () => {
-    signIn(email, password);
+    signIn(email, password)
+      .then(() => {
+        navigation.navigate('dashboard');
+      })
+      .catch((error) => {
+        alert(error.message);
+      });
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Volunteer App</Text>
-      <TextInput
-        style={styles.input}
-        onChangeText={setEmail}
-        value={email}
-        placeholder="Email"
-        placeholderTextColor="#ccc"
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={setPassword}
-        value={password}
-        secureTextEntry
-        placeholder="Password"
-        placeholderTextColor="#ccc"
-      />
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
-      <Text style={styles.footerText}>
-        If you don't have an account please contact your system administrator.
-      </Text>
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Volunteer App</Text>
+        <TextInput
+          style={styles.input}
+          onChangeText={setEmail}
+          value={email}
+          placeholder="Email"
+          placeholderTextColor="#ccc"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          onChangeText={setPassword}
+          value={password}
+          secureTextEntry
+          placeholder="Password"
+          placeholderTextColor="#ccc"
+        />
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, { marginTop: 10 }]}
+          onPress={() => navigation.navigate('register')}
+        >
+          <Text style={styles.buttonText}>Register</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 

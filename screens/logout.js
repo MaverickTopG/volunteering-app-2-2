@@ -4,15 +4,16 @@ import styles from '../screens/styles';
 import { useAuth } from '../screens/AuthContext';
 
 const Logout = ({ navigation }) => {
-  const { signOut } = useAuth();
+  const { signOutUser } = useAuth();
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      navigation.replace('Login'); // Ensure this screen name matches the name in your navigator
-    } catch (error) {
-      console.error('Error signing out: ', error);
-    }
+  const handleLogout = () => {
+    signOutUser()
+      .then(() => {
+        navigation.navigate('login');
+      })
+      .catch((error) => {
+        console.error('Error signing out: ', error);
+      });
   };
 
   return (
