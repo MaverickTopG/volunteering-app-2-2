@@ -5,9 +5,9 @@ import { MainContainer, ChatContainer, MessageList, Message, MessageInput, Typin
 const API_KEY = "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";
 
 const systemMessage = { //  Explain things like you're talking to a software professional with 5 years of experience.
-    "role": "system",
-    "content": "Answer it like the person is looking for volunteering opportunities that are legible for a teenager (13-17 years old)"
-  }
+  "role": "system",
+  "content": "Answer it like the person is looking for volunteering opportunities that are legible for a teenager (13-17 years old)"
+}
 
 function Chatbot() {
   const [messages, setMessages] = useState([
@@ -28,7 +28,7 @@ function Chatbot() {
     };
 
     const newMessages = [...messages, newMessage];
-    
+
     setMessages(newMessages);
 
     setIsTyping(true);
@@ -43,7 +43,7 @@ function Chatbot() {
       } else {
         role = "user";
       }
-      return { role: role, content: messageObject.message}
+      return { role: role, content: messageObject.message }
     });
 
     const apiRequestBody = {
@@ -54,32 +54,32 @@ function Chatbot() {
       ]
     }
 
-    await fetch("https://api.openai.com/v1/chat/completions", 
-    {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + API_KEY,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(apiRequestBody)
-    }).then((data) => {
-      return data.json();
-    }).then((data) => {
-      setMessages([...chatMessages, {
-        message: data.choices[0].message.content,
-        sender: "ChatGPT",
-        direction: "incoming"
-      }]);
-      setIsTyping(false);
-    });
+    await fetch("https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + API_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(apiRequestBody)
+      }).then((data) => {
+        return data.json();
+      }).then((data) => {
+        setMessages([...chatMessages, {
+          message: data.choices[0].message.content,
+          sender: "ChatGPT",
+          direction: "incoming"
+        }]);
+        setIsTyping(false);
+      });
   }
 
   return (
     <View style={styles.container}>
       <MainContainer>
-        <ChatContainer>       
-          <MessageList 
-            scrollBehavior="smooth" 
+        <ChatContainer>
+          <MessageList
+            scrollBehavior="smooth"
             typingIndicator={isTyping ? <TypingIndicator content="Ordix is typing" /> : null}
           >
             <FlatList
@@ -88,7 +88,7 @@ function Chatbot() {
               keyExtractor={(item, index) => index.toString()}
             />
           </MessageList>
-          <MessageInput placeholder="Type message here" onSend={handleSend} />        
+          <MessageInput placeholder="Type message here" onSend={handleSend} />
         </ChatContainer>
       </MainContainer>
     </View>

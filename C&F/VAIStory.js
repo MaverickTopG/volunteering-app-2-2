@@ -131,12 +131,12 @@ const styles = StyleSheet.create({
         fontSize: 25,
     },
     errorText: {
-        backgroundColor: 'rgba(255, 0, 0, 0.2)', 
+        backgroundColor: 'rgba(255, 0, 0, 0.2)',
         color: 'red',
         padding: 10,
         borderRadius: 20,
-        position: 'absolute', 
-        alignSelf: 'center', 
-        bottom: '50%', 
+        position: 'absolute',
+        alignSelf: 'center',
+        bottom: '50%',
     },
 });

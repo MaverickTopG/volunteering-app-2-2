@@ -31,7 +31,7 @@ export default class TScreen extends Component {
       fontsLoaded: false,
       speakerColor: 'gray',
       speakerIcon: 'volume-high-outline',
-      like:0,
+      like: 0,
     };
   }
 
@@ -44,18 +44,18 @@ export default class TScreen extends Component {
     this._loadFontsAsync();
   }
 
-  async intiateTTS(title,author,story,moral){
+  async intiateTTS(title, author, story, moral) {
     const current_color = this.state.speakerColor;
     this.setState({
-      speakerColor:current_color == "gray" ? "orange":"gray" 
+      speakerColor: current_color == "gray" ? "orange" : "gray"
     })
-    if(current_color == "gray"){
-    Speech.speak(`${title} by ${author}`);
-    Speech.speak(story)
-    Speech.speak("the moral of the story is!")
-    Speech.speak(moral)
+    if (current_color == "gray") {
+      Speech.speak(`${title} by ${author}`);
+      Speech.speak(story)
+      Speech.speak("the moral of the story is!")
+      Speech.speak(moral)
     }
-    else{
+    else {
       Speech.stop()
     }
   }
@@ -65,7 +65,7 @@ export default class TScreen extends Component {
       this.props.navigation.navigate('Home');
     } else if (this.state.fontsLoaded) {
       return (
-        <View style={this.state.light_theme ? styles.lightcontainer: styles.darkcontainer}>
+        <View style={this.state.light_theme ? styles.lightcontainer : styles.darkcontainer}>
           <SafeAreaView style={styles.droidSafeArea} />
           <View style={styles.appTitle}>
             <View style={styles.appIcon}>
@@ -74,24 +74,24 @@ export default class TScreen extends Component {
                 style={styles.iconImage}></Image>
             </View>
             <View style={styles.appTitleTextContainer}>
-              <Text style={this.state.light_theme ? styles.lightappTitleText: styles.darkappTitleText}>Animal & Wildlife</Text>
+              <Text style={this.state.light_theme ? styles.lightappTitleText : styles.darkappTitleText}>Animal & Wildlife</Text>
             </View>
           </View>
           <View style={styles.storyContainer}>
-            <ScrollView style={this.state.light_theme ? styles.lightstoryCard: styles.darkstoryCard}>
+            <ScrollView style={this.state.light_theme ? styles.lightstoryCard : styles.darkstoryCard}>
               <Image
                 source={require('../assets/story_image_1.png')}
                 style={styles.image}></Image>
 
               <View style={styles.dataContainer}>
                 <View style={styles.titleTextContainer}>
-                  <Text style={this.state.light_theme ? styles.lightappTitleText: styles.appTitleText}>
+                  <Text style={this.state.light_theme ? styles.lightappTitleText : styles.appTitleText}>
                     {this.props.route.params.story.title}
                   </Text>
-                  <Text style={this.state.light_theme ? styles.lightstoryAuthorText: styles.darkstoryAuthorText}>
+                  <Text style={this.state.light_theme ? styles.lightstoryAuthorText : styles.darkstoryAuthorText}>
                     {this.props.route.params.story.author}
                   </Text>
-                  <Text style={this.state.light_theme ? styles.lightstoryTitleText: styles.darkstoryTitleText}>
+                  <Text style={this.state.light_theme ? styles.lightstoryTitleText : styles.darkstoryTitleText}>
                     {this.props.route.params.story.created_on}
                   </Text>
                 </View>
@@ -115,29 +115,29 @@ export default class TScreen extends Component {
                 </View>
               </View>
               <View style={styles.storyTextContainer}>
-                <Text style={this.state.light_theme ? styles.lightstoryText: styles.darkstoryText}>
+                <Text style={this.state.light_theme ? styles.lightstoryText : styles.darkstoryText}>
                   {this.props.route.params.story.story}
                 </Text>
-                <Text style={this.state.light_theme ? styles.lightmoralText: styles.darkmoralText}>
+                <Text style={this.state.light_theme ? styles.lightmoralText : styles.darkmoralText}>
                   Moral - {this.props.route.params.story.moral}
                 </Text>
               </View>
               <View style={styles.actionContainer}>
                 <View style={styles.likeButton}>
-                  <TouchableOpacity style = {{flexDirection:"row"}} onPress={()=>{
-                    this.setState({like:this.state.like+1})
+                  <TouchableOpacity style={{ flexDirection: "row" }} onPress={() => {
+                    this.setState({ like: this.state.like + 1 })
                   }}>
-                  <Ionicons name={'heart'} size={RFValue(30)} color={'white'} />
-                  <Text style={styles.darklikeText}>like {this.state.like}</Text>
+                    <Ionicons name={'heart'} size={RFValue(30)} color={'white'} />
+                    <Text style={styles.darklikeText}>like {this.state.like}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
-               <View style={styles.actionContainer}>
+              <View style={styles.actionContainer}>
                 <View style={styles.likeButton}>
-                  <TouchableOpacity style = {{flexDirection:"row"}} onPress={()=>{
+                  <TouchableOpacity style={{ flexDirection: "row" }} onPress={() => {
                     this.props.navigation.navigate("Animal & Wildlife")
                   }}>
-                  <Ionicons name={'arrow-back-sharp'} size={RFValue(30)} color={'white'} />
+                    <Ionicons name={'arrow-back-sharp'} size={RFValue(30)} color={'white'} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#15193c',
   },
-    lightcontainer: {
+  lightcontainer: {
     flex: 1,
     backgroundColor: "lightblue"
   },
@@ -198,20 +198,20 @@ const styles = StyleSheet.create({
     margin: RFValue(20),
     backgroundColor: '#2f345d',
     borderRadius: RFValue(20),
-    
+
   },
   lightstoryCard: {
     margin: RFValue(20),
     backgroundColor: 'white',
     borderRadius: RFValue(20),
-    
+
   },
   image: {
     width: '100%',
     alignSelf: 'center',
     height: RFValue(200),
-    borderRadius:RFValue(20),
-    
+    borderRadius: RFValue(20),
+
   },
   dataContainer: {
     flexDirection: 'row',
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     fontSize: RFValue(25),
     color: 'white',
   },
-   lightstoryTitleText: {
+  lightstoryTitleText: {
     fontFamily: 'Bubblegum-Sans',
     fontSize: RFValue(25),
     color: 'black',
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     fontSize: RFValue(18),
     color: 'white',
   },
-   lightstoryAuthorText: {
+  lightstoryAuthorText: {
     fontFamily: 'Bubblegum-Sans',
     fontSize: RFValue(18),
     color: 'black',
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     margin: RFValue(10),
-    
+
   },
   likeButton: {
     width: RFValue(160),
@@ -280,9 +280,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: RFValue(30),
-    
+
   },
-  
+
   darklikeText: {
     color: 'white',
     fontFamily: 'Bubblegum-Sans',

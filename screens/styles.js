@@ -9,7 +9,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     padding: 20,
   },
- 
+
   title: {
     fontSize: RFValue(24),
     fontWeight: 'bold',
