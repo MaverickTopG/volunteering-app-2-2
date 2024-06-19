@@ -1,5 +1,3 @@
-// EventsPage.js
-
 import React from 'react';
 import {
   StatusBar,
@@ -19,6 +17,7 @@ import {
   Directions,
   State,
 } from 'react-native-gesture-handler';
+import DynamicScroll from './dynamicscroll'; // Ensure the correct path
 
 const DATA = [
   {
@@ -70,7 +69,6 @@ const DATA = [
     poster:
       'https://www.creative-flyers.com/wp-content/uploads/2020/06/Summer-Beach-House-Flyer.jpg',
   },
-  // Add other items as in your original code...
 ];
 
 const OVERFLOW_HEIGHT = 70;
@@ -234,6 +232,7 @@ export default function EventsPage() {
               );
             }}
           />
+          <DynamicScroll />
         </SafeAreaView>
       </FlingGestureHandler>
     </FlingGestureHandler>
