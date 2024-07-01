@@ -1,32 +1,47 @@
-// DisplayScreen.js
+// volcarosuel/DisplayScreen.js
 import React from 'react';
-import { View, Text, StyleSheet, Button, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, Button } from 'react-native';
 
 const DisplayScreen = ({ route, navigation }) => {
-  const { title, location, date, description, email } = route.params.item;
+  const { item } = route.params;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.text}>Name: {title}</Text>
-      <Text style={styles.text}>Description: {description}</Text>
-      <Text style={styles.text}>Location: {location}</Text>
-      <Text style={styles.text}>Date: {date}</Text>
-      <Text style={styles.text}>Contact Email: {email}</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.description}>{item.description}</Text>
+      <Text style={styles.location}>{item.location}</Text>
+      <Text style={styles.date}>{item.date}</Text>
+      <Text style={styles.email}>{item.email}</Text>
       <Button title="Back" onPress={() => navigation.goBack()} />
-    </SafeAreaView>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 20,
     backgroundColor: '#fff',
   },
-  text: {
-    fontSize: 20,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  description: {
+    fontSize: 16,
     marginVertical: 10,
+  },
+  location: {
+    fontSize: 14,
+    marginVertical: 5,
+  },
+  date: {
+    fontSize: 14,
+    marginVertical: 5,
+  },
+  email: {
+    fontSize: 14,
+    marginVertical: 5,
   },
 });
 

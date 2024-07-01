@@ -7,7 +7,6 @@ import VStackNavigator from '../C&FNav/stack.js';
 import EStackNavigator from '../TechNav/stack.js';
 import LStackNavigator from '../LibraryNav/stack.js';
 import StackNavigator from './stack';
-import Profile from '../screens/profile';
 import Logout from '../screens/logout';
 import VolcarosuelStack from '../volcarosuel/VolcarosuelStack'; // Import VolcarosuelStack
 

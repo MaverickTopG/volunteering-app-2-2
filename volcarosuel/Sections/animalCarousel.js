@@ -3,7 +3,7 @@ import { EvilIcons } from '@expo/vector-icons';
 import * as React from 'react';
 import { Dimensions, FlatList, Text, View, Image, StatusBar, StyleSheet, SafeAreaView, Animated, TouchableOpacity } from 'react-native';
 import { GestureHandlerRootView, FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
-import { handleNavigation } from '../navigationHandler';
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('screen');
 
@@ -58,7 +58,8 @@ const OverflowItems = ({ data, scrollXAnimated }) => {
   );
 };
 
-export default function AnimalCarousel({ navigation }) {
+export default function AnimalCarousel() {
+  const navigation = useNavigation();
   const ref = React.useRef(null);
   const scrollXIndex = React.useRef(new Animated.Value(0)).current;
   const scrollXAnimated = React.useRef(new Animated.Value(0)).current;
@@ -142,7 +143,7 @@ export default function AnimalCarousel({ navigation }) {
                 });
 
                 return (
-                  <TouchableOpacity onPress={() => handleNavigation(navigation, item)}>
+                  <TouchableOpacity onPress={() => navigation.navigate('DisplayScreen', { item })}>
                     <Animated.View
                       style={{
                         position: 'absolute',
