@@ -8,7 +8,9 @@ import EStackNavigator from '../TechNav/stack.js';
 import LStackNavigator from '../LibraryNav/stack.js';
 import StackNavigator from './stack';
 import Logout from '../screens/logout';
-import AnimalStack from '../volcarosuel/Nav/AnimalStack.js'; // Import AnimalStack
+//import AnimalStack from '../volcarosuel/Nav/AnimalStack.js'; // Import AnimalStack
+import AnimalTabNavigator from '../volcarosuel/tab/AnimalTabNavigator.js'; // Import AnimalTabNavigator
+
 
 const Drawer = createDrawerNavigator();
 
@@ -23,7 +25,8 @@ const DrawerNavigator = () => {
       <Drawer.Screen name="Environment" component={EStackNavigator} />
       <Drawer.Screen name="Library Services" component={LStackNavigator} />
       <Drawer.Screen name="Logout" component={Logout} />
-      <Drawer.Screen name="Animal Carousel" component={AnimalStack} /> 
+      {/* <Drawer.Screen name="Animal Carousel" component={AnimalStack} />  */}
+      <Drawer.Screen name="Animal Carousel" component={AnimalTabNavigator} /> 
     </Drawer.Navigator>
   );
 };
