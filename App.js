@@ -1,10 +1,10 @@
+// App.js
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import DrawerNavigator from './navigation/drawer';
 import Login from './screens/Login.js';
 import Register from './screens/Register.js';
-import Feed from './screens/Feed.js';
 import Logout from './screens/logout.js';
 import { AuthProvider } from './screens/AuthContext.js';
 import { registerRootComponent } from 'expo';

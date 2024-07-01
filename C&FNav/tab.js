@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     overflow: 'hidden',
     position: 'absolute',
-    bottom: 25,
+    bottom: 505,
     left: 20,
     right: 20,
     elevation: 0,

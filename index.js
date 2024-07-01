@@ -10,8 +10,6 @@ const ChatGPT = () => {
     const [textInput, setTextInput] = useState('');
     const [error, setError] = useState('');
 
-
-
     // Function to handle sending user messages
     const handleSend = async () => {
         const message = textInput;
@@ -59,18 +57,20 @@ const ChatGPT = () => {
                 style={styles.body}
                 renderItem={renderMessage}
             />
-            <TextInput
-                style={styles.input}
-                value={textInput}
-                onChangeText={text => setTextInput(text)}
-                placeholder=" Ask me anything!"
-            />
-            <TouchableOpacity
-                style={styles.button}
-                onPress={handleSend}
-            >
-                <Text style={styles.buttonText}>Let's Go</Text>
-            </TouchableOpacity>
+            <View style={styles.inputContainer}>
+                <TextInput
+                    style={styles.input}
+                    value={textInput}
+                    onChangeText={text => setTextInput(text)}
+                    placeholder="Ask me anything!"
+                />
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleSend}
+                >
+                    <Text style={styles.buttonText}>Send</Text>
+                </TouchableOpacity>
+            </View>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
     );
@@ -82,7 +82,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-        alignItems: 'center',
     },
     body: {
         flex: 1,
@@ -93,7 +92,7 @@ const styles = StyleSheet.create({
     userMessageContainer: {
         alignSelf: 'flex-end',
         backgroundColor: '#EEE',
-        borderRadius: 10,
+        borderRadius: 20,
         maxWidth: '70%',
         marginBottom: 10,
         padding: 10,
@@ -101,7 +100,7 @@ const styles = StyleSheet.create({
     botMessageContainer: {
         alignSelf: 'flex-start',
         backgroundColor: 'lightblue',
-        borderRadius: 10,
+        borderRadius: 20,
         maxWidth: '70%',
         marginBottom: 10,
         padding: 10,
@@ -109,26 +108,34 @@ const styles = StyleSheet.create({
     messageText: {
         fontSize: 16,
     },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderColor: '#e8e8e8',
+    },
     input: {
+        flex: 1,
         borderWidth: 1,
         borderColor: "black",
-        width: '90%',
-        height: 60,
-        marginBottom: 10,
-        borderRadius: 10,
+        height: 40,
+        borderRadius: 20,
         paddingHorizontal: 10,
+        marginRight: 10,
     },
     button: {
         backgroundColor: 'lightblue',
-        width: '90%',
-        height: 60,
-        borderRadius: 10,
+        borderRadius: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 10,
     },
     buttonText: {
-        fontSize: 25,
+        fontSize: 16,
+        color: '#fff',
     },
     errorText: {
         backgroundColor: 'rgba(255, 0, 0, 0.2)',
