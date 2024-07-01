@@ -1,11 +1,10 @@
-// Sections/animalCarousel.js
+import React from 'react';
 import { EvilIcons } from '@expo/vector-icons';
-import * as React from 'react';
 import { Dimensions, FlatList, Text, View, Image, StatusBar, StyleSheet, SafeAreaView, Animated, TouchableOpacity } from 'react-native';
 import { GestureHandlerRootView, FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 
-const { width, height } = Dimensions.get('screen');
+const { width } = Dimensions.get('screen');
 
 const DATA = [
   {
