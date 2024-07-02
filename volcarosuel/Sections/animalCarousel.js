@@ -57,7 +57,7 @@ const OverflowItems = ({ data, scrollXAnimated }) => {
   );
 };
 
-export default function AnimalCarousel() {
+const AnimalCarousel = () => {
   const navigation = useNavigation();
   const ref = React.useRef(null);
   const scrollXIndex = React.useRef(new Animated.Value(0)).current;
@@ -172,7 +172,9 @@ export default function AnimalCarousel() {
       </FlingGestureHandler>
     </GestureHandlerRootView>
   );
-}
+};
+
+export default AnimalCarousel;
 
 const styles = StyleSheet.create({
   container: {

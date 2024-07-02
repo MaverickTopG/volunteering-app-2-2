@@ -1,9 +1,10 @@
+import React from 'react';
 import { EvilIcons } from '@expo/vector-icons';
-import * as React from 'react';
-import { Dimensions, FlatList, Text, View, Image, StatusBar, StyleSheet, SafeAreaView, Animated } from 'react-native';
+import { Dimensions, FlatList, Text, View, Image, StatusBar, StyleSheet, SafeAreaView, Animated, TouchableOpacity } from 'react-native';
 import { GestureHandlerRootView, FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
+import { useNavigation } from '@react-navigation/native';
 
-const { width, height } = Dimensions.get('screen');
+const { width } = Dimensions.get('screen');
 
 const DATA = [
   {
@@ -11,12 +12,16 @@ const DATA = [
     location: 'Mumbai, India',
     date: 'Nov 17th, 2020',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2020/07/Afro-vibes-flyer-template.jpg',
+    description: 'An exciting Afro vibes event.',
+    email: 'contact@afrovibes.com',
   },
   {
     title: 'Jungle Party',
     location: 'Unknown',
     date: 'Sept 3rd, 2020',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    description: 'A thrilling jungle party.',
+    email: 'contact@jungleparty.com',
   },
 ];
 
@@ -52,7 +57,8 @@ const OverflowItems = ({ data, scrollXAnimated }) => {
   );
 };
 
-export default function AnimalCarousel() {
+const SeniorsCarousel = () => {
+  const navigation = useNavigation();
   const ref = React.useRef(null);
   const scrollXIndex = React.useRef(new Animated.Value(0)).current;
   const scrollXAnimated = React.useRef(new Animated.Value(0)).current;
@@ -136,26 +142,28 @@ export default function AnimalCarousel() {
                 });
 
                 return (
-                  <Animated.View
-                    style={{
-                      position: 'absolute',
-                      left: -ITEM_WIDTH / 2,
-                      opacity,
-                      transform: [
-                        { translateX },
-                        { scale },
-                      ],
-                    }}
-                  >
-                    <Image
-                      source={{ uri: item.poster }}
+                  <TouchableOpacity onPress={() => navigation.navigate('DisplayScreen', { item })}>
+                    <Animated.View
                       style={{
-                        width: ITEM_WIDTH,
-                        height: ITEM_HEIGHT,
-                        borderRadius: 14,
+                        position: 'absolute',
+                        left: -ITEM_WIDTH / 2,
+                        opacity,
+                        transform: [
+                          { translateX },
+                          { scale },
+                        ],
                       }}
-                    />
-                  </Animated.View>
+                    >
+                      <Image
+                        source={{ uri: item.poster }}
+                        style={{
+                          width: ITEM_WIDTH,
+                          height: ITEM_HEIGHT,
+                          borderRadius: 14,
+                        }}
+                      />
+                    </Animated.View>
+                  </TouchableOpacity>
                 );
               }}
             />
@@ -164,7 +172,9 @@ export default function AnimalCarousel() {
       </FlingGestureHandler>
     </GestureHandlerRootView>
   );
-}
+};
+
+export default SeniorsCarousel;
 
 const styles = StyleSheet.create({
   container: {

@@ -1,4 +1,3 @@
-// App.js
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -7,6 +6,7 @@ import Login from './screens/Login.js';
 import Register from './screens/Register.js';
 import Logout from './screens/logout.js';
 import { AuthProvider } from './screens/AuthContext.js';
+import { CarouselProvider } from './volcarosuel/tab/CarosuelSelection.js';
 import { registerRootComponent } from 'expo';
 
 const Stack = createStackNavigator();
@@ -25,9 +25,11 @@ const StackNav = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <StackNav />
-      </NavigationContainer>
+      <CarouselProvider>
+        <NavigationContainer>
+          <StackNav />
+        </NavigationContainer>
+      </CarouselProvider>
     </AuthProvider>
   );
 };
