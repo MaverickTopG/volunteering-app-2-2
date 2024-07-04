@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
+import { useRoute } from '@react-navigation/native';
 
 const DEFAULT_MAP_HTML = `
 <!DOCTYPE html>
@@ -46,15 +47,23 @@ const DEFAULT_MAP_HTML = `
 `;
 
 const MapScreen = () => {
-  const [address, setAddress] = useState('');
+  const route = useRoute();
+  const initialAddress = route.params?.address || '';
+  const [address, setAddress] = useState(initialAddress);
   const [mapHtml, setMapHtml] = useState(DEFAULT_MAP_HTML);
 
-  const handleSearch = async () => {
-    if (address.trim() === '') {
+  useEffect(() => {
+    if (initialAddress) {
+      handleSearch(initialAddress);
+    }
+  }, [initialAddress]);
+
+  const handleSearch = async (searchAddress = address) => {
+    if (searchAddress.trim() === '') {
       setMapHtml(DEFAULT_MAP_HTML);
     } else {
       try {
-        const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`);
+        const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchAddress)}&format=json&limit=1`);
         if (response.data.length > 0) {
           const { lat, lon } = response.data[0];
           const updatedMapHtml = `

@@ -13,6 +13,7 @@ const DATA = [
     date: 'Nov 17th, 2020',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2020/07/Afro-vibes-flyer-template.jpg',
     description: 'An exciting Afro vibes event.',
+    address:'120 lower via casitas',
     email: 'contact@afrovibes.com',
   },
   {
@@ -21,6 +22,7 @@ const DATA = [
     date: 'Sept 3rd, 2020',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
     description: 'A thrilling jungle party.',
+     address:'120 lower via casitas',
     email: 'contact@jungleparty.com',
   },
 ];

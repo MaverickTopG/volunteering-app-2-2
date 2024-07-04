@@ -1,9 +1,14 @@
-// volcarosuel/DisplayScreen.js
 import React from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet, Button, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
-const DisplayScreen = ({ route, navigation }) => {
+const DisplayScreen = ({ route }) => {
   const { item } = route.params;
+  const navigation = useNavigation();
+
+  const handleAddressClick = () => {
+    navigation.navigate('Map', { address: item.address });
+  };
 
   return (
     <View style={styles.container}>
@@ -12,6 +17,9 @@ const DisplayScreen = ({ route, navigation }) => {
       <Text style={styles.location}>{item.location}</Text>
       <Text style={styles.date}>{item.date}</Text>
       <Text style={styles.email}>{item.email}</Text>
+      <TouchableOpacity onPress={handleAddressClick}>
+        <Text style={[styles.email, styles.hyperlink]}>{item.address}</Text>
+      </TouchableOpacity>
       <Button title="Back" onPress={() => navigation.goBack()} />
     </View>
   );
@@ -42,6 +50,10 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 14,
     marginVertical: 5,
+  },
+  hyperlink: {
+    color: 'blue',
+    textDecorationLine: 'underline',
   },
 });
 
