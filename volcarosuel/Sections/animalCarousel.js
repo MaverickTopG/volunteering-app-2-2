@@ -4,7 +4,7 @@ import { Dimensions, FlatList, Text, View, Image, StatusBar, StyleSheet, SafeAre
 import { GestureHandlerRootView, FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 
-const { width } = Dimensions.get('screen');
+const { width, height } = Dimensions.get('screen');
 
 const DATA = [
   {
@@ -13,7 +13,7 @@ const DATA = [
     date: 'Nov 17th, 2020',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2020/07/Afro-vibes-flyer-template.jpg',
     description: 'An exciting Afro vibes event.',
-    address:'120 lower via casitas',
+    address: '120 lower via casitas',
     email: 'contact@afrovibes.com',
   },
   {
@@ -22,7 +22,7 @@ const DATA = [
     date: 'Sept 3rd, 2020',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
     description: 'A thrilling jungle party.',
-     address:'120 lower via casitas',
+    address: '120 lower via casitas',
     email: 'contact@jungleparty.com',
   },
 ];
@@ -47,7 +47,7 @@ const OverflowItems = ({ data, scrollXAnimated }) => {
             <Text style={[styles.title]} numberOfLines={1}>{item.title}</Text>
             <View style={styles.itemContainerRow}>
               <Text style={[styles.location]}>
-                <EvilIcons name="location" size={16} color="black" style={{ marginRight: 5 }} />
+                <EvilIcons name="location" size={16} color="#fff6e7" style={{ marginRight: 5 }} />
                 {item.location}
               </Text>
               <Text style={[styles.date]}>{item.date}</Text>
@@ -116,7 +116,8 @@ const AnimalCarousel = () => {
                 flex: 1,
                 justifyContent: 'center',
                 padding: SPACING * 2,
-                marginTop: 50,
+                marginTop: 10,
+                marginBottom: 30, // Adjust this value to make the posters equidistant from the circle and the mini bar
               }}
               scrollEnabled={false}
               removeClippedSubviews={false}
@@ -182,19 +183,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#fff6e7', // Background color for the screen
   },
   title: {
     fontSize: 28,
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: -1,
+    color: '#fff6e7', // Title text color
   },
   location: {
     fontSize: 16,
+    color: '#fff6e7', // Location text color
   },
   date: {
     fontSize: 12,
+    color: '#fff6e7', // Date text color
   },
   itemContainer: {
     height: OVERFLOW_HEIGHT,
@@ -206,7 +210,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   overflowContainer: {
-    height: OVERFLOW_HEIGHT,
+    height: OVERFLOW_HEIGHT +17,
     overflow: 'hidden',
+    backgroundColor: '#2A2A33', // Mini bar background color
+    borderBottomLeftRadius: 20, // Adding border radius to match bottom tab navigator
+    borderBottomRightRadius: 20, // Adding border radius to match bottom tab navigator
   },
 });
