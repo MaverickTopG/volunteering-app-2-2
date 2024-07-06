@@ -58,12 +58,13 @@ const MapScreen = () => {
     }
   }, [initialAddress]);
 
-  const handleSearch = async (searchAddress = address) => {
-    if (searchAddress.trim() === '') {
+  const handleSearch = async (searchAddress) => {
+    const searchQuery = searchAddress || address;
+    if (searchQuery.trim() === '') {
       setMapHtml(DEFAULT_MAP_HTML);
     } else {
       try {
-        const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchAddress)}&format=json&limit=1`);
+        const response = await axios.get(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1`);
         if (response.data.length > 0) {
           const { lat, lon } = response.data[0];
           const updatedMapHtml = `
@@ -127,7 +128,7 @@ const MapScreen = () => {
           onChangeText={setAddress}
           placeholder="Enter address"
         />
-        <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+        <TouchableOpacity onPress={() => handleSearch()} style={styles.searchButton}>
           <Ionicons name="search" size={24} color="white" />
         </TouchableOpacity>
       </View>

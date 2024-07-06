@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   overflowContainer: {
     height: OVERFLOW_HEIGHT +17,
     overflow: 'hidden',
-    backgroundColor: '#2A2A33', // Mini bar background color
+    backgroundColor: 'black', // Mini bar background color
     borderBottomLeftRadius: 20, // Adding border radius to match bottom tab navigator
     borderBottomRightRadius: 20, // Adding border radius to match bottom tab navigator
   },
