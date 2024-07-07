@@ -104,7 +104,7 @@ const AnimalTabNavigator = () => {
           style={styles.bottomBar}
           height={65}
           circleWidth={75}
-          bgColor="#1A1A23"
+          bgColor="black"
           initialRouteName="Home"
           borderTopLeftRight
           renderCircle={({ selectedTab, navigate }) => (

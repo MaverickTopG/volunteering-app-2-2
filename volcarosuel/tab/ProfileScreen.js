@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, Image, Animated, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, Animated, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 
 const ChatGPT = () => {
     const [data, setData] = useState([{ type: 'bot', text: 'How may I help you?' }]);
-    const apiKey = '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';
+    const apiKey = 'your-api-key';
     const apiUrl = "https://api.openai.com/v1/chat/completions";
     const modelId = 'gpt-3.5-turbo';
     const [textInput, setTextInput] = useState('');
@@ -12,6 +13,8 @@ const ChatGPT = () => {
     const [inputPosition] = useState(new Animated.Value(0));
     const [inputWidth] = useState(new Animated.Value(1));
     const [isFocused, setIsFocused] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [fadeAnim] = useState(new Animated.Value(1)); // Initial opacity for error message
 
     useEffect(() => {
         const showKeyboard = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
@@ -39,9 +42,11 @@ const ChatGPT = () => {
         }).start();
     };
 
-    // Function to handle sending user messages
     const handleSend = async () => {
         const message = textInput;
+        if (message.trim() === '') return;
+        setIsLoading(true);
+        setTextInput(''); // Clear the input field
         try {
             const response = await axios.post(apiUrl, {
                 model: modelId,
@@ -60,12 +65,25 @@ const ChatGPT = () => {
                 }
             });
             const text = response.data.choices[0].message.content;
-            setData([...data, { type: 'user', text: textInput }, { type: 'bot', text }]);
-            setTextInput('');
+            setData([...data, { type: 'user', text: message }, { type: 'bot', text }]);
             setError('');
         } catch (error) {
             console.error("Error:", error.response.data);
             setError('An error occurred while fetching response. Please try again.');
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 0,
+                useNativeDriver: false
+            }).start(() => {
+                Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 1000,
+                    delay: 3000,
+                    useNativeDriver: false
+                }).start();
+            });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -87,20 +105,14 @@ const ChatGPT = () => {
         }).start();
     };
 
-    // Function to render messages with bubbles and images
     const renderMessage = ({ item }) => {
         return (
             <View style={item.type === 'user' ? styles.userMessageContainer : styles.botMessageContainer}>
-                <Image
-                    source={item.type === 'user' ? require('../miniasset/humanimage.png') : require('../miniasset/botimage.png')}
-                    style={styles.avatar}
-                />
                 <Text style={styles.messageText}>{item.text}</Text>
             </View>
         );
     };
 
-    // Function to dismiss the keyboard
     const dismissKeyboard = () => {
         Keyboard.dismiss();
     };
@@ -109,33 +121,37 @@ const ChatGPT = () => {
         <TouchableWithoutFeedback onPress={dismissKeyboard}>
             <View style={styles.container}>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-                    <Animated.View style={[styles.inputContainer, { transform: [{ translateY: inputPosition }] }]}>
-                        <Animated.View style={{ flex: inputWidth }}>
-                            <TextInput
-                                style={styles.input}
-                                value={textInput}
-                                onChangeText={text => setTextInput(text)}
-                                placeholder="Ask me anything!"
-                                onFocus={handleFocus}
-                                onBlur={handleBlur}
-                                onSubmitEditing={handleSend}
-                            />
+                    <View style={styles.searchContainer}>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Ask me anything!"
+                            placeholderTextColor="#fff"
+                            value={textInput}
+                            onChangeText={setTextInput}
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
+                            onSubmitEditing={handleSend}
+                        />
+                        <TouchableOpacity onPress={handleSend} style={styles.searchButton}>
+                            <Ionicons name="send-outline" size={24} color="#000" />
+                        </TouchableOpacity>
+                    </View>
+                    {error ? (
+                        <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
+                            <Text style={styles.errorText}>{error}</Text>
                         </Animated.View>
-                        {isFocused && (
-                            <TouchableOpacity
-                                style={styles.button}
-                                onPress={handleSend}
-                            >
-                                <Text style={styles.buttonText}>Send</Text>
-                            </TouchableOpacity>
-                        )}
-                    </Animated.View>
-                    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                    ) : null}
                     <FlatList
                         data={data}
                         keyExtractor={(item, index) => index.toString()}
                         style={styles.body}
                         renderItem={renderMessage}
+                        ListFooterComponent={isLoading ? (
+                            <View style={styles.loadingContainer}>
+                                <ActivityIndicator size="large" color="#fff6e7" />
+                                <Text style={styles.loadingText}>Generating...</Text>
+                            </View>
+                        ) : null}
                     />
                 </KeyboardAvoidingView>
             </View>
@@ -148,7 +164,7 @@ export default ChatGPT;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#fff6e7',
     },
     body: {
         flex: 1,
@@ -159,7 +175,9 @@ const styles = StyleSheet.create({
     userMessageContainer: {
         flexDirection: 'row',
         alignSelf: 'flex-end',
-        backgroundColor: '#EEE',
+        backgroundColor: '#fff6e7',
+        borderWidth: 1,
+        borderColor: 'black',
         borderRadius: 20,
         maxWidth: '70%',
         marginBottom: 10,
@@ -168,64 +186,65 @@ const styles = StyleSheet.create({
     botMessageContainer: {
         flexDirection: 'row',
         alignSelf: 'flex-start',
-        backgroundColor: 'lightblue',
+        backgroundColor: 'black',
         borderRadius: 20,
         maxWidth: '70%',
         marginBottom: 10,
         padding: 10,
     },
-    avatar: {
-        width: 30,
-        height: 30,
-        marginRight: 10,
-    },
     messageText: {
-        fontSize: 16,
+        fontSize: 17, // Increased font size
+        color: 'white',
     },
-    inputContainer: {
+    searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#000',
         paddingHorizontal: 10,
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderColor: '#e8e8e8',
-        backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.23,
-        shadowRadius: 2.62,
-        elevation: 4,
+        paddingVertical: 20,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
     },
-    input: {
-        borderWidth: 1,
-        borderColor: "black",
-        height: 40,
-        borderRadius: 20,
-        paddingHorizontal: 10,
-        marginRight: 10,
-    },
-    button: {
-        backgroundColor: 'lightblue',
-        borderRadius: 20,
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    buttonText: {
-        fontSize: 16,
+    searchInput: {
+        flex: 1,
+        height: 50,
+        backgroundColor: '#000',
         color: '#fff',
+        borderColor: '#fff6e7',
+        borderWidth: 1,
+        borderRadius: 25,
+        paddingHorizontal: 20,
+        fontSize: 16,
+    },
+    searchButton: {
+        marginLeft: 10,
+        backgroundColor: '#fff6e7',
+        padding: 10,
+        borderRadius: 25,
+    },
+    errorContainer: {
+        position: 'absolute',
+        bottom:'50%',
+        left: '10%',
+        right: '10%',
+        backgroundColor: 'black',
+        borderRadius: 20,
+        padding: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     errorText: {
-        backgroundColor: 'rgba(255, 0, 0, 0.2)',
-        color: 'red',
-        padding: 10,
-        borderRadius: 20,
-        position: 'absolute',
-        alignSelf: 'center',
-        top: '10%',
+        color: 'white',
+        fontSize: 16,
+    },
+    loadingContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 10,
+    },
+    loadingText: {
+        color: '#fff6e7',
+        marginLeft: 10,
     },
 });

@@ -3,8 +3,9 @@ import { EvilIcons } from '@expo/vector-icons';
 import { Dimensions, FlatList, Text, View, Image, StatusBar, StyleSheet, SafeAreaView, Animated, TouchableOpacity } from 'react-native';
 import { GestureHandlerRootView, FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
+import { RFPercentage } from 'react-native-responsive-fontsize';
 
-const { width } = Dimensions.get('screen');
+const { width, height } = Dimensions.get('window');
 
 const DATA = [
   {
@@ -13,8 +14,8 @@ const DATA = [
     date: 'Nov 17th, 2020',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2020/07/Afro-vibes-flyer-template.jpg',
     description: 'An exciting Afro vibes event.',
+    address: '120 lower via casitas',
     email: 'contact@afrovibes.com',
-    address:'120 lower via casitas',
   },
   {
     title: 'Jungle Party',
@@ -22,13 +23,13 @@ const DATA = [
     date: 'Sept 3rd, 2020',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
     description: 'A thrilling jungle party.',
+    address: '120 lower via casitas',
     email: 'contact@jungleparty.com',
-    address:'120 lower via casitas',
   },
 ];
 
-const OVERFLOW_HEIGHT = 70;
-const SPACING = 10;
+const OVERFLOW_HEIGHT = height * 0.1;
+const SPACING = width * 0.03;
 const ITEM_WIDTH = width * 0.76;
 const ITEM_HEIGHT = ITEM_WIDTH * 1.7;
 const VISIBLE_ITEMS = 3;
@@ -47,7 +48,7 @@ const OverflowItems = ({ data, scrollXAnimated }) => {
             <Text style={[styles.title]} numberOfLines={1}>{item.title}</Text>
             <View style={styles.itemContainerRow}>
               <Text style={[styles.location]}>
-                <EvilIcons name="location" size={16} color="black" style={{ marginRight: 5 }} />
+                <EvilIcons name="location" size={RFPercentage(2.2)} color="#fff6e7" style={{ marginRight: 5 }} />
                 {item.location}
               </Text>
               <Text style={[styles.date]}>{item.date}</Text>
@@ -59,7 +60,7 @@ const OverflowItems = ({ data, scrollXAnimated }) => {
   );
 };
 
-const ChildrenCarousel = () => {
+const ChildrenCarosuel = () => {
   const navigation = useNavigation();
   const ref = React.useRef(null);
   const scrollXIndex = React.useRef(new Animated.Value(0)).current;
@@ -116,7 +117,8 @@ const ChildrenCarousel = () => {
                 flex: 1,
                 justifyContent: 'center',
                 padding: SPACING * 2,
-                marginTop: 50,
+                marginTop: height * 0.023,
+                marginBottom: height * 0.05,
               }}
               scrollEnabled={false}
               removeClippedSubviews={false}
@@ -161,7 +163,7 @@ const ChildrenCarousel = () => {
                         style={{
                           width: ITEM_WIDTH,
                           height: ITEM_HEIGHT,
-                          borderRadius: 14,
+                          borderRadius: RFPercentage(2),
                         }}
                       />
                     </Animated.View>
@@ -176,25 +178,28 @@ const ChildrenCarousel = () => {
   );
 };
 
-export default ChildrenCarousel;
+export default ChildrenCarosuel;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#fff6e7', // Background color for the screen
   },
   title: {
-    fontSize: 28,
+    fontSize: RFPercentage(3.5),
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: -1,
+    color: '#fff6e7', // Title text color
   },
   location: {
-    fontSize: 16,
+    fontSize: RFPercentage(2),
+    color: '#fff6e7', // Location text color
   },
   date: {
-    fontSize: 12,
+    fontSize: RFPercentage(1.8),
+    color: '#fff6e7', // Date text color
   },
   itemContainer: {
     height: OVERFLOW_HEIGHT,
@@ -206,7 +211,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   overflowContainer: {
-    height: OVERFLOW_HEIGHT,
+    height: OVERFLOW_HEIGHT + 17,
     overflow: 'hidden',
+    backgroundColor: 'black', // Mini bar background color
+    borderBottomLeftRadius: RFPercentage(3), // Adding border radius to match bottom tab navigator
+    borderBottomRightRadius: RFPercentage(3), // Adding border radius to match bottom tab navigator
   },
 });

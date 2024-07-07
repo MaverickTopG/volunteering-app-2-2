@@ -109,6 +109,7 @@ const MapScreen = () => {
             </html>
           `;
           setMapHtml(updatedMapHtml);
+          setAddress(''); // Clear the search input field
         } else {
           alert('Location not found');
         }
@@ -123,13 +124,14 @@ const MapScreen = () => {
     <View style={{ flex: 1 }}>
       <View style={styles.searchContainer}>
         <TextInput
-          style={styles.input}
+          style={styles.searchInput}
+          placeholder="Enter address"
+          placeholderTextColor="#fff"
           value={address}
           onChangeText={setAddress}
-          placeholder="Enter address"
         />
         <TouchableOpacity onPress={() => handleSearch()} style={styles.searchButton}>
-          <Ionicons name="search" size={24} color="white" />
+          <Ionicons name="search" size={24} color="#000" />
         </TouchableOpacity>
       </View>
       <WebView
@@ -144,28 +146,39 @@ const MapScreen = () => {
 const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
-    padding: 10,
-    backgroundColor: '#fff',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#000',
+    paddingHorizontal: 10,
+    paddingVertical: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
   },
-  input: {
+  searchInput: {
     flex: 1,
-    height: 40,
-    borderColor: '#ccc',
+    height: 50,
+    backgroundColor: '#000',
+    color: '#fff',
+    borderColor: '#fff6e7',
     borderWidth: 1,
-    borderRadius: 5,
-    paddingLeft: 10,
-    marginRight: 10,
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    fontSize: 16,
   },
   searchButton: {
-    backgroundColor: '#1A73E8',
+    marginLeft: 10,
+    backgroundColor: '#fff6e7',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 25,
   },
   webview: {
     flex: 1,
-    marginTop: 10,
+    marginTop: 70, 
+    marginLeft:-10,
   },
 });
 

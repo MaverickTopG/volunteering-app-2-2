@@ -3,8 +3,9 @@ import { EvilIcons } from '@expo/vector-icons';
 import { Dimensions, FlatList, Text, View, Image, StatusBar, StyleSheet, SafeAreaView, Animated, TouchableOpacity } from 'react-native';
 import { GestureHandlerRootView, FlingGestureHandler, Directions, State } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
+import { RFPercentage } from 'react-native-responsive-fontsize';
 
-const { width, height } = Dimensions.get('screen');
+const { width, height } = Dimensions.get('window');
 
 const DATA = [
   {
@@ -27,8 +28,8 @@ const DATA = [
   },
 ];
 
-const OVERFLOW_HEIGHT = 70;
-const SPACING = 10;
+const OVERFLOW_HEIGHT = height * 0.1;
+const SPACING = width * 0.03;
 const ITEM_WIDTH = width * 0.76;
 const ITEM_HEIGHT = ITEM_WIDTH * 1.7;
 const VISIBLE_ITEMS = 3;
@@ -47,7 +48,7 @@ const OverflowItems = ({ data, scrollXAnimated }) => {
             <Text style={[styles.title]} numberOfLines={1}>{item.title}</Text>
             <View style={styles.itemContainerRow}>
               <Text style={[styles.location]}>
-                <EvilIcons name="location" size={16} color="#fff6e7" style={{ marginRight: 5 }} />
+                <EvilIcons name="location" size={RFPercentage(2.2)} color="#fff6e7" style={{ marginRight: 5 }} />
                 {item.location}
               </Text>
               <Text style={[styles.date]}>{item.date}</Text>
@@ -116,8 +117,8 @@ const AnimalCarousel = () => {
                 flex: 1,
                 justifyContent: 'center',
                 padding: SPACING * 2,
-                marginTop: 10,
-                marginBottom: 30, // Adjust this value to make the posters equidistant from the circle and the mini bar
+                marginTop: height * 0.023,
+                marginBottom: height * 0.05,
               }}
               scrollEnabled={false}
               removeClippedSubviews={false}
@@ -162,7 +163,7 @@ const AnimalCarousel = () => {
                         style={{
                           width: ITEM_WIDTH,
                           height: ITEM_HEIGHT,
-                          borderRadius: 14,
+                          borderRadius: RFPercentage(2),
                         }}
                       />
                     </Animated.View>
@@ -186,18 +187,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff6e7', // Background color for the screen
   },
   title: {
-    fontSize: 28,
+    fontSize: RFPercentage(3.5),
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: -1,
     color: '#fff6e7', // Title text color
   },
   location: {
-    fontSize: 16,
+    fontSize: RFPercentage(2),
     color: '#fff6e7', // Location text color
   },
   date: {
-    fontSize: 12,
+    fontSize: RFPercentage(1.8),
     color: '#fff6e7', // Date text color
   },
   itemContainer: {
@@ -210,10 +211,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   overflowContainer: {
-    height: OVERFLOW_HEIGHT +17,
+    height: OVERFLOW_HEIGHT + 17,
     overflow: 'hidden',
     backgroundColor: 'black', // Mini bar background color
-    borderBottomLeftRadius: 20, // Adding border radius to match bottom tab navigator
-    borderBottomRightRadius: 20, // Adding border radius to match bottom tab navigator
+    borderBottomLeftRadius: RFPercentage(3), // Adding border radius to match bottom tab navigator
+    borderBottomRightRadius: RFPercentage(3), // Adding border radius to match bottom tab navigator
   },
 });
