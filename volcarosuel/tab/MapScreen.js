@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
-    marginTop: 70, 
+    marginTop: 60, 
     marginLeft:-10,
   },
 });
