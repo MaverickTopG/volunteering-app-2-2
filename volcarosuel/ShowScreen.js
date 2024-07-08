@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import SwipeButton from './SwipeButton';
 import { useNavigation } from '@react-navigation/native';
+
+const { width, height } = Dimensions.get('window');
 
 const DetailScreen = () => {
   const navigation = useNavigation();
@@ -102,6 +104,14 @@ const styles = StyleSheet.create({
     color: 'black',
   },
   swipeButtonContainer: {
+    alignItems: 'center',
+  },
+  swipeButton: {
+    width: width * 0.9,
+    height: height * 0.1,
+    borderRadius: (height * 0.1) / 2,
+    backgroundColor: 'black',
+    justifyContent: 'center',
     alignItems: 'center',
   },
 });

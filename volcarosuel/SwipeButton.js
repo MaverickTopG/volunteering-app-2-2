@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, Dimensions } from 'react-native';
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedGestureHandler,
@@ -11,8 +11,10 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-const BUTTON_WIDTH = 350;
-const BUTTON_HEIGHT = 100;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const BUTTON_WIDTH = SCREEN_WIDTH * 0.9;
+const BUTTON_HEIGHT = SCREEN_HEIGHT * 0.08;
 const BUTTON_PADDING = 10;
 const SWIPEABLE_DIMENSIONS = BUTTON_HEIGHT - 2 * BUTTON_PADDING;
 
@@ -45,10 +47,10 @@ const SwipeButton = ({ onToggle }) => {
     colorWave: useAnimatedStyle(() => ({
       width: H_WAVE_RANGE + X.value,
       opacity: interpolate(X.value, [0, H_SWIPE_RANGE], [0, 1]),
-      backgroundColor: '#000', // Changed trail color to black
+      backgroundColor: '#000',
     })),
     swipeable: useAnimatedStyle(() => ({
-      backgroundColor: '#000', // Changed circle color to black
+      backgroundColor: '#000',
       transform: [{ translateX: X.value }],
     })),
     swipeText: useAnimatedStyle(() => ({
