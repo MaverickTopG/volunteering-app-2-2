@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import SwipeButton from './SwipeButton';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
-const DetailScreen = () => {
+const ShowScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const { item } = route.params; // Retrieve the item data passed via navigation
 
   const handleSwipe = (isToggled) => {
     if (isToggled) {
@@ -18,17 +20,20 @@ const DetailScreen = () => {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.titleContainer}>
-          <Text style={styles.titleText}>AFRO VIBES</Text>
+          <Text style={styles.titleText}>{item.title}</Text>
           <View style={styles.subtitleContainer}>
-            <Text style={styles.locationText}>Mumbai, India</Text>
-            <Text style={styles.dateText}>Nov 17th, 2020</Text>
+            <Text style={styles.locationText}>{item.location}</Text>
+            <Text style={styles.dateText}>{item.date}</Text>
           </View>
         </View>
         <View style={styles.descriptionContainer}>
-          <Text style={styles.descriptionText}>An exciting Afro vibes event.</Text>
+          <Text style={styles.descriptionText}>{item.description}</Text>
         </View>
         <View style={styles.addressContainer}>
-          <Text style={styles.addressText}>120 lower via casitas</Text>
+          <Text style={styles.addressText}>{item.address}</Text>
+        </View>
+        <View style={styles.emailContainer}>
+          <Text style={styles.emailText}>{item.email}</Text>
         </View>
         <View style={styles.swipeButtonContainer}>
           <SwipeButton onToggle={handleSwipe} />
@@ -103,6 +108,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: 'black',
   },
+  emailContainer: {
+    backgroundColor: '#fff6e7',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'black',
+    padding: 15,
+    width: '100%',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  emailText: {
+    fontSize: 18,
+    color: 'black',
+  },
   swipeButtonContainer: {
     alignItems: 'center',
   },
@@ -116,4 +135,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DetailScreen;
+export default ShowScreen;
