@@ -1,14 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Image } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import SwipeButton from './SwipeButton';
-import { useNavigation, useRoute } from '@react-navigation/native';
 
-const { width, height } = Dimensions.get('window');
-
-const ShowScreen = () => {
-  const navigation = useNavigation();
+const DisplayScreen = () => {
   const route = useRoute();
-  const { item } = route.params; // Retrieve the item data passed via navigation
+  const navigation = useNavigation();
+  const { item } = route.params;
 
   const handleSwipe = (isToggled) => {
     if (isToggled) {
@@ -18,6 +16,7 @@ const ShowScreen = () => {
 
   return (
     <View style={styles.container}>
+      <SafeAreaView />
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <View style={styles.titleContainer}>
           <Text style={styles.titleText}>{item.title}</Text>
@@ -26,13 +25,12 @@ const ShowScreen = () => {
             <Text style={styles.dateText}>{item.date}</Text>
           </View>
         </View>
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: item.poster }} style={styles.image} />
+        </View>
         <View style={styles.descriptionContainer}>
           <Text style={styles.descriptionText}>{item.description}</Text>
-        </View>
-        <View style={styles.addressContainer}>
           <Text style={styles.addressText}>{item.address}</Text>
-        </View>
-        <View style={styles.emailContainer}>
           <Text style={styles.emailText}>{item.email}</Text>
         </View>
         <View style={styles.swipeButtonContainer}>
@@ -80,6 +78,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'black',
   },
+  imageContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  image: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+  },
   descriptionContainer: {
     backgroundColor: '#fff6e7',
     borderRadius: 10,
@@ -93,46 +100,21 @@ const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 18,
     color: 'black',
-  },
-  addressContainer: {
-    backgroundColor: '#fff6e7',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'black',
-    padding: 15,
-    width: '100%',
-    alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   addressText: {
-    fontSize: 18,
+    fontSize: 16,
     color: 'black',
-  },
-  emailContainer: {
-    backgroundColor: '#fff6e7',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'black',
-    padding: 15,
-    width: '100%',
-    alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   emailText: {
-    fontSize: 18,
+    fontSize: 16,
     color: 'black',
   },
   swipeButtonContainer: {
     alignItems: 'center',
-  },
-  swipeButton: {
-    width: width * 0.9,
-    height: height * 0.1,
-    borderRadius: (height * 0.1) / 2,
-    backgroundColor: 'black',
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginTop: 20,
   },
 });
 
-export default ShowScreen;
+export default DisplayScreen;
