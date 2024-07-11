@@ -7,22 +7,40 @@ const { width, height } = Dimensions.get('window');
 
 const DATA = [
   {
-    title: 'Afro vibes',
-    location: 'Mumbai, India',
-    date: 'Nov 17th, 2020',
+    title: 'American Cancer Society',
+    location: 'Local Office: San Francisco, CA',
+    date: '1913',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2020/07/Afro-vibes-flyer-template.jpg',
-    description: 'An exciting Afro vibes event.',
-    address: '120 lower via casitas',
-    email: 'contact@afrovibes.com',
+    description: 'The American Cancer Society offers various volunteer opportunities to support the fight against cancer. Volunteers can participate in patient support programs, help organize and run fundraising events like Relay for Life, provide transportation for patients through the Road to Recovery program, and assist with administrative tasks. These activities help develop organizational and leadership skills while making a significant impact on individuals affected by cancer. Volunteering with the American Cancer Society is a great way to contribute to a cause that affects millions of lives.',
+    address: '945 Sutter Street, San Francisco, CA 94109',
+    email: '800-227-2345',
   },
   {
-    title: 'Jungle Party',
-    location: 'Unknown',
-    date: 'Sept 3rd, 2020',
+    title: 'Hospice by the Bay',
+    location: 'Larkspur, CA',
+    date: '1975',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
-    description: 'A thrilling jungle party.',
-    address: '120 lower via casitas',
-    email: 'contact@jungleparty.com',
+    description: 'Hospice by the Bay provides compassionate end-of-life care to patients and their families. Volunteers can play an essential role by offering companionship to patients, assisting with activities, supporting administrative tasks, and helping with fundraising events. This experience can be deeply rewarding and educational, providing insight into healthcare and the importance of emotional support for patients and their families. Those interested in healthcare or wanting to make a meaningful difference in their community will find this opportunity invaluable.',
+    address: '17 East Sir Francis Drake Blvd, Suite 100, Larkspur, CA 94939',
+    email: '415-927-2273',
+  },
+  {
+    title: 'Marin Convalescent & Rehabilitation Hospital',
+    location: 'Tiburon, CA',
+    date: '1948',
+    poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    description: 'Marin Convalescent & Rehabilitation Hospital offers skilled nursing and rehabilitation services to elderly and disabled patients. Volunteers can assist with recreational activities, provide companionship, help with meal services, and support the staff with various tasks. This opportunity allows volunteers to build relationships with residents, learn about geriatric care, and develop empathy and communication skills. Volunteering here is ideal for those considering a career in healthcare or those who enjoy working with the elderly.',
+    address: '30 Hacienda Drive, Tiburon, CA 94920',
+    email: '415-435-4554',
+  },
+  {
+    title: 'Marin General Hospital',
+    location: 'Greenbrae, CA',
+    date: '1952',
+    poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    description: 'Marin General Hospital provides a wide range of medical services to the community. Volunteers can support different departments by assisting with patient transport, providing information and directions to visitors, delivering flowers and mail to patients, and helping with administrative tasks. This experience offers a behind-the-scenes look at hospital operations and the opportunity to interact with healthcare professionals. It’s a perfect opportunity for those interested in pursuing careers in medicine or healthcare administration, providing valuable experience and insights into the medical field.',
+    address: '250 Bon Air Road, Greenbrae, CA 94904',
+    email: '415-925-7258',
   },
 ];
 
@@ -63,7 +81,9 @@ const HospitalCarousel = () => {
           return (
             <View style={styles.itemContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.title}>{item.title}</Text>
+                <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+                  {item.title}
+                </Text>
                 <View style={styles.infoContainer}>
                   <Text style={styles.location}>{item.location}</Text>
                   <Text style={styles.date}>{item.date}</Text>
@@ -73,7 +93,7 @@ const HospitalCarousel = () => {
                 onPress={() => navigation.navigate('DisplayScreen', { item })}
                 style={styles.imageContainer}
               >
-                <Image source={{ uri: item.poster }} style={styles.posterImage} />
+                <Animated.Image source={{ uri: item.poster }} style={[styles.posterImage, { opacity }]} />
               </TouchableOpacity>
             </View>
           );
@@ -95,11 +115,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageContainer: {
-    width: ITEM_WIDTH + 20 ,
+    width: ITEM_WIDTH + 20,
     height: ITEM_HEIGHT + 50,
     borderRadius: 10,
     overflow: 'hidden',
-    marginTop: 130, // Adjust to move the poster down
+    marginTop: 130,
   },
   posterImage: {
     height: '100%',
@@ -110,8 +130,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 100, // Increase height of the mini bar
-    backgroundColor: 'black', // Ensure the mini bar background is black
+    height: 100,
+    backgroundColor: 'black',
     justifyContent: 'center',
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,

@@ -5,11 +5,11 @@ import { useCarousel } from './CarosuelSelection';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const DATA = [
-  { id: '1', title: 'Animal Carousel', name: 'AnimalCarousel' },
-  { id: '2', title: 'Environment Carousel', name: 'TechCarousel' },
-  { id: '3', title: 'Family Carousel', name: 'FamilyCarousel' },
-  { id: '4', title: 'Hospital Carousel', name: 'HospitalCarousel' },
-  { id: '5', title: 'Library Carousel', name: 'SeniorCarousel' },
+  { id: '1', title: 'Animal', name: 'AnimalCarousel' },
+  { id: '2', title: 'Environment', name: 'TechCarousel' },
+  { id: '3', title: 'Family', name: 'FamilyCarousel' },
+  { id: '4', title: 'Hospital', name: 'HospitalCarousel' },
+  { id: '5', title: 'Library', name: 'SeniorCarousel' },
 ];
 
 const SearchScreen = () => {

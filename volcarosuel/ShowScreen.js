@@ -44,17 +44,19 @@ const DisplayScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: 'black',
   },
   contentContainer: {
     flexGrow: 1,
     padding: 10,
+    paddingBottom: 100, // Ensure space for bottom tab navigation
+    backgroundColor:'black'
   },
   titleContainer: {
     backgroundColor: '#fff6e7',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'white',
+    borderColor: '#fff6e7',
     padding: 15,
     width: '100%',
     alignSelf: 'center',

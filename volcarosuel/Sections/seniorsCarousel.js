@@ -7,29 +7,65 @@ const { width, height } = Dimensions.get('window');
 
 const DATA = [
   {
-    title: 'Afro vibes',
-    location: 'Mumbai, India',
-    date: 'Nov 17th, 2020',
+    title: 'The Book Exchange',
+    location: 'Not specified',
+    date: '1998',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2020/07/Afro-vibes-flyer-template.jpg',
-    description: 'An exciting Afro vibes event.',
-    address: '120 lower via casitas',
-    email: 'contact@afrovibes.com',
+    description: 'The Book Exchange offers a platform for exchanging used books to promote reading and literacy. Volunteers can help organize books, manage exchanges, and assist with community outreach efforts to encourage book donations and literacy programs.',
+    address: 'Not Specified',
+    email: 'global.k12books@gmail.com',
   },
   {
-    title: 'Jungle Party',
-    location: 'Unknown',
-    date: 'Sept 3rd, 2020',
+    title: 'Belvedere Tiburon Library',
+    location: 'Tiburon, CA',
+    date: '1997',
     poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
-    description: 'A thrilling jungle party.',
-    address: '120 lower via casitas',
-    email: 'contact@jungleparty.com',
+    description: 'The Belvedere Tiburon Library regularly seeks volunteers to assist with various functions such as assembling annual mailings, working in Corner Books, and helping with annual events. Teen volunteers can also participate in community service activities, such as the Reading Buddies program, where they read to younger children and help foster a love of reading.',
+    address: '1501 Tiburon Blvd, Tiburon, CA 94920',
+    email: '415-789-2665',
+  },
+  {
+    title: 'Corte Madera Library',
+    location: 'Corte Madera, CA',
+    date: '1966',
+    poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    description: 'Corte Madera Library offers volunteer opportunities for teens to help with library activities and events. Volunteers can assist with summer reading programs, help organize library materials, and support various community outreach initiatives.',
+    address: '707 Meadowsweet Dr, Corte Madera, CA 94925',
+    email: '415-924-3515',
+  },
+  {
+    title: 'Larkspur Library',
+    location: 'Larkspur, CA',
+    date: '1913',
+    poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    description: 'Larkspur Library welcomes teen volunteers to assist with a range of activities including event planning, organizing books, and helping with childrens programs. Volunteers play a vital role in supporting the library’s mission to serve the community.',
+    address: '400 Magnolia Ave, Larkspur, CA 94939',
+    email: '415-927-5022',
+  },
+  {
+    title: 'Marin City/Sausalito Library',
+    location: 'Marin City, CA',
+    date: '1975',
+    poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    description: 'Marin City/Sausalito Library offers volunteer opportunities for teens to engage in community service by assisting with library programs, helping patrons, and supporting library events. Volunteers can contribute to making the library a vibrant community hub.',
+    address: '164 Donahue St, Marin City, CA 94965',
+    email: '415-332-6158',
+  },
+  {
+    title: 'Marin County Public Library',
+    location: 'San Rafael, CA',
+    date: '1927',
+    poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    description: 'Marin County Public Library provides a variety of volunteer opportunities for teens across its branches. Volunteers can help with children’s storytimes, summer reading programs, organizing books, and special events. This is a great way to gain experience and give back to the community.',
+    address: '3501 Civic Center Dr, Suite 414, San Rafael, CA 94903',
+    email: '415-473-3220',
   },
 ];
 
 const ITEM_WIDTH = width * 0.76;
 const ITEM_HEIGHT = ITEM_WIDTH * 1.5;
 
-const AnimalCarousel = () => {
+const SeniorCarousel = () => {
   const navigation = useNavigation();
   const scrollX = useRef(new Animated.Value(0)).current;
 
@@ -63,7 +99,9 @@ const AnimalCarousel = () => {
           return (
             <View style={styles.itemContainer}>
               <View style={styles.textContainer}>
-                <Text style={styles.title}>{item.title}</Text>
+                <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+                  {item.title}
+                </Text>
                 <View style={styles.infoContainer}>
                   <Text style={styles.location}>{item.location}</Text>
                   <Text style={styles.date}>{item.date}</Text>
@@ -73,7 +111,7 @@ const AnimalCarousel = () => {
                 onPress={() => navigation.navigate('DisplayScreen', { item })}
                 style={styles.imageContainer}
               >
-                <Image source={{ uri: item.poster }} style={styles.posterImage} />
+                <Animated.Image source={{ uri: item.poster }} style={[styles.posterImage, { opacity }]} />
               </TouchableOpacity>
             </View>
           );
@@ -83,7 +121,7 @@ const AnimalCarousel = () => {
   );
 };
 
-export default AnimalCarousel;
+export default SeniorCarousel;
 
 const styles = StyleSheet.create({
   container: {
@@ -95,11 +133,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageContainer: {
-    width: ITEM_WIDTH + 20 ,
+    width: ITEM_WIDTH + 20,
     height: ITEM_HEIGHT + 50,
     borderRadius: 10,
     overflow: 'hidden',
-    marginTop: 130, // Adjust to move the poster down
+    marginTop: 130,
   },
   posterImage: {
     height: '100%',
@@ -110,8 +148,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 100, // Increase height of the mini bar
-    backgroundColor: 'black', // Ensure the mini bar background is black
+    height: 100,
+    backgroundColor: 'black',
     justifyContent: 'center',
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
