@@ -12,8 +12,8 @@ import HospitalCarousel from '../Sections/hospitalCarousel';
 import SeniorCarousel from '../Sections/seniorsCarousel';
 import AIScreen from './ProfileScreen';
 import DisplayScreen from '../ShowScreen';
-import MapScreen from './MapScreen';
-import SplashScreen from './Splashscreen';  // Import the SplashScreen
+import MapScreen from './MapScreen'; // Ensure this is the correct path to MapScreen
+import SplashScreen from './Splashscreen';  // Ensure this is the correct path to SplashScreen
 import { CarouselProvider, useCarousel } from './CarosuelSelection';
 
 const Stack = createStackNavigator();

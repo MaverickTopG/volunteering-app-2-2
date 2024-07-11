@@ -114,8 +114,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'black', // Ensure the mini bar background is black
     justifyContent: 'center',
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   title: {
     fontSize: RFPercentage(3.5),

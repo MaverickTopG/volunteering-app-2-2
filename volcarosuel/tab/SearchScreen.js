@@ -6,10 +6,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const DATA = [
   { id: '1', title: 'Animal Carousel', name: 'AnimalCarousel' },
-  { id: '2', title: 'Tech Carousel', name: 'TechCarousel' },
+  { id: '2', title: 'Environment Carousel', name: 'TechCarousel' },
   { id: '3', title: 'Family Carousel', name: 'FamilyCarousel' },
   { id: '4', title: 'Hospital Carousel', name: 'HospitalCarousel' },
-  { id: '5', title: 'Senior Carousel', name: 'SeniorCarousel' },
+  { id: '5', title: 'Library Carousel', name: 'SeniorCarousel' },
 ];
 
 const SearchScreen = () => {

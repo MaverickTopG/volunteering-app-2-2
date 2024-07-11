@@ -24,6 +24,7 @@ const StackNav = () => {
 
 const App = () => {
   return (
+ 
     <AuthProvider>
       <CarouselProvider>
         <NavigationContainer>
@@ -31,6 +32,7 @@ const App = () => {
         </NavigationContainer>
       </CarouselProvider>
     </AuthProvider>
+ 
   );
 };
 
