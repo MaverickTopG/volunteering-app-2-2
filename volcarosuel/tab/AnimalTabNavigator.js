@@ -53,6 +53,7 @@ const HomeStack = () => {
       />
     </Stack.Navigator>
   );
+  
 };
 
 const AnimalTabNavigator = () => {

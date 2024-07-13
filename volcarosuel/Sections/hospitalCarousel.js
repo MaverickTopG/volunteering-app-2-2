@@ -4,13 +4,14 @@ import { useNavigation } from '@react-navigation/native';
 import { RFPercentage } from 'react-native-responsive-fontsize';
 
 const { width, height } = Dimensions.get('window');
+const HospitalImage = require('../../assets/hospital.png');
 
 const DATA = [
   {
     title: 'American Cancer Society',
     location: 'Local Office: San Francisco, CA',
     date: '1913',
-    poster: 'https://www.creative-flyers.com/wp-content/uploads/2020/07/Afro-vibes-flyer-template.jpg',
+    poster: HospitalImage,
     description: 'The American Cancer Society offers various volunteer opportunities to support the fight against cancer. Volunteers can participate in patient support programs, help organize and run fundraising events like Relay for Life, provide transportation for patients through the Road to Recovery program, and assist with administrative tasks. These activities help develop organizational and leadership skills while making a significant impact on individuals affected by cancer. Volunteering with the American Cancer Society is a great way to contribute to a cause that affects millions of lives.',
     address: '945 Sutter Street, San Francisco, CA 94109',
     email: '800-227-2345',
@@ -19,7 +20,7 @@ const DATA = [
     title: 'Hospice by the Bay',
     location: 'Larkspur, CA',
     date: '1975',
-    poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    poster: HospitalImage,
     description: 'Hospice by the Bay provides compassionate end-of-life care to patients and their families. Volunteers can play an essential role by offering companionship to patients, assisting with activities, supporting administrative tasks, and helping with fundraising events. This experience can be deeply rewarding and educational, providing insight into healthcare and the importance of emotional support for patients and their families. Those interested in healthcare or wanting to make a meaningful difference in their community will find this opportunity invaluable.',
     address: '17 East Sir Francis Drake Blvd, Suite 100, Larkspur, CA 94939',
     email: '415-927-2273',
@@ -28,7 +29,7 @@ const DATA = [
     title: 'Marin Convalescent & Rehabilitation Hospital',
     location: 'Tiburon, CA',
     date: '1948',
-    poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    poster: HospitalImage,
     description: 'Marin Convalescent & Rehabilitation Hospital offers skilled nursing and rehabilitation services to elderly and disabled patients. Volunteers can assist with recreational activities, provide companionship, help with meal services, and support the staff with various tasks. This opportunity allows volunteers to build relationships with residents, learn about geriatric care, and develop empathy and communication skills. Volunteering here is ideal for those considering a career in healthcare or those who enjoy working with the elderly.',
     address: '30 Hacienda Drive, Tiburon, CA 94920',
     email: '415-435-4554',
@@ -37,7 +38,7 @@ const DATA = [
     title: 'Marin General Hospital',
     location: 'Greenbrae, CA',
     date: '1952',
-    poster: 'https://www.creative-flyers.com/wp-content/uploads/2019/11/Jungle-Party-Flyer-Template-1.jpg',
+    poster: HospitalImage,
     description: 'Marin General Hospital provides a wide range of medical services to the community. Volunteers can support different departments by assisting with patient transport, providing information and directions to visitors, delivering flowers and mail to patients, and helping with administrative tasks. This experience offers a behind-the-scenes look at hospital operations and the opportunity to interact with healthcare professionals. It’s a perfect opportunity for those interested in pursuing careers in medicine or healthcare administration, providing valuable experience and insights into the medical field.',
     address: '250 Bon Air Road, Greenbrae, CA 94904',
     email: '415-925-7258',
@@ -65,39 +66,25 @@ const HospitalCarousel = () => {
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           { useNativeDriver: true }
         )}
-        renderItem={({ item, index }) => {
-          const inputRange = [
-            (index - 1) * ITEM_WIDTH,
-            index * ITEM_WIDTH,
-            (index + 1) * ITEM_WIDTH,
-          ];
-
-          const opacity = scrollX.interpolate({
-            inputRange,
-            outputRange: [0.6, 1, 0.6],
-            extrapolate: 'clamp',
-          });
-
-          return (
-            <View style={styles.itemContainer}>
-              <View style={styles.textContainer}>
-                <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-                  {item.title}
-                </Text>
-                <View style={styles.infoContainer}>
-                  <Text style={styles.location}>{item.location}</Text>
-                  <Text style={styles.date}>{item.date}</Text>
-                </View>
+        renderItem={({ item }) => (
+          <View style={styles.itemContainer}>
+            <View style={styles.textContainer}>
+              <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+                {item.title}
+              </Text>
+              <View style={styles.infoContainer}>
+                <Text style={styles.location}>{item.location}</Text>
+                <Text style={styles.date}>{item.date}</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('DisplayScreen', { item })}
-                style={styles.imageContainer}
-              >
-                <Animated.Image source={{ uri: item.poster }} style={[styles.posterImage, { opacity }]} />
-              </TouchableOpacity>
             </View>
-          );
-        }}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('DisplayScreen', { item })}
+              style={styles.imageContainer}
+            >
+              <Image source={item.poster} style={styles.posterImage} />
+            </TouchableOpacity>
+          </View>
+        )}
       />
     </SafeAreaView>
   );
@@ -115,14 +102,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageContainer: {
-    width: ITEM_WIDTH + 20,
-    height: ITEM_HEIGHT + 50,
+    width: ITEM_WIDTH + 100,
+    height: ITEM_HEIGHT + 170,
     borderRadius: 10,
     overflow: 'hidden',
-    marginTop: 130,
+    marginTop: 110,
+    left:29,
   },
   posterImage: {
-    height: '100%',
+    width: '85%',
+    height: '85%',
     resizeMode: 'cover',
   },
   textContainer: {

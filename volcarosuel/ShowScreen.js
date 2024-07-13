@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import SwipeButton from './SwipeButton';
 
@@ -14,6 +14,10 @@ const DisplayScreen = () => {
     }
   };
 
+  const handleAddressPress = () => {
+    navigation.navigate('MapScreen', { address: item.address });
+  };
+
   return (
     <View style={styles.container}>
       <SafeAreaView />
@@ -26,16 +30,19 @@ const DisplayScreen = () => {
           </View>
         </View>
         <View style={styles.imageContainer}>
-          <Image source={{ uri: item.poster }} style={styles.image} />
+          <Image source={item.poster} style={styles.image} />
         </View>
         <View style={styles.descriptionContainer}>
           <Text style={styles.descriptionText}>{item.description}</Text>
-          <Text style={styles.addressText}>{item.address}</Text>
+          <TouchableOpacity onPress={handleAddressPress}>
+            <Text style={styles.addressText}>{item.address}</Text>
+          </TouchableOpacity>
           <Text style={styles.emailText}>{item.email}</Text>
         </View>
         <View style={styles.swipeButtonContainer}>
           <SwipeButton onToggle={handleSwipe} />
         </View>
+        <View style={styles.scrollPadding} />
       </ScrollView>
     </View>
   );
@@ -44,19 +51,18 @@ const DisplayScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#000',
   },
   contentContainer: {
     flexGrow: 1,
     padding: 10,
-    paddingBottom: 100, // Ensure space for bottom tab navigation
-    backgroundColor:'black'
+    paddingBottom: 100, // Add padding at the bottom for extra scroll space
   },
   titleContainer: {
     backgroundColor: '#fff6e7',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#fff6e7',
+    borderColor: 'white',
     padding: 15,
     width: '100%',
     alignSelf: 'center',
@@ -86,8 +92,9 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 200,
+    height: 400, // Adjust the height to fill the area
     borderRadius: 10,
+    resizeMode: 'cover',
   },
   descriptionContainer: {
     backgroundColor: '#fff6e7',
@@ -116,6 +123,9 @@ const styles = StyleSheet.create({
   swipeButtonContainer: {
     alignItems: 'center',
     marginTop: 20,
+  },
+  scrollPadding: {
+    height: 10, // Additional space at the bottom for more scroll space
   },
 });
 
