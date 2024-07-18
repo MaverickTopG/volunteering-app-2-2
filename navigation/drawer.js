@@ -1,12 +1,7 @@
 import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import CustomSideBarMenu from '../screens/CustomSideBarMenu';
-import TStackNavigator from '../A&WNav/stack';
-import VStackNavigator from '../C&FNav/stack.js';
-import EStackNavigator from '../TechNav/stack.js';
-import LStackNavigator from '../LibraryNav/stack.js';
-import StackNavigator from './stack';
-import Logout from '../screens/logout';
+import CustomSideBarMenu from './CustomSideBarMenu';
+
 import AnimalTabNavigator from '../volcarosuel/tab/AnimalTabNavigator.js';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, Text, StyleSheet, StatusBar } from 'react-native';
@@ -35,12 +30,7 @@ const DrawerNavigator = () => {
           },
         })}
       >
-        <Drawer.Screen name="Animal & Wildlife" component={TStackNavigator} />
-        <Drawer.Screen name="Children and Family" component={VStackNavigator} />
-        <Drawer.Screen name="Working with Seniors" component={StackNavigator} />
-        <Drawer.Screen name="Environment" component={EStackNavigator} />
-        <Drawer.Screen name="Library Services" component={LStackNavigator} />
-        <Drawer.Screen name="Logout" component={Logout} />
+      
         <Drawer.Screen
           name="Animal Carousel"
           component={AnimalTabNavigator}

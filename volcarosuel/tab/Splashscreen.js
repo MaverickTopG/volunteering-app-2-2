@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Animated, Easing, Dimensions, TouchableOpacity, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -11,6 +12,12 @@ const WelcomeScreen = () => {
   const bottomLeftScale = useRef(new Animated.Value(1)).current;
   const topLeftScale = useRef(new Animated.Value(1)).current;
   const bottomRightScale = useRef(new Animated.Value(1)).current;
+
+  const [typedText, setTypedText] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const fullText = "A volunteer's guidebook.";
+  let index = 0;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -62,9 +69,29 @@ const WelcomeScreen = () => {
         loopAnimation(bottomRightScale);
       };
 
+      const typeText = () => {
+        if (index < fullText.length) {
+          setTypedText((prev) => prev + fullText[index]);
+          index++;
+          setTimeout(typeText, 100);
+        }
+      };
+
       startAnimations();
+      setTypedText(''); // Reset text
+      index = 0;
+      setTimeout(typeText, 1000); // Start typing after a delay
+
     }, [logoScale, textOpacity, topRightScale, bottomLeftScale, topLeftScale, bottomRightScale])
   );
+
+  const openModal = () => {
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -72,8 +99,14 @@ const WelcomeScreen = () => {
         <Text style={styles.logo}>🐾</Text>
       </Animated.View>
       <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
-        <Text style={styles.title}>Animal Carousel</Text>
+        <Text style={styles.title}>NexoLink</Text>
       </Animated.View>
+      <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
+        <Text style={styles.typingText}>{typedText}</Text>
+      </Animated.View>
+      <TouchableOpacity onPress={openModal} style={styles.infoButton}>
+        <Ionicons name="information-circle-outline" size={30} color="#fff6e7" />
+      </TouchableOpacity>
       <View style={styles.curvesContainer}>
         <Animated.View style={[styles.curve, styles.topRightCurve, { transform: [{ scale: topRightScale }] }]}>
           <View style={styles.curveLayer1} />
@@ -96,6 +129,24 @@ const WelcomeScreen = () => {
           <View style={styles.smallCurveLayer3} />
         </Animated.View>
       </View>
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.bottomSheet}>
+            <Text style={styles.bottomSheetTitle}>About This App</Text>
+            <Text style={styles.bottomSheetText}>
+              This app is a volunteer's guidebook designed to help you find volunteer opportunities in various sectors such as animal care, environment, family support, hospitals, and senior care. Explore the different carousels to find opportunities that match your interests and start making a difference today!
+            </Text>
+            <TouchableOpacity onPress={closeModal}>
+              <Text style={styles.closeButton}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -116,11 +167,15 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     alignItems: 'center',
-    marginBottom: height * 0.1,
+    marginBottom: height * 0.02,
   },
   title: {
     fontSize: width * 0.07,
     fontWeight: 'bold',
+    color: '#fff6e7',
+  },
+  typingText: {
+    fontSize: width * 0.05,
     color: '#fff6e7',
   },
   curvesContainer: {
@@ -193,6 +248,39 @@ const styles = StyleSheet.create({
     opacity: 0.3,
     borderRadius: width * 0.24,
     margin: width * 0.03,
+  },
+  infoButton: {
+    position: 'absolute',
+    top: height * 0.03,
+    right: width * 0.05,
+    zIndex: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  bottomSheet: {
+    backgroundColor: '#fff6e7',
+    padding: 20,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+  },
+  bottomSheetTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'black',
+    marginBottom: 10,
+  },
+  bottomSheetText: {
+    fontSize: 16,
+    color: 'black',
+    marginBottom: 20,
+  },
+  closeButton: {
+    fontSize: 16,
+    color: 'black',
+    textAlign: 'center',
   },
 });
 
