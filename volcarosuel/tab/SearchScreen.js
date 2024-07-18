@@ -66,7 +66,7 @@ const SearchScreen = () => {
       >
         <View style={styles.bottomSheet}>
           <Text style={styles.bottomSheetTitle}>Search Screen</Text>
-          <Text style={styles.bottomSheetText}>This screen allows you to search and select various carousels based on the categories. Use the search bar to filter the categories and tap on a category to navigate to the respective carousel.</Text>
+          <Text style={styles.bottomSheetText}>This screen allows you to search and select various sections based on the categories. Use the search bar to filter the categories and tap on a category to navigate to the respective section.</Text>
           <TouchableOpacity onPress={() => setIsBottomSheetVisible(false)}>
             <Text style={styles.closeButton}>Close</Text>
           </TouchableOpacity>
