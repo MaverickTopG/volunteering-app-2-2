@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, Text, Modal } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
@@ -51,6 +51,7 @@ const MapScreen = () => {
   const initialAddress = route.params?.address || '';
   const [address, setAddress] = useState(initialAddress);
   const [mapHtml, setMapHtml] = useState(DEFAULT_MAP_HTML);
+  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
 
   useEffect(() => {
     if (initialAddress) {
@@ -133,12 +134,31 @@ const MapScreen = () => {
         <TouchableOpacity onPress={() => handleSearch()} style={styles.searchButton}>
           <Ionicons name="search" size={24} color="#000" />
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => setIsBottomSheetVisible(true)} style={styles.infoButton}>
+          <Ionicons name="information-circle-outline" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
       <WebView
         originWhitelist={['*']}
         source={{ html: mapHtml }}
         style={styles.webview}
       />
+      <Modal
+        visible={isBottomSheetVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsBottomSheetVisible(false)}
+      >
+        <View style={styles.bottomSheet}>
+          <Text style={styles.bottomSheetTitle}>MapScreen</Text>
+          <Text style={styles.bottomSheetText}>
+            This page helps you to search and display the location on the map based on the address you enter.
+          </Text>
+          <TouchableOpacity onPress={() => setIsBottomSheetVisible(false)}>
+            <Text style={styles.closeButton}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -175,10 +195,40 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 25,
   },
+  infoButton: {
+    marginLeft: 10,
+    backgroundColor: 'transparent',
+  },
   webview: {
     flex: 1,
-    marginTop: 60, 
-    marginLeft:-10,
+    width: '105%',
+    left: -10,
+  },
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff6e7',
+    padding: 20,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+  },
+  bottomSheetTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'black',
+    marginBottom: 10,
+  },
+  bottomSheetText: {
+    fontSize: 16,
+    color: 'black',
+    marginBottom: 20,
+  },
+  closeButton: {
+    fontSize: 16,
+    color: 'black',
+    textAlign: 'center',
   },
 });
 
