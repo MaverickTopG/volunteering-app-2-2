@@ -139,7 +139,7 @@ const WelcomeScreen = () => {
           <View style={styles.bottomSheet}>
             <Text style={styles.bottomSheetTitle}>About This App</Text>
             <Text style={styles.bottomSheetText}>
-              This app is a volunteer's guidebook designed to help you find volunteer opportunities in various sectors such as animal care, environment, family support, hospitals, and senior care. Explore the different carousels to find opportunities that match your interests and start making a difference today!
+              This app is a volunteer's guidebook designed to help you find volunteer opportunities in various sectors such as animal care, environment, family support, hospitals, and library. Explore the different carousels to find opportunities that match your interests and start making a difference today!
             </Text>
             <TouchableOpacity onPress={closeModal}>
               <Text style={styles.closeButton}>Close</Text>
