@@ -1,101 +1,72 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, Dimensions, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Image, Dimensions } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
-import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
+import { DrawerContentScrollView, DrawerItem, useDrawerStatus } from '@react-navigation/drawer';
 
 const { width, height } = Dimensions.get('window');
 
 const CustomSideBarMenu = (props) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
-  const positionX = useRef(new Animated.Value(width / 2)).current;
-  const positionY = useRef(new Animated.Value(height / 2)).current;
+  const positionX = useRef(new Animated.Value(width * 0.1)).current;
+  const positionY = useRef(new Animated.Value(height * 0.9)).current;
   const rotation = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-  const [isAnimating, setIsAnimating] = useState(true);
+
+  const isDrawerOpen = useDrawerStatus() === 'open';
+
+  useEffect(() => {
+    if (isDrawerOpen) {
+      startSpaceshipAnimation();
+    }
+  }, [isDrawerOpen]);
 
   useEffect(() => {
     Animated.timing(scaleAnim, {
       toValue: 1,
       duration: 500,
-      easing: Easing.bounce,
       useNativeDriver: true,
     }).start();
-
-    startSpaceshipAnimation();
   }, []);
 
   const startSpaceshipAnimation = () => {
-    if (!isAnimating) return;
+    const path = [
+      { x: width * 0.1, y: height * 0.9 },
+      { x: width * 0.1, y: height * 0.3 },
+      { x: width * 0.5, y: height * 0.3 },
+      { x: width * 0.5, y: height * 0.1 },
+      { x: width * 0.9, y: height * 0.1 },
+      { x: width * 0.9, y: height * 0.9 },
+      { x: width * 0.5, y: height * 0.5 },
+      { x: width * 0.1, y: height * 0.5 },
+      { x: width * 0.1, y: height * 0.9 },
+    ];
 
-    const moveSpaceship = () => {
-      if (!isAnimating) return;
-
-      const newX = Math.random() * (width - 100);
-      const newY = Math.random() * (height - 300) + 200;
-
-      const angle = Math.atan2(newY - positionY._value, newX - positionX._value) * (180 / Math.PI);
-
-      Animated.parallel([
+    const animations = path.map((point, index) => {
+      const duration = 3000;
+      return Animated.parallel([
         Animated.timing(positionX, {
-          toValue: newX,
-          duration: 25000, // Move for 25 seconds
-          easing: Easing.linear,
+          toValue: point.x,
+          duration,
           useNativeDriver: true,
         }),
         Animated.timing(positionY, {
-          toValue: newY,
-          duration: 25000, // Move for 25 seconds
-          easing: Easing.linear,
+          toValue: point.y,
+          duration,
           useNativeDriver: true,
         }),
         Animated.timing(rotation, {
-          toValue: angle,
-          duration: 12500,
-          easing: Easing.linear,
+          toValue: index % 2 === 0 ? 1 : 0,
+          duration,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        if (!isAnimating) return;
+      ]);
+    });
 
-        // Final 5 seconds animation to disappear
-        Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 5000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          if (!isAnimating) return;
-
-          // Restart animation in reverse after it exits the screen
-          positionY.setValue(Math.random() * (height - 300) + 200);
-          positionX.setValue(Math.random() * (width - 100));
-          rotation.setValue(Math.random() * 360);
-          opacity.setValue(1);
-          moveSpaceship();
-        });
-      });
-    };
-
-    moveSpaceship();
+    Animated.sequence(animations).start(() => {
+      positionX.setValue(width * 0.1);
+      positionY.setValue(height * 0.9);
+      rotation.setValue(0);
+    });
   };
-
-  useEffect(() => {
-    const unsubscribe = props.navigation.addListener('drawerOpen', () => {
-      setIsAnimating(true);
-      startSpaceshipAnimation();
-    });
-
-    const unsubscribeClose = props.navigation.addListener('drawerClose', () => {
-      setIsAnimating(false);
-    });
-
-    return () => {
-      unsubscribe();
-      unsubscribeClose();
-    };
-  }, [props.navigation]);
 
   return (
     <View style={styles.container}>
@@ -115,25 +86,18 @@ const CustomSideBarMenu = (props) => {
         />
         {/* Add other DrawerItem components as needed */}
       </DrawerContentScrollView>
-      {isAnimating && (
-        <Animated.View style={[styles.spaceshipContainer, {
-          transform: [
-            { translateX: positionX },
-            { translateY: positionY },
-            { rotate: rotation.interpolate({
-                inputRange: [-180, 180],
-                outputRange: ['-180deg', '180deg']
+      <Animated.View style={[styles.spaceshipContainer, {
+        transform: [
+          { translateX: positionX },
+          { translateY: positionY },
+          { rotate: rotation.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0deg', '360deg']
             }) }
-          ],
-          opacity: opacity
-        }]}>
-          <View style={styles.trail}>
-            <View style={styles.dotLarge} />
-            <View style={styles.dotSmall} />
-          </View>
-          <Image source={require('../assets/spaceship.png')} style={styles.spaceship} />
-        </Animated.View>
-      )}
+        ]
+      }]}>
+        <Image source={require('../assets/spaceship.png')} style={styles.spaceship} />
+      </Animated.View>
     </View>
   );
 };
@@ -181,29 +145,10 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
   },
-  trail: {
-    position: 'absolute',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    bottom: -20, // Adjust based on spaceship size
-  },
-  dotLarge: {
-    width: 10,
-    height: 10,
-    backgroundColor: 'black',
-    borderRadius: 5,
-    marginBottom: 5,
-  },
-  dotSmall: {
-    width: 5,
-    height: 5,
-    backgroundColor: 'black',
-    borderRadius: 2.5,
-  },
   spaceship: {
     width: 40,
     height: 40,
+    tintColor: 'black',
   },
 });
 
