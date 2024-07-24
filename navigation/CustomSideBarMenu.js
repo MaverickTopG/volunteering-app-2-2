@@ -29,19 +29,19 @@ const CustomSideBarMenu = (props) => {
 
   const startSpaceshipAnimation = () => {
     const path = [
-      { x: width * 0.1, y: height * 0.9 },
       { x: width * 0.1, y: height * 0.3 },
       { x: width * 0.5, y: height * 0.3 },
-      { x: width * 0.5, y: height * 0.1 },
-      { x: width * 0.9, y: height * 0.1 },
-      { x: width * 0.9, y: height * 0.9 },
-      { x: width * 0.5, y: height * 0.5 },
-      { x: width * 0.1, y: height * 0.5 },
-      { x: width * 0.1, y: height * 0.9 },
+      { x: width * 0.5, y: height * 0.9 },
+      { x: width * 0.2, y: height * 0.9 },
+      { x: width * 0.2, y: height * 0.4 },
+      { x: width * 0.39, y: height * 0.4 },
+      { x: width * 0.39, y: height * 0.9 },
+      { x: width * 0.25, y: height * 0.5 },
+      { x: width * 0.1, y: height * 0.85 },
     ];
 
     const animations = path.map((point, index) => {
-      const duration = 3000;
+      const duration = 2000;
       return Animated.parallel([
         Animated.timing(positionX, {
           toValue: point.x,
@@ -63,7 +63,7 @@ const CustomSideBarMenu = (props) => {
 
     Animated.sequence(animations).start(() => {
       positionX.setValue(width * 0.1);
-      positionY.setValue(height * 0.9);
+      positionY.setValue(height * 0.85);
       rotation.setValue(0);
     });
   };
@@ -79,10 +79,10 @@ const CustomSideBarMenu = (props) => {
           </Animated.View>
         </View>
         <DrawerItem
-          label="Animal Carousel"
+          label="Home"
           labelStyle={styles.drawerItemLabel}
           style={styles.drawerItem}
-          onPress={() => props.navigation.navigate('Animal Carousel')}
+          onPress={() => props.navigation.navigate('NexoLink')}
         />
         {/* Add other DrawerItem components as needed */}
       </DrawerContentScrollView>

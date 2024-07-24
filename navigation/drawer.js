@@ -32,10 +32,10 @@ const DrawerNavigator = () => {
       >
       
         <Drawer.Screen
-          name="Animal Carousel"
+          name="NexoLink"
           component={AnimalTabNavigator}
           options={{
-            headerTitle: "Animal Carousel",
+            headerTitle: "NexoLink",
             headerTitleStyle: { color: '#fff6e7' },
             headerStyle: { backgroundColor: 'black' },
           }}

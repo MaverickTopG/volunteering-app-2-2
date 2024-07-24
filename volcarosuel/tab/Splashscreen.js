@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, Dimensions, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, Dimensions, TouchableOpacity, Modal, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -96,7 +96,7 @@ const WelcomeScreen = () => {
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.logoContainer, { transform: [{ scale: logoScale }] }]}>
-        <Text style={styles.logo}>🐾</Text>
+        <Image source={require('../../assets/spaceship.png')} style={styles.logo} />
       </Animated.View>
       <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
         <Text style={styles.title}>NexoLink</Text>
@@ -139,7 +139,7 @@ const WelcomeScreen = () => {
           <View style={styles.bottomSheet}>
             <Text style={styles.bottomSheetTitle}>About This App</Text>
             <Text style={styles.bottomSheetText}>
-              This app is a volunteer's guidebook designed to help you find volunteer opportunities in various sectors such as animal care, environment, family support, hospitals, and library. Explore the different carousels to find opportunities that match your interests and start making a difference today!
+              This app is a volunteer's guidebook designed to help you find volunteer opportunities in various sectors such as animal care, environment, family support, hospitals, and library in marin. Explore the different sections to find opportunities that match your interests and start making a difference today!
             </Text>
             <TouchableOpacity onPress={closeModal}>
               <Text style={styles.closeButton}>Close</Text>
@@ -162,8 +162,10 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.05,
   },
   logo: {
-    fontSize: width * 0.2,
-    color: '#fff6e7',
+    width: width * 0.2,
+    height: width * 0.2,
+    resizeMode: 'contain',
+    tintColor: "#fff6e7"
   },
   textContainer: {
     alignItems: 'center',
