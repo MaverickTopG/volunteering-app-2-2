@@ -12,8 +12,8 @@ import HospitalCarousel from '../Sections/hospitalCarousel';
 import SeniorCarousel from '../Sections/seniorsCarousel';
 import AIScreen from './ProfileScreen';
 import DisplayScreen from '../ShowScreen';
-import MapScreen from './MapScreen'; // Ensure this is the correct path to MapScreen
-import SplashScreen from './Splashscreen';  // Ensure this is the correct path to SplashScreen
+import MapScreen from './MapScreen'; 
+import SplashScreen from './Splashscreen'; 
 import { CarouselProvider, useCarousel } from './CarosuelSelection';
 
 const Stack = createStackNavigator();
@@ -53,7 +53,6 @@ const HomeStack = () => {
       />
     </Stack.Navigator>
   );
-  
 };
 
 const AnimalTabNavigator = () => {
@@ -64,6 +63,9 @@ const AnimalTabNavigator = () => {
     let icon = "";
 
     switch (routeName) {
+      case "Show":
+        icon = "eye";
+        break;
       case "Home":
         icon = "home";
         break;
@@ -76,6 +78,7 @@ const AnimalTabNavigator = () => {
       case "Profile":
         icon = "person";
         break;
+    
     }
 
     return (
@@ -106,13 +109,13 @@ const AnimalTabNavigator = () => {
           height={65}
           circleWidth={75}
           bgColor="black"
-          initialRouteName="Home"
+          initialRouteName="Show"
           borderTopLeftRight
           renderCircle={({ selectedTab, navigate }) => (
             <Animated.View style={styles.circleContainer}>
               <TouchableOpacity
                 style={styles.btnCircle}
-                onPress={() => navigate('SplashScreen')}
+                onPress={() => navigate('Show')}
               >
                 <Ionicons name={"add"} color="white" size={30} />
               </TouchableOpacity>
@@ -145,7 +148,7 @@ const AnimalTabNavigator = () => {
             options={{ headerShown: false }}
           />
           <CurvedBottomBarExpo.Screen
-            name="SplashScreen"
+            name="Show"
             position="CIRCLE"
             component={SplashScreen}
             options={{ headerShown: false }}
