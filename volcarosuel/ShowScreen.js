@@ -15,7 +15,7 @@ const DisplayScreen = () => {
   };
 
   const handleAddressPress = () => {
-    navigation.navigate('MapScreen', { address: item.address });
+    navigation.navigate('Map', { address: item.address });
   };
 
   return (
