@@ -1,7 +1,6 @@
 import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import CustomSideBarMenu from './CustomSideBarMenu';
-
 import AnimalTabNavigator from '../volcarosuel/tab/AnimalTabNavigator.js';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, Text, StyleSheet, StatusBar } from 'react-native';
