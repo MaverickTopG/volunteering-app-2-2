@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const ChatGPT = () => {
     const [data, setData] = useState([{ type: 'bot', text: 'How may I help you?' }]);
-    const apiKey = ''; // Ensure this is your valid OpenAI API key
+    const apiKey = 'sk-proj-fjaLyfKk3xm7YLCSLhy5T3BlbkFJWzNG2GteXN7XN9goMdtj'; // Ensure this is your valid OpenAI API key
     const apiUrl = "https://api.openai.com/v1/chat/completions";
     const modelId = 'gpt-3.5-turbo';
     const [textInput, setTextInput] = useState('');
