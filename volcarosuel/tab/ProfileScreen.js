@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, Animated, KeyboardAvoidingView, Platform, ActivityIndicator, Modal } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, Animated, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, FlatList } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 
 const ChatGPT = () => {
     const [data, setData] = useState([{ type: 'bot', text: 'How may I help you?' }]);
-    const apiKey = 'sk-proj-fjaLyfKk3xm7YLCSLhy5T3BlbkFJWzNG2GteXN7XN9goMdtj';
+    const apiKey = ''; // Ensure this is your valid OpenAI API key
     const apiUrl = "https://api.openai.com/v1/chat/completions";
     const modelId = 'gpt-3.5-turbo';
     const [textInput, setTextInput] = useState('');
@@ -16,6 +16,10 @@ const ChatGPT = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [fadeAnim] = useState(new Animated.Value(1)); // Initial opacity for error message
     const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
+    const [showButtons, setShowButtons] = useState(true);
+    const buttonOpacity = useRef(new Animated.Value(1)).current;
+    const flatListRef = useRef();
+    const buttonTimeoutRef = useRef(null);
 
     useEffect(() => {
         const showKeyboard = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
@@ -26,6 +30,15 @@ const ChatGPT = () => {
             hideKeyboard.remove();
         };
     }, []);
+
+    useEffect(() => {
+        if (showButtons) {
+            clearTimeout(buttonTimeoutRef.current);
+            buttonTimeoutRef.current = setTimeout(() => {
+                fadeOutButtons();
+            }, 5000);
+        }
+    }, [showButtons]);
 
     const keyboardDidShow = (event) => {
         Animated.timing(inputPosition, {
@@ -66,11 +79,17 @@ const ChatGPT = () => {
                 }
             });
             const text = response.data.choices[0].message.content;
-            setData([...data, { type: 'user', text: message }, { type: 'bot', text }]);
+            setData(prevData => [...prevData, { type: 'user', text: message }, { type: 'bot', text }]);
             setError('');
+            setTimeout(() => flatListRef.current.scrollToEnd({ animated: true }), 100);
         } catch (error) {
-            console.error("Error:", error.response.data);
-            setError('An error occurred while fetching response. Please try again.');
+            console.error("Error:", error);
+            if (error.response && error.response.data) {
+                console.error("Error response data:", error.response.data);
+                setError(`An error occurred: ${error.response.data.error.message}`);
+            } else {
+                setError('An error occurred while fetching response. Please try again.');
+            }
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 0,
@@ -106,7 +125,7 @@ const ChatGPT = () => {
         }).start();
     };
 
-    const renderMessage = ({ item }) => {
+    const renderItem = ({ item }) => {
         return (
             <View style={item.type === 'user' ? styles.userMessageContainer : styles.botMessageContainer}>
                 <Text style={styles.messageText}>{item.text}</Text>
@@ -116,6 +135,38 @@ const ChatGPT = () => {
 
     const dismissKeyboard = () => {
         Keyboard.dismiss();
+        fadeInButtons();
+    };
+
+    const scrollToEnd = () => {
+        flatListRef.current.scrollToEnd({ animated: true });
+    };
+
+    const scrollToTop = () => {
+        flatListRef.current.scrollToOffset({ animated: true, offset: 0 });
+    };
+
+    const fadeOutButtons = () => {
+        Animated.timing(buttonOpacity, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+        }).start(() => {
+            setShowButtons(false);
+        });
+    };
+
+    const fadeInButtons = () => {
+        setShowButtons(true);
+        Animated.timing(buttonOpacity, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+        }).start();
+        clearTimeout(buttonTimeoutRef.current);
+        buttonTimeoutRef.current = setTimeout(() => {
+            fadeOutButtons();
+        }, 5000);
     };
 
     return (
@@ -146,18 +197,24 @@ const ChatGPT = () => {
                         </Animated.View>
                     ) : null}
                     <FlatList
+                        ref={flatListRef}
                         data={data}
+                        renderItem={renderItem}
                         keyExtractor={(item, index) => index.toString()}
-                        style={styles.body}
-                        renderItem={renderMessage}
-                        ListFooterComponent={isLoading ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="large" color="#fff6e7" />
-                                <Text style={styles.loadingText}>Generating...</Text>
-                            </View>
-                        ) : null}
+                        onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
+                        contentContainerStyle={styles.chatContainer}
                     />
                 </KeyboardAvoidingView>
+                {showButtons && (
+                    <Animated.View style={[styles.buttonContainer, { opacity: buttonOpacity }]}>
+                        <TouchableOpacity onPress={scrollToTop} style={styles.scrollButton}>
+                            <Ionicons name="arrow-up" size={24} color="#fff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={scrollToEnd} style={styles.scrollButton}>
+                            <Ionicons name="arrow-down" size={24} color="#fff" />
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
                 <Modal
                     visible={isBottomSheetVisible}
                     transparent={true}
@@ -182,17 +239,17 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff6e7',
+        marginBottom:50,
     },
-    body: {
-        flex: 1,
-        width: '100%',
+    chatContainer: {
         paddingTop: 20,
         paddingHorizontal: 10,
+        paddingBottom: 150, // Extra padding to ensure text is not overshadowed by tab navigator
     },
     userMessageContainer: {
         flexDirection: 'row',
         alignSelf: 'flex-end',
-        backgroundColor: '#fff6e7',
+        backgroundColor: 'black',
         borderWidth: 1,
         borderColor: 'black',
         borderRadius: 20,
@@ -258,15 +315,20 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
     },
-    loadingContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 10,
+    buttonContainer: {
+        position: 'absolute',
+        bottom: 60,
+        right: 20,
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        height: 100,
     },
-    loadingText: {
-        color: '#fff6e7',
-        marginLeft: 10,
+    scrollButton: {
+        backgroundColor: '#000',
+        padding: 10,
+        borderRadius: 25,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     bottomSheet: {
         position: 'absolute',
