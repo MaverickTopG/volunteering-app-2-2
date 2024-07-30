@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, StyleSheet, TouchableOpacity, View, Image } from 'react-native';
 import { CurvedBottomBarExpo } from 'react-native-curved-bottom-bar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -12,8 +12,8 @@ import HospitalCarousel from '../Sections/hospitalCarousel';
 import SeniorCarousel from '../Sections/seniorsCarousel';
 import AIScreen from './ProfileScreen';
 import DisplayScreen from '../ShowScreen';
-import MapScreen from './MapScreen'; 
-import SplashScreen from './Splashscreen'; 
+import MapScreen from './MapScreen';
+import SplashScreen from './Splashscreen';
 import { CarouselProvider, useCarousel } from './CarosuelSelection';
 
 const Stack = createStackNavigator();
@@ -78,7 +78,7 @@ const AnimalTabNavigator = () => {
       case "Profile":
         icon = "person";
         break;
-    
+
     }
 
     return (
@@ -117,7 +117,10 @@ const AnimalTabNavigator = () => {
                 style={styles.btnCircle}
                 onPress={() => navigate('Show')}
               >
-                <Ionicons name={"add"} color="white" size={30} />
+                <Image
+                  source={require('../../assets/spaceship.png')} // Update the path to your image
+                  style={styles.spaceshipIcon}
+                />
               </TouchableOpacity>
             </Animated.View>
           )}
@@ -208,5 +211,10 @@ const styles = StyleSheet.create({
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
+  },
+  spaceshipIcon: {
+    width: 30, // Adjust the size of the image as needed
+    height: 30,
+    tintColor: '#fff6e7', // Apply the color to the image
   },
 });

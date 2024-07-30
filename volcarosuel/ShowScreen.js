@@ -91,10 +91,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   image: {
-    width: '100%',
-    height: 400, // Adjust the height to fill the area
+    width: '50%',
+    height: 250, // Adjust the height to fill the area
     borderRadius: 10,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   descriptionContainer: {
     backgroundColor: '#fff6e7',
