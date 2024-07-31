@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'black',
     marginBottom: 10,
+    textDecorationLine:'underline',
   },
   emailText: {
     fontSize: 16,
