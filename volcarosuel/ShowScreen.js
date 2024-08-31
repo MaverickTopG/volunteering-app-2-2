@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
     padding: 10,
-    paddingBottom: 100, // Add padding at the bottom for extra scroll space
+    paddingBottom: 100, 
   },
   titleContainer: {
     backgroundColor: '#fff6e7',
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   scrollPadding: {
-    height: 10, // Additional space at the bottom for more scroll space
+    height: 10, 
   },
 });
 

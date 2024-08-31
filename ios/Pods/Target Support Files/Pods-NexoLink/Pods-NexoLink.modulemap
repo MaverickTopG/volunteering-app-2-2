@@ -1,0 +1,6 @@
+module Pods_NexoLink {
+  umbrella header "Pods-NexoLink-umbrella.h"
+
+  export *
+  module * { export * }
+}

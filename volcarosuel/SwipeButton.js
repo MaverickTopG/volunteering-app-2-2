@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     borderColor: '#fff6e7', 
-    borderWidth: 0, // Removed border
+    borderWidth: 0, 
   },
   colorWave: {
     position: 'absolute',
