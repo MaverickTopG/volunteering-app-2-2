@@ -84,6 +84,12 @@ const CustomSideBarMenu = (props) => {
           style={styles.drawerItem}
           onPress={() => props.navigation.navigate('NexoLink')}
         />
+        <DrawerItem
+          label="Volunteer Logs" // New Drawer Item
+          labelStyle={styles.drawerItemLabel}
+          style={styles.drawerItem}
+          onPress={() => props.navigation.navigate('VolunteerLogs')} // Navigate to the Volunteer Logs screen
+        />
         {/* Add other DrawerItem components as needed */}
       </DrawerContentScrollView>
       <Animated.View style={[styles.spaceshipContainer, {
