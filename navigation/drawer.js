@@ -2,7 +2,7 @@ import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import CustomSideBarMenu from './CustomSideBarMenu';
 import AnimalTabNavigator from '../volcarosuel/tab/AnimalTabNavigator.js';
-import VolunteerLogs from '../volcarosuel/volunteer_log.js'; // Add import for VolunteerLogs
+import VolunteerLogs from '../volcarosuel/volunteer_log.js';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, Text, StyleSheet, StatusBar } from 'react-native';
 
@@ -30,6 +30,7 @@ const DrawerNavigator = () => {
           },
         })}
       >
+      
         <Drawer.Screen
           name="NexoLink"
           component={AnimalTabNavigator}
@@ -39,9 +40,7 @@ const DrawerNavigator = () => {
             headerStyle: { backgroundColor: 'black' },
           }}
         />
-        
-        {/* New Logs screen */}
-        <Drawer.Screen
+            <Drawer.Screen
           name="VolunteerLogs"
           component={VolunteerLogs}
           options={{
