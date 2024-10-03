@@ -1,11 +1,15 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Image, Dimensions } from 'react-native';
+// CustomSideBarMenu.js
+import React, { useEffect, useRef, useContext } from 'react';
+import { View, Text, StyleSheet, Animated, Image, Dimensions, Alert } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { DrawerContentScrollView, DrawerItem, useDrawerStatus } from '@react-navigation/drawer';
+import { AuthContext } from '../auth/AuthContext'; // Import AuthContext
+import { supabase } from '../supabaseClient'; // Import Supabase client
 
 const { width, height } = Dimensions.get('window');
 
 const CustomSideBarMenu = (props) => {
+  const { user, setUser } = useContext(AuthContext); // Use AuthContext for authentication
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const positionX = useRef(new Animated.Value(width * 0.1)).current;
   const positionY = useRef(new Animated.Value(height * 0.9)).current;
@@ -68,6 +72,16 @@ const CustomSideBarMenu = (props) => {
     });
   };
 
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      setUser(null);
+      props.navigation.navigate('Login'); // Navigate to the Login screen after logout
+    }
+  };
+
   return (
     <View style={styles.container}>
       <DrawerContentScrollView {...props}>
@@ -85,23 +99,39 @@ const CustomSideBarMenu = (props) => {
           onPress={() => props.navigation.navigate('NexoLink')}
         />
         <DrawerItem
-          label="Volunteer Logs" // New Drawer Item
+          label="Volunteer Logs"
           labelStyle={styles.drawerItemLabel}
           style={styles.drawerItem}
-          onPress={() => props.navigation.navigate('VolunteerLogs')} // Navigate to the Volunteer Logs screen
+          onPress={() => props.navigation.navigate('VolunteerLogs')}
         />
         {/* Add other DrawerItem components as needed */}
+
+        {user && (
+          <DrawerItem
+            label="Logout"
+            labelStyle={styles.drawerItemLabel}
+            style={styles.drawerItem}
+            onPress={handleLogout}
+          />
+        )}
       </DrawerContentScrollView>
-      <Animated.View style={[styles.spaceshipContainer, {
-        transform: [
-          { translateX: positionX },
-          { translateY: positionY },
-          { rotate: rotation.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['0deg', '360deg']
-            }) }
-        ]
-      }]}>
+      <Animated.View
+        style={[
+          styles.spaceshipContainer,
+          {
+            transform: [
+              { translateX: positionX },
+              { translateY: positionY },
+              {
+                rotate: rotation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '360deg'],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <Image source={require('../assets/spaceship.png')} style={styles.spaceship} />
       </Animated.View>
     </View>

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// volcarosuel/volunteer_log.js
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -8,16 +9,24 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  FlatList,
+  Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { supabase } from '../supabaseClient'; // Adjust the path
+import { AuthContext } from '../auth/AuthContext'; // Adjust the path
 
 const { width, height } = Dimensions.get('window');
 
 const VolunteerLogs = () => {
-  const [date, setDate] = useState(new Date().toLocaleDateString());
+  const { user } = useContext(AuthContext);
+
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [hours, setHours] = useState('');
   const [selectedSite, setSelectedSite] = useState('Select Site');
   const [modalVisible, setModalVisible] = useState(false);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const sites = [
     'Hooves for Harmony',
@@ -27,16 +36,61 @@ const VolunteerLogs = () => {
     'Tech Carousel',
   ];
 
-  const handleLogSubmit = () => {
+  useEffect(() => {
+    if (user) {
+      fetchVolunteerLogs();
+    }
+  }, [user]);
+
+  const fetchVolunteerLogs = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('volunteer_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false });
+
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      setLogs(data);
+    }
+    setLoading(false);
+  };
+
+  const handleLogSubmit = async () => {
     if (!hours || selectedSite === 'Select Site') {
-      alert('Please fill all fields.');
+      Alert.alert('Error', 'Please fill all fields.');
       return;
     }
 
-    console.log('Volunteer Log:', { date, hours, site: selectedSite });
+    const { error } = await supabase.from('volunteer_logs').insert([
+      {
+        user_id: user.id,
+        date: date,
+        hours_contributed: parseFloat(hours),
+        site: selectedSite,
+      },
+    ]);
 
-    // Here, send it to firebase
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      Alert.alert('Success', 'Volunteer Log Added.');
+      setHours('');
+      setSelectedSite('Select Site');
+      fetchVolunteerLogs();
+    }
   };
+
+  const renderItem = ({ item }) => (
+    <View style={styles.logItem}>
+      <Text style={styles.logText}>Date: {item.date}</Text>
+      <Text style={styles.logText}>Hours: {item.hours_contributed}</Text>
+      <Text style={styles.logText}>Site: {item.site}</Text>
+      {/* Add edit and delete buttons if needed */}
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -53,18 +107,23 @@ const VolunteerLogs = () => {
       />
 
       <Text style={styles.label}>Volunteering Site:</Text>
-      <TouchableOpacity
-        style={styles.siteButton}
-        onPress={() => setModalVisible(true)}
-      >
+      <TouchableOpacity style={styles.siteButton} onPress={() => setModalVisible(true)}>
         <Text style={styles.siteButtonText}>{selectedSite}</Text>
       </TouchableOpacity>
 
-      <Button
-        title="Submit Log"
-        onPress={handleLogSubmit}
-        color="#fff6e7" 
-      />
+      <Button title="Submit Log" onPress={handleLogSubmit} color="#fff6e7" />
+
+      {/* Display volunteer logs */}
+      {loading ? (
+        <Text style={styles.loadingText}>Loading...</Text>
+      ) : (
+        <FlatList
+          data={logs}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          style={styles.logsList}
+        />
+      )}
 
       {/* Modal for Picker */}
       <Modal
@@ -80,16 +139,14 @@ const VolunteerLogs = () => {
               selectedValue={selectedSite}
               onValueChange={(itemValue) => setSelectedSite(itemValue)}
               style={styles.picker}
-              dropdownIconColor="#fff6e7" 
+              dropdownIconColor="#fff6e7"
             >
+              <Picker.Item label="Select Site" value="Select Site" />
               {sites.map((site, index) => (
                 <Picker.Item key={index} label={site} value={site} />
               ))}
             </Picker>
-            <TouchableOpacity
-              style={styles.doneButton}
-              onPress={() => setModalVisible(false)}
-            >
+            <TouchableOpacity style={styles.doneButton} onPress={() => setModalVisible(false)}>
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
@@ -100,16 +157,17 @@ const VolunteerLogs = () => {
 };
 
 const styles = StyleSheet.create({
+  // Your existing styles
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#000', 
+    backgroundColor: '#000',
   },
   label: {
     marginBottom: 10,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#fff6e7', 
+    color: '#fff6e7',
   },
   input: {
     height: 40,
@@ -117,29 +175,46 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 20,
     paddingHorizontal: 10,
-    color: '#fff6e7', 
-    backgroundColor: '#1a1a1a', 
+    color: '#fff6e7',
+    backgroundColor: '#1a1a1a',
   },
   siteButton: {
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a', 
+    backgroundColor: '#1a1a1a',
     borderColor: '#fff6e7',
     borderWidth: 1,
     marginBottom: 20,
   },
   siteButtonText: {
     fontSize: 16,
-    color: '#fff6e7', 
+    color: '#fff6e7',
+  },
+  loadingText: {
+    color: '#fff6e7',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  logsList: {
+    marginTop: 20,
+  },
+  logItem: {
+    backgroundColor: '#1a1a1a',
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 5,
+  },
+  logText: {
+    color: '#fff6e7',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)', 
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
-    backgroundColor: '#1a1a1a', 
+    backgroundColor: '#1a1a1a',
     padding: 20,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
@@ -148,13 +223,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#fff6e7', 
+    color: '#fff6e7',
     textAlign: 'center',
   },
   picker: {
     height: 150,
     width: '100%',
-    color: '#fff6e7', 
+    color: '#fff6e7',
   },
   doneButton: {
     marginTop: 20,
