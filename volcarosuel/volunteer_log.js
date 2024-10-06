@@ -1,5 +1,4 @@
-// volcarosuel/volunteer_log.js
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -9,24 +8,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  FlatList,
   Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { supabase } from '../supabaseClient'; // Adjust the path
-import { AuthContext } from '../auth/AuthContext'; // Adjust the path
+import firebase from '../auth/firebase'; // Adjust path
+import { AuthContext } from '../auth/AuthContext'; // Adjust path
 
 const { width, height } = Dimensions.get('window');
 
 const VolunteerLogs = () => {
-  const { user } = useContext(AuthContext);
-
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(new Date().toLocaleDateString());
   const [hours, setHours] = useState('');
   const [selectedSite, setSelectedSite] = useState('Select Site');
   const [modalVisible, setModalVisible] = useState(false);
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { user } = useContext(AuthContext);
 
   const sites = [
     'Hooves for Harmony',
@@ -36,61 +31,28 @@ const VolunteerLogs = () => {
     'Tech Carousel',
   ];
 
-  useEffect(() => {
-    if (user) {
-      fetchVolunteerLogs();
-    }
-  }, [user]);
-
-  const fetchVolunteerLogs = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('volunteer_logs')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false });
-
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      setLogs(data);
-    }
-    setLoading(false);
-  };
-
   const handleLogSubmit = async () => {
     if (!hours || selectedSite === 'Select Site') {
       Alert.alert('Error', 'Please fill all fields.');
       return;
     }
 
-    const { error } = await supabase.from('volunteer_logs').insert([
-      {
-        user_id: user.id,
-        date: date,
-        hours_contributed: parseFloat(hours),
+    try {
+      const db = firebase.firestore();
+      await db.collection('volunteer_logs').add({
+        userId: user.uid,
+        hours: parseFloat(hours),
         site: selectedSite,
-      },
-    ]);
-
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      Alert.alert('Success', 'Volunteer Log Added.');
+        date,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      Alert.alert('Success', 'Volunteer hours logged successfully');
       setHours('');
       setSelectedSite('Select Site');
-      fetchVolunteerLogs();
+    } catch (error) {
+      Alert.alert('Error', error.message);
     }
   };
-
-  const renderItem = ({ item }) => (
-    <View style={styles.logItem}>
-      <Text style={styles.logText}>Date: {item.date}</Text>
-      <Text style={styles.logText}>Hours: {item.hours_contributed}</Text>
-      <Text style={styles.logText}>Site: {item.site}</Text>
-      {/* Add edit and delete buttons if needed */}
-    </View>
-  );
 
   return (
     <View style={styles.container}>
@@ -107,25 +69,15 @@ const VolunteerLogs = () => {
       />
 
       <Text style={styles.label}>Volunteering Site:</Text>
-      <TouchableOpacity style={styles.siteButton} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity
+        style={styles.siteButton}
+        onPress={() => setModalVisible(true)}
+      >
         <Text style={styles.siteButtonText}>{selectedSite}</Text>
       </TouchableOpacity>
 
       <Button title="Submit Log" onPress={handleLogSubmit} color="#fff6e7" />
 
-      {/* Display volunteer logs */}
-      {loading ? (
-        <Text style={styles.loadingText}>Loading...</Text>
-      ) : (
-        <FlatList
-          data={logs}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          style={styles.logsList}
-        />
-      )}
-
-      {/* Modal for Picker */}
       <Modal
         visible={modalVisible}
         transparent={true}
@@ -141,12 +93,14 @@ const VolunteerLogs = () => {
               style={styles.picker}
               dropdownIconColor="#fff6e7"
             >
-              <Picker.Item label="Select Site" value="Select Site" />
               {sites.map((site, index) => (
                 <Picker.Item key={index} label={site} value={site} />
               ))}
             </Picker>
-            <TouchableOpacity style={styles.doneButton} onPress={() => setModalVisible(false)}>
+            <TouchableOpacity
+              style={styles.doneButton}
+              onPress={() => setModalVisible(false)}
+            >
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
@@ -157,7 +111,6 @@ const VolunteerLogs = () => {
 };
 
 const styles = StyleSheet.create({
-  // Your existing styles
   container: {
     flex: 1,
     padding: 20,
@@ -189,23 +142,6 @@ const styles = StyleSheet.create({
   },
   siteButtonText: {
     fontSize: 16,
-    color: '#fff6e7',
-  },
-  loadingText: {
-    color: '#fff6e7',
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  logsList: {
-    marginTop: 20,
-  },
-  logItem: {
-    backgroundColor: '#1a1a1a',
-    padding: 15,
-    marginBottom: 10,
-    borderRadius: 5,
-  },
-  logText: {
     color: '#fff6e7',
   },
   modalContainer: {

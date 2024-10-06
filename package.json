@@ -31,7 +31,7 @@
     "expo-splash-screen": "~0.27.5",
     "expo-status-bar": "~1.12.1",
     "faker": "^5.5.3",
-    "firebase": "^10.13.2",
+    "firebase": "^10.14.0",
     "moti": "^0.29.0",
     "particles-bg": "^2.5.5",
     "react": "18.2.0",

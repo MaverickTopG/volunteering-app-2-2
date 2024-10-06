@@ -1,64 +1,63 @@
-// LoginScreen.js
 import React, { useState, useContext } from 'react';
-import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { supabase } from '../supabaseClient'; // Adjust the path accordingly
-import { AuthContext } from './AuthContext'; // Adjust the path accordingly
+import { View, TextInput, Button, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { AuthContext } from './AuthContext';  // Adjust the path to your AuthContext
+import { useNavigation } from '@react-navigation/native';
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { setUser } = useContext(AuthContext);
+  const { signIn } = useContext(AuthContext);  // Use the signIn method from AuthContext
+  const navigation = useNavigation();  // For navigating to RegisterScreen
 
-  const handleLogin = async () => {
-    const { error, user } = await supabase.auth.signIn({ email, password });
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      setUser(user);
-      navigation.navigate('NexoLink'); // Navigate to your main app screen
-    }
+  const handleLogin = () => {
+    signIn(email, password);
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <TextInput
+        style={styles.input}
         placeholder="Email"
-        placeholderTextColor="#aaa"
         value={email}
         onChangeText={setEmail}
-        style={styles.input}
-        autoCapitalize="none"
         keyboardType="email-address"
+        autoCapitalize="none"
       />
       <TextInput
+        style={styles.input}
         placeholder="Password"
-        placeholderTextColor="#aaa"
         value={password}
         onChangeText={setPassword}
-        style={styles.input}
         secureTextEntry
       />
-      <Button title="Login" onPress={handleLogin} color="#fff6e7" />
-      <Button
-        title="Don't have an account? Register"
-        onPress={() => navigation.navigate('Register')}
-        color="#fff6e7"
-      />
-    </View>
+      <Button title="Login" onPress={handleLogin} />
+
+      <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+        <Text style={styles.signupText}>Don't have an account? Sign up</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
+export default LoginScreen;
+
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#000' },
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+  },
   input: {
-    height: 40,
-    borderColor: '#fff6e7',
+    height: 50,
     borderWidth: 1,
+    borderColor: '#ddd',
     marginBottom: 20,
     paddingHorizontal: 10,
-    color: '#fff6e7',
-    backgroundColor: '#1a1a1a',
+  },
+  signupText: {
+    marginTop: 20,
+    color: '#007BFF',
+    textAlign: 'center',
   },
 });
-
-export default LoginScreen;

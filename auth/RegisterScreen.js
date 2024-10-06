@@ -1,62 +1,62 @@
-// RegisterScreen.js
-import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { supabase } from '../supabaseClient'; // Adjust the path accordingly
+import React, { useState, useContext } from 'react';
+import { View, TextInput, Button, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { AuthContext } from './AuthContext';  // Adjust the path to your AuthContext
+import { useNavigation } from '@react-navigation/native';
 
-const RegisterScreen = ({ navigation }) => {
+const RegisterScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { signUp } = useContext(AuthContext);  // Use the signUp method from AuthContext
+  const navigation = useNavigation();  // For navigating back to login
 
-  const handleRegister = async () => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      Alert.alert('Success', 'Please check your email to confirm your account.');
-      navigation.navigate('Login');
-    }
+  const handleSignUp = () => {
+    signUp(email, password);
   };
 
   return (
     <View style={styles.container}>
       <TextInput
+        style={styles.input}
         placeholder="Email"
-        placeholderTextColor="#aaa"
         value={email}
         onChangeText={setEmail}
-        style={styles.input}
-        autoCapitalize="none"
         keyboardType="email-address"
+        autoCapitalize="none"
       />
       <TextInput
+        style={styles.input}
         placeholder="Password"
-        placeholderTextColor="#aaa"
         value={password}
         onChangeText={setPassword}
-        style={styles.input}
         secureTextEntry
       />
-      <Button title="Register" onPress={handleRegister} color="#fff6e7" />
-      <Button
-        title="Already have an account? Login"
-        onPress={() => navigation.navigate('Login')}
-        color="#fff6e7"
-      />
+      <Button title="Sign Up" onPress={handleSignUp} />
+
+      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+        <Text style={styles.loginText}>Already have an account? Log in</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
+export default RegisterScreen;
+
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#000' },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
   input: {
-    height: 40,
-    borderColor: '#fff6e7',
+    height: 50,
     borderWidth: 1,
+    borderColor: '#ddd',
     marginBottom: 20,
     paddingHorizontal: 10,
-    color: '#fff6e7',
-    backgroundColor: '#1a1a1a',
+  },
+  loginText: {
+    marginTop: 20,
+    color: '#007BFF',
+    textAlign: 'center',
   },
 });
-
-export default RegisterScreen;
