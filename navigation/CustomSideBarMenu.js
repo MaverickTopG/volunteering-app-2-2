@@ -1,10 +1,10 @@
-// CustomSideBarMenu.js
 import React, { useEffect, useRef, useContext } from 'react';
 import { View, Text, StyleSheet, Animated, Image, Dimensions, Alert } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { DrawerContentScrollView, DrawerItem, useDrawerStatus } from '@react-navigation/drawer';
 import { AuthContext } from '../auth/AuthContext'; // Import AuthContext
-import { supabase } from '../supabaseClient'; // Import Supabase client
+import { signOut } from 'firebase/auth';  // Import Firebase signOut function
+import { auth } from '../auth/firebase';  // Import the initialized auth object from Firebase
 
 const { width, height } = Dimensions.get('window');
 
@@ -73,12 +73,12 @@ const CustomSideBarMenu = (props) => {
   };
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      await signOut(auth);  // Use Firebase signOut
+      setUser(null);  // Clear the user in AuthContext
+      props.navigation.navigate('Login');  // Navigate to the Login screen after logout
+    } catch (error) {
       Alert.alert('Error', error.message);
-    } else {
-      setUser(null);
-      props.navigation.navigate('Login'); // Navigate to the Login screen after logout
     }
   };
 
