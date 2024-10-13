@@ -10,17 +10,20 @@ import {
   FlatList,
   Alert,
 } from 'react-native';
-import { AuthContext } from '../auth/AuthContext';  // Adjust the path to your AuthContext
-import { db } from '../auth/firebase';  // Import Firestore db
+import { AuthContext } from '../auth/AuthContext'; // Adjust the path to your AuthContext
+import { db } from '../auth/firebase'; // Import Firestore db
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 
 const VolunteerLogs = () => {
-  const { user } = useContext(AuthContext);  // Get current authenticated user
+  const { user } = useContext(AuthContext); // Get current authenticated user
   const [logs, setLogs] = useState([]);
+  const [totalHours, setTotalHours] = useState(0); // State to store cumulative hours
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newHours, setNewHours] = useState('');
-  const [selectedSite, setSelectedSite] = useState('Select Site');
+  const [selectedSite, setSelectedSite] = useState('');
+  const [customSite, setCustomSite] = useState(''); // For custom site input
+  const [isCustomSite, setIsCustomSite] = useState(false); // Track if using custom site
 
   const sites = [
     'Hooves for Harmony',
@@ -45,10 +48,16 @@ const VolunteerLogs = () => {
       );
       const querySnapshot = await getDocs(q);
       const logsData = [];
+      let total = 0; // Initialize cumulative total
+
       querySnapshot.forEach((doc) => {
-        logsData.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        logsData.push({ id: doc.id, ...data });
+        total += data.hours_contributed; // Accumulate hours
       });
+
       setLogs(logsData);
+      setTotalHours(total); // Update the total hours state
     } catch (error) {
       Alert.alert('Error', error.message);
     } finally {
@@ -57,26 +66,27 @@ const VolunteerLogs = () => {
   };
 
   const handleAddLog = async () => {
-    if (!newHours || selectedSite === 'Select Site') {
+    if (!newHours || (!selectedSite && !customSite)) {
       Alert.alert('Please fill all fields.');
       return;
     }
 
-    // Capture the current date and time
+    const siteName = isCustomSite ? customSite : selectedSite;
+
     const currentDate = new Date();
-    const formattedDate = currentDate.toLocaleDateString();  // You can adjust the format as needed
-    const formattedTime = currentDate.toLocaleTimeString();  // Time in the format HH:MM:SS
+    const formattedDate = currentDate.toLocaleDateString();
+    const formattedTime = currentDate.toLocaleTimeString();
 
     try {
       await addDoc(collection(db, 'volunteer_logs'), {
         user_id: user.uid,
         hours_contributed: parseFloat(newHours),
-        site: selectedSite,
-        date: formattedDate,  // Store the current date
-        time: formattedTime,  // Store the current time
-        timestamp: currentDate.toISOString(),  // Store the full timestamp for future reference
+        site: siteName,
+        date: formattedDate,
+        time: formattedTime,
+        timestamp: currentDate.toISOString(),
       });
-      fetchVolunteerLogs(); // Refresh the logs after adding a new entry
+      fetchVolunteerLogs(); // Refresh logs after adding a new entry
       setShowModal(false);
     } catch (error) {
       Alert.alert('Error', error.message);
@@ -94,6 +104,10 @@ const VolunteerLogs = () => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.totalHoursText}>
+        Total Hours: {totalHours} hrs {/* Display cumulative total */}
+      </Text>
+
       {loading ? (
         <Text>Loading...</Text>
       ) : logs.length === 0 ? (
@@ -130,9 +144,11 @@ const VolunteerLogs = () => {
 
             <TouchableOpacity
               style={styles.siteButton}
-              onPress={() => setShowModal(true)}
+              onPress={() => setIsCustomSite(false)}
             >
-              <Text style={styles.siteButtonText}>{selectedSite}</Text>
+              <Text style={styles.siteButtonText}>
+                {selectedSite || 'Select a site'}
+              </Text>
             </TouchableOpacity>
 
             <FlatList
@@ -148,6 +164,23 @@ const VolunteerLogs = () => {
               )}
             />
 
+            <TouchableOpacity
+              style={styles.customSiteButton}
+              onPress={() => setIsCustomSite(true)}
+            >
+              <Text style={styles.customSiteButtonText}>Enter Custom Site</Text>
+            </TouchableOpacity>
+
+            {isCustomSite && (
+              <TextInput
+                style={styles.input}
+                placeholder="Enter custom site name"
+                value={customSite}
+                onChangeText={(text) => setCustomSite(text)}
+                placeholderTextColor="#aaa"
+              />
+            )}
+
             <Button title="Add Log" onPress={handleAddLog} />
             <Button title="Cancel" onPress={() => setShowModal(false)} />
           </View>
@@ -162,6 +195,12 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#fff',
+  },
+  totalHoursText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
   },
   noLogsText: {
     fontSize: 18,
@@ -239,6 +278,13 @@ const styles = StyleSheet.create({
   siteText: {
     fontSize: 16,
     color: '#333',
+  },
+  customSiteButton: {
+    marginTop: 10,
+  },
+  customSiteButtonText: {
+    color: '#007BFF',
+    textAlign: 'center',
   },
 });
 

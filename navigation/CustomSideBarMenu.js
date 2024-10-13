@@ -10,65 +10,23 @@ const { width, height } = Dimensions.get('window');
 
 const CustomSideBarMenu = (props) => {
   const { user, setUser } = useContext(AuthContext); // Use AuthContext for authentication
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const positionX = useRef(new Animated.Value(width * 0.1)).current;
-  const positionY = useRef(new Animated.Value(height * 0.9)).current;
-  const rotation = useRef(new Animated.Value(0)).current;
+  const rotation = useRef(new Animated.Value(0)).current; // Rotation animation value
 
   const isDrawerOpen = useDrawerStatus() === 'open';
 
   useEffect(() => {
     if (isDrawerOpen) {
-      startSpaceshipAnimation();
+      startRotationAnimation(); // Start rotation when the drawer opens
     }
   }, [isDrawerOpen]);
 
-  useEffect(() => {
-    Animated.timing(scaleAnim, {
-      toValue: 1,
-      duration: 500,
+  const startRotationAnimation = () => {
+    Animated.timing(rotation, {
+      toValue: 1, // Rotate 360 degrees (1 in interpolation)
+      duration: 2000, // Duration of rotation
       useNativeDriver: true,
-    }).start();
-  }, []);
-
-  const startSpaceshipAnimation = () => {
-    const path = [
-      { x: width * 0.1, y: height * 0.3 },
-      { x: width * 0.5, y: height * 0.3 },
-      { x: width * 0.5, y: height * 0.9 },
-      { x: width * 0.2, y: height * 0.9 },
-      { x: width * 0.2, y: height * 0.4 },
-      { x: width * 0.39, y: height * 0.4 },
-      { x: width * 0.39, y: height * 0.9 },
-      { x: width * 0.25, y: height * 0.5 },
-      { x: width * 0.1, y: height * 0.85 },
-    ];
-
-    const animations = path.map((point, index) => {
-      const duration = 2000;
-      return Animated.parallel([
-        Animated.timing(positionX, {
-          toValue: point.x,
-          duration,
-          useNativeDriver: true,
-        }),
-        Animated.timing(positionY, {
-          toValue: point.y,
-          duration,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotation, {
-          toValue: index % 2 === 0 ? 1 : 0,
-          duration,
-          useNativeDriver: true,
-        }),
-      ]);
-    });
-
-    Animated.sequence(animations).start(() => {
-      positionX.setValue(width * 0.1);
-      positionY.setValue(height * 0.85);
-      rotation.setValue(0);
+    }).start(() => {
+      rotation.setValue(0); // Reset rotation value after animation completes
     });
   };
 
@@ -86,11 +44,11 @@ const CustomSideBarMenu = (props) => {
     <View style={styles.container}>
       <DrawerContentScrollView {...props}>
         <View style={styles.header}>
-          <Animated.View style={[styles.boxContainer, { transform: [{ scale: scaleAnim }] }]}>
+          <View style={styles.boxContainer}>
             <View style={styles.box}>
               <Text style={styles.boxText}>NexoLink</Text>
             </View>
-          </Animated.View>
+          </View>
         </View>
         <DrawerItem
           label="Home"
@@ -104,7 +62,6 @@ const CustomSideBarMenu = (props) => {
           style={styles.drawerItem}
           onPress={() => props.navigation.navigate('VolunteerLogs')}
         />
-        {/* Add other DrawerItem components as needed */}
 
         {user && (
           <DrawerItem
@@ -115,17 +72,16 @@ const CustomSideBarMenu = (props) => {
           />
         )}
       </DrawerContentScrollView>
+
       <Animated.View
         style={[
           styles.spaceshipContainer,
           {
             transform: [
-              { translateX: positionX },
-              { translateY: positionY },
               {
                 rotate: rotation.interpolate({
                   inputRange: [0, 1],
-                  outputRange: ['0deg', '360deg'],
+                  outputRange: ['0deg', '360deg'], // Rotate once from 0 to 360 degrees
                 }),
               },
             ],
@@ -176,10 +132,12 @@ const styles = StyleSheet.create({
   },
   spaceshipContainer: {
     position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    bottom: 50,
+    right: 180,
     width: 50,
     height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   spaceship: {
     width: 40,
