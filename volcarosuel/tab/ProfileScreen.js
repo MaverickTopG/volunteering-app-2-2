@@ -208,10 +208,10 @@ const ChatGPT = () => {
                 {showButtons && (
                     <Animated.View style={[styles.buttonContainer, { opacity: buttonOpacity }]}>
                         <TouchableOpacity onPress={scrollToTop} style={styles.scrollButton}>
-                            <Ionicons name="arrow-up" size={24} color="#000" />
+                            <Ionicons name="arrow-up" size={24} color="#fff6e7" />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={scrollToEnd} style={styles.scrollButton}>
-                            <Ionicons name="arrow-down" size={24} color="black" />
+                            <Ionicons name="arrow-down" size={24} color="#fff6e7" />
                         </TouchableOpacity>
                     </Animated.View>
                 )}
@@ -237,129 +237,95 @@ export default ChatGPT;
 
 const styles = StyleSheet.create({
     container: {
-      flex: 1,
-      backgroundColor: '#fff6e7',
+        flex: 1,
+        backgroundColor: '#fff6e7',
     },
     chatContainer: {
-      paddingTop: 20,
-      paddingHorizontal: 10,
-      paddingBottom: 100,
+        paddingTop: 20,
+        paddingHorizontal: 10,
+        paddingBottom: 100, // Ensures chat content does not overlap with buttons
     },
     userMessageContainer: {
-      alignSelf: 'flex-end',
-      backgroundColor: '#fff6e7',
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: '#fff6e7',
-      marginVertical: 5,
-      padding: 10,
-      maxWidth: '70%',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
+        alignSelf: 'flex-end',
+        backgroundColor: '#fff6e7',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#fff6e7',
+        marginVertical: 5,
+        padding: 10,
+        maxWidth: '70%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     },
     botMessageContainer: {
-      alignSelf: 'flex-start',
-      backgroundColor: '#fff6e7',
-      borderRadius: 20,
-      marginVertical: 5,
-      padding: 10,
-      maxWidth: '70%',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
+        alignSelf: 'flex-start',
+        backgroundColor: '#fff6e7',
+        borderRadius: 20,
+        marginVertical: 5,
+        padding: 10,
+        maxWidth: '70%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     },
     messageText: {
-      fontSize: 17,
-      color: 'black',
+        fontSize: 17,
+        color: 'black',
     },
     searchContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#fff6e7',
-      paddingHorizontal: 10,
-      paddingVertical: 20,
-      borderBottomLeftRadius: 30,
-      borderBottomRightRadius: 30,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff6e7',
+        paddingHorizontal: 10,
+        paddingVertical: 20,
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
     },
     searchInput: {
-      flex: 1,
-      height: 50,
-      backgroundColor: '#fff6e7',
-      color: '#000',
-      borderColor: '#333',
-      borderWidth: 1,
-      borderRadius: 25,
-      paddingHorizontal: 20,
-      fontSize: 16,
+        flex: 1,
+        height: 50,
+        backgroundColor: '#fff6e7',
+        color: '#000',
+        borderColor: '#333',
+        borderWidth: 1,
+        borderRadius: 25,
+        paddingHorizontal: 20,
+        fontSize: 16,
     },
     searchButton: {
-      marginLeft: 10,
-      backgroundColor: '#fff6e7',
-      padding: 10,
-      borderRadius: 25,
+        marginLeft: 10,
+        backgroundColor: '#fff6e7',
+        padding: 10,
+        borderRadius: 25,
     },
-    infoButton: {
-      marginLeft: 10,
-    },
-    errorContainer: {
-      position: 'absolute',
-      bottom: '50%',
-      left: '10%',
-      right: '10%',
-      backgroundColor: 'black',
-      borderRadius: 20,
-      padding: 10,
-      alignItems: 'center',
-    },
-    errorText: {
-      color: 'white',
-      fontSize: 16,
-    },
-    bottomSheet: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: '#000',
-      padding: 20,
-      borderTopLeftRadius: 30,
-      borderTopRightRadius: 30,
-    },
-    bottomSheetTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: '#fff6e7',
-      marginBottom: 10,
-    },
-    bottomSheetText: {
-      fontSize: 16,
-      color: '#fff6e7',
-      marginBottom: 20,
-    },
-    closeButton: {
-      fontSize: 16,
-      color: '#fff6e7',
-      textAlign: 'center',
+    buttonContainer: {
+        position: 'absolute',
+        bottom: 80, // Adjusted to be slightly above the bottom of the screen
+        right: 20,  // Align with the right side of the screen
+        flexDirection: 'column', // Stack the buttons vertically
+        justifyContent: 'space-between',
+        height: 120, // Total height for both buttons with spacing
     },
     scrollButton: {
         backgroundColor: '#000', // Black button color
-        padding: 12,             // Adjust size for smaller circular button
+        padding: 12,             // Size of the button
         borderRadius: 30,         // Perfect circular shape
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 10,         // Space between buttons
+        marginBottom: 10,         // Space between the two buttons
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.3,
-        shadowRadius: 10,  
+        shadowRadius: 10,
     },
-    
-  });
-  
+    infoButton: {
+        marginLeft: 10,
+    },
+});
