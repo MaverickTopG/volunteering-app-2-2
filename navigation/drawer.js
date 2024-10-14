@@ -17,14 +17,14 @@ const DrawerNavigator = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <StatusBar barStyle="dark-content" backgroundColor="#000000" />
       <Drawer.Navigator
         drawerContent={(props) => <CustomSideBarMenu {...props} />}
         screenOptions={({ navigation, route }) => ({
           headerBackground: () => (
-            <LinearGradient colors={['#2A2A33', '#000']} style={StyleSheet.absoluteFill} />
+            <LinearGradient colors={['#fff6e7', '#fff6e7']} style={StyleSheet.absoluteFill} />
           ),
-          headerTintColor: '#fff6e7',
+          headerTintColor: '#333333',
           headerTitleStyle: {
             color: '#fff6e7',
           },
@@ -41,7 +41,7 @@ const DrawerNavigator = () => {
               component={AnimalTabNavigator}
               options={{
                 headerTitle: 'NexoLink',
-                headerTitleStyle: { color: '#fff6e7' },
+                headerTitleStyle: { color: '#333333' },
                 headerStyle: { backgroundColor: 'black' },
               }}
             />

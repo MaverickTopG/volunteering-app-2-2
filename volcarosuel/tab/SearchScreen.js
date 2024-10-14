@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Modal, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useCarousel } from './CarosuelSelection';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+
+const { width } = Dimensions.get('window');
 
 const DATA = [
   { id: '1', title: 'Animal', name: 'AnimalCarousel' },
@@ -43,21 +45,22 @@ const SearchScreen = () => {
         <TextInput
           style={styles.searchInput}
           placeholder="Search..."
-          placeholderTextColor="#fff"
+          placeholderTextColor="#333333"
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
         <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-          <Ionicons name="close-outline" size={24} color="#000" />
+          <Ionicons name="close-outline" size={24} color="#333333" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setIsBottomSheetVisible(true)} style={styles.infoButton}>
-          <Ionicons name="information-circle-outline" size={24} color="#fff" />
+          <Ionicons name="information-circle-outline" size={24} color="#333333" />
         </TouchableOpacity>
       </View>
       <FlatList
         data={filteredData}
         renderItem={renderItem}
         keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContent}
       />
       <Modal
         visible={isBottomSheetVisible}
@@ -66,9 +69,11 @@ const SearchScreen = () => {
       >
         <View style={styles.bottomSheet}>
           <Text style={styles.bottomSheetTitle}>Search Screen</Text>
-          <Text style={styles.bottomSheetText}>This screen allows you to search and select various sections based on the categories. Use the search bar to filter the categories and tap on a category to navigate to the respective section.</Text>
-          <TouchableOpacity onPress={() => setIsBottomSheetVisible(false)}>
-            <Text style={styles.closeButton}>Close</Text>
+          <Text style={styles.bottomSheetText}>
+            Use the search bar to filter categories and tap on a category to navigate to the respective section.
+          </Text>
+          <TouchableOpacity onPress={() => setIsBottomSheetVisible(false)} style={styles.closeButton}>
+            <Text style={styles.closeButtonText}>Close</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -84,18 +89,22 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: '#fff6e7',
     paddingHorizontal: 10,
     paddingVertical: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+    shadowColor: '#333333',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   searchInput: {
     flex: 1,
     height: 50,
-    backgroundColor: '#000',
-    color: '#fff',
-    borderColor: '#fff6e7',
+    backgroundColor: '#fff6e7',
+    color: '#333333',
+    borderColor: '#333333',
     borderWidth: 1,
     borderRadius: 25,
     paddingHorizontal: 20,
@@ -111,44 +120,64 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     backgroundColor: 'transparent',
   },
+  listContent: {
+    paddingHorizontal: 10,
+    paddingBottom: 20,
+    bottom: -20,
+  },
   item: {
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    backgroundColor: 'black',
-    marginHorizontal: 10,
-    marginVertical: 5,
-    borderRadius: 10,
+    marginVertical: 8,
+    borderRadius: 15,
+    backgroundColor: '#fff6e7',
+    borderWidth: 1,
+    borderColor: '#333333',
+    alignItems: 'center',
+    width: width * 0.9,
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
   },
   title: {
     fontSize: 18,
-    color: '#fff',
+    fontWeight: 'bold',
+    color: '#333333',
   },
   bottomSheet: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'black',
+    backgroundColor: '#fff6e7',
     padding: 20,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
+    shadowColor: '#333333',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
   },
   bottomSheetTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff6e7',
+    color: '#333333',
     marginBottom: 10,
   },
   bottomSheetText: {
     fontSize: 16,
-    color: '#fff6e7',
+    color: '#333333',
     marginBottom: 20,
   },
   closeButton: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  closeButtonText: {
     fontSize: 16,
-    color: '#fff6e7',
-    textAlign: 'center',
+    color: '#333333',
+    fontWeight: 'bold',
   },
 });
 

@@ -49,7 +49,7 @@ const VolunteerScreen = () => {
   const rMiniBarStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateY: withSpring(isExpanded.value ? -20 : 0) }],
-      backgroundColor: 'black',
+      backgroundColor: '#fff6e7',
     };
   });
 
@@ -73,7 +73,7 @@ const VolunteerScreen = () => {
           </View>
         </TouchableOpacity>
         {activeSection === item.title && (
-          <View style={styles.dropdownContent}>
+          <View style={[styles.dropdownContent, { height: ITEM_HEIGHT + 150 }]}>
             <Image source={item.poster} style={styles.cardImage} />
             <TouchableOpacity
               style={styles.navigateButton}
@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff6e7',
   },
   header: {
-    height: 85,
-    backgroundColor: 'black',
+    height: 100,
+    backgroundColor: '#fff6e7',
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomLeftRadius: 30,
@@ -123,24 +123,33 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1,
+    shadowColor: '#333333',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
   },
   headerText: {
     fontSize: RFPercentage(3),
     fontWeight: 'bold',
-    color: '#fff6e7',
+    color: '#333333',
   },
   scrollViewContent: {
-    paddingTop: 100,
+    paddingTop: 120, // Keep cards lower on the screen
     paddingBottom: 20,
   },
   card: {
     width: width * 0.9,
-    backgroundColor: '#1B1B1B',
-    borderRadius: 10,
+    backgroundColor: '#fff6e7',
+    borderRadius: 15,
     overflow: 'hidden',
     alignSelf: 'center',
-    borderWidth: 2,
-    borderColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: '#333333',
+    marginVertical: 15,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -151,35 +160,48 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: RFPercentage(2.5),
     fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    flex: 1,
+    color: '#333333',
   },
   dropdownContent: {
     alignItems: 'center',
-    padding: 15,
-    paddingBottom: 15, // Adjusted padding to avoid bottom tab overlap
+    paddingVertical: 15,
   },
   cardImage: {
     width: '100%',
     height: 150,
     resizeMode: 'contain',
-    borderRadius: 15,
+    borderRadius: 10,
     marginBottom: 10,
   },
   navigateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff6e7',
-    paddingVertical: 10,
+    paddingVertical: 15, // Align with dropdown button height
     paddingHorizontal: 15,
     borderRadius: 10,
     width: '100%',
     justifyContent: 'space-between',
-    marginTop: 10,
+    marginTop: 10, // Ensure consistent spacing from the image
   },
   navigateButtonText: {
-    color: '#000',
+    color: '#333333',
     fontSize: 18,
+  },
+  siteButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff6e7',
+    paddingVertical: 15, // Same height as the Navigate button
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#333333',
+    marginBottom: 10, // Add spacing to separate from the next element
+  },
+  siteButtonText: {
+    fontSize: 16,
+    color: '#333333',
   },
 });

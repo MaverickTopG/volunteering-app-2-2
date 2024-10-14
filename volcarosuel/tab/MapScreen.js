@@ -127,7 +127,7 @@ const MapScreen = () => {
         <TextInput
           style={styles.searchInput}
           placeholder="Enter address"
-          placeholderTextColor="#fff"
+          placeholderTextColor="black"
           value={address}
           onChangeText={setAddress}
         />
@@ -135,7 +135,7 @@ const MapScreen = () => {
           <Ionicons name="search" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setIsBottomSheetVisible(true)} style={styles.infoButton}>
-          <Ionicons name="information-circle-outline" size={24} color="#fff" />
+          <Ionicons name="information-circle-outline" size={24} color="black" />
         </TouchableOpacity>
       </View>
       <WebView
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#000',
+    backgroundColor: '#fff6e7',  // Light background
     paddingHorizontal: 10,
     paddingVertical: 20,
     borderBottomLeftRadius: 30,
@@ -181,9 +181,9 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 50,
-    backgroundColor: '#000',
-    color: '#fff',
-    borderColor: '#fff6e7',
+    backgroundColor: '#fff6e7',  // Slightly different tone to distinguish the input
+    color: '#333333',  // Text color for better contrast
+    borderColor: '#333333',  // Subtle border
     borderWidth: 1,
     borderRadius: 25,
     paddingHorizontal: 20,
@@ -191,13 +191,14 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     marginLeft: 10,
-    backgroundColor: '#fff6e7',
+    backgroundColor: '#fff6e7',  // Match the overall theme
     padding: 10,
     borderRadius: 25,
   },
   infoButton: {
     marginLeft: 10,
-    backgroundColor: 'transparent',
+    
+    color:'black',
   },
   webview: {
     flex: 1,
@@ -209,7 +210,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff6e7',
+    backgroundColor: '#fff6e7',  // Match bottom sheet with the theme
     padding: 20,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -217,17 +218,17 @@ const styles = StyleSheet.create({
   bottomSheetTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: 'black',
+    color: '#333333',  // Subtle black for headings
     marginBottom: 10,
   },
   bottomSheetText: {
     fontSize: 16,
-    color: 'black',
+    color: '#333333',  // Consistent text color for better readability
     marginBottom: 20,
   },
   closeButton: {
     fontSize: 16,
-    color: 'black',
+    color: '#333333',  // Consistent text for buttons
     textAlign: 'center',
   },
 });
