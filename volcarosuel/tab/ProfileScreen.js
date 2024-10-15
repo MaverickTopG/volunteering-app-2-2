@@ -1,12 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Keyboard, TouchableWithoutFeedback, Animated, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, FlatList } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    Keyboard,
+    TouchableWithoutFeedback,
+    Animated,
+    KeyboardAvoidingView,
+    Platform,
+    ActivityIndicator,
+    Modal,
+    FlatList,
+    Dimensions, // Imported Dimensions
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 
 const ChatGPT = () => {
     const [data, setData] = useState([{ type: 'bot', text: 'How may I help you?' }]);
-    const apiKey = 'sk-proj-fjaLyfKk3xm7YLCSLhy5T3BlbkFJWzNG2GteXN7XN9goMdtj'; // Ensure this is your valid OpenAI API key
-    const apiUrl = "https://api.openai.com/v1/chat/completions";
+    const apiKey = 'your-api-key'; // Replace with your valid OpenAI API key
+    const apiUrl = 'https://api.openai.com/v1/chat/completions';
     const modelId = 'gpt-3.5-turbo';
     const [textInput, setTextInput] = useState('');
     const [error, setError] = useState('');
@@ -20,6 +35,9 @@ const ChatGPT = () => {
     const buttonOpacity = useRef(new Animated.Value(1)).current;
     const flatListRef = useRef();
     const buttonTimeoutRef = useRef(null);
+
+    // Get screen dimensions
+    const screenHeight = Dimensions.get('window').height;
 
     useEffect(() => {
         const showKeyboard = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
@@ -62,30 +80,38 @@ const ChatGPT = () => {
         setIsLoading(true);
         setTextInput(''); // Clear the input field
         try {
-            const response = await axios.post(apiUrl, {
-                model: modelId,
-                messages: [
-                    {
-                        role: 'user',
-                        content: message
-                    }
-                ],
-                max_tokens: 1024,
-                temperature: 0.5,
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
+            const response = await axios.post(
+                apiUrl,
+                {
+                    model: modelId,
+                    messages: [
+                        {
+                            role: 'user',
+                            content: message,
+                        },
+                    ],
+                    max_tokens: 1024,
+                    temperature: 0.5,
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${apiKey}`,
+                    },
                 }
-            });
+            );
             const text = response.data.choices[0].message.content;
-            setData(prevData => [...prevData, { type: 'user', text: message }, { type: 'bot', text }]);
+            setData((prevData) => [
+                ...prevData,
+                { type: 'user', text: message },
+                { type: 'bot', text },
+            ]);
             setError('');
             setTimeout(() => flatListRef.current.scrollToEnd({ animated: true }), 100);
         } catch (error) {
-            console.error("Error:", error);
+            console.error('Error:', error);
             if (error.response && error.response.data) {
-                console.error("Error response data:", error.response.data);
+                console.error('Error response data:', error.response.data);
                 setError(`An error occurred: ${error.response.data.error.message}`);
             } else {
                 setError('An error occurred while fetching response. Please try again.');
@@ -93,13 +119,13 @@ const ChatGPT = () => {
             Animated.timing(fadeAnim, {
                 toValue: 1,
                 duration: 0,
-                useNativeDriver: false
+                useNativeDriver: false,
             }).start(() => {
                 Animated.timing(fadeAnim, {
                     toValue: 0,
                     duration: 1000,
                     delay: 3000,
-                    useNativeDriver: false
+                    useNativeDriver: false,
                 }).start();
             });
         } finally {
@@ -112,7 +138,7 @@ const ChatGPT = () => {
         Animated.timing(inputWidth, {
             toValue: 0.7,
             duration: 300,
-            useNativeDriver: false
+            useNativeDriver: false,
         }).start();
     };
 
@@ -121,13 +147,19 @@ const ChatGPT = () => {
         Animated.timing(inputWidth, {
             toValue: 1,
             duration: 300,
-            useNativeDriver: false
+            useNativeDriver: false,
         }).start();
     };
 
     const renderItem = ({ item }) => {
         return (
-            <View style={item.type === 'user' ? styles.userMessageContainer : styles.botMessageContainer}>
+            <View
+                style={
+                    item.type === 'user'
+                        ? styles.userMessageContainer
+                        : styles.botMessageContainer
+                }
+            >
                 <Text style={styles.messageText}>{item.text}</Text>
             </View>
         );
@@ -172,7 +204,10 @@ const ChatGPT = () => {
     return (
         <TouchableWithoutFeedback onPress={dismissKeyboard}>
             <View style={styles.container}>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                >
                     <View style={styles.searchContainer}>
                         <TextInput
                             style={styles.searchInput}
@@ -187,7 +222,10 @@ const ChatGPT = () => {
                         <TouchableOpacity onPress={handleSend} style={styles.searchButton}>
                             <Ionicons name="send-outline" size={24} color="#000" />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setIsBottomSheetVisible(true)} style={styles.infoButton}>
+                        <TouchableOpacity
+                            onPress={() => setIsBottomSheetVisible(true)}
+                            style={styles.infoButton}
+                        >
                             <Ionicons name="information-circle-outline" size={24} color="black" />
                         </TouchableOpacity>
                     </View>
@@ -196,14 +234,20 @@ const ChatGPT = () => {
                             <Text style={styles.errorText}>{error}</Text>
                         </Animated.View>
                     ) : null}
-                    <FlatList
-                        ref={flatListRef}
-                        data={data}
-                        renderItem={renderItem}
-                        keyExtractor={(item, index) => index.toString()}
-                        onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
-                        contentContainerStyle={styles.chatContainer}
-                    />
+                    {/* Added a View wrapper with height set to 50% of screen height */}
+                    <View style={{ height: screenHeight * 0.65 }}>
+                        <FlatList
+                            ref={flatListRef}
+                            data={data}
+                            renderItem={renderItem}
+                            keyExtractor={(item, index) => index.toString()}
+                            onContentSizeChange={() =>
+                                flatListRef.current.scrollToEnd({ animated: true })
+                            }
+                            contentContainerStyle={{ paddingTop: 20, paddingHorizontal: 10 }}
+                        />
+                    </View>
+                    {/* End of modification */}
                 </KeyboardAvoidingView>
                 {showButtons && (
                     <Animated.View style={[styles.buttonContainer, { opacity: buttonOpacity }]}>
@@ -215,14 +259,13 @@ const ChatGPT = () => {
                         </TouchableOpacity>
                     </Animated.View>
                 )}
-                <Modal
-                    visible={isBottomSheetVisible}
-                    transparent={true}
-                    animationType="slide"
-                >
+                <Modal visible={isBottomSheetVisible} transparent={true} animationType="slide">
                     <View style={styles.bottomSheet}>
                         <Text style={styles.bottomSheetTitle}>Ordix</Text>
-                        <Text style={styles.bottomSheetText}>This chatbot helps you with your questions using the GPT-3.5 language model. You can ask anything and get a response generated by Ordix!</Text>
+                        <Text style={styles.bottomSheetText}>
+                            This chatbot helps you with your questions using the GPT-3.5 language
+                            model. You can ask anything and get a response generated by Ordix!
+                        </Text>
                         <TouchableOpacity onPress={() => setIsBottomSheetVisible(false)}>
                             <Text style={styles.closeButton}>Close</Text>
                         </TouchableOpacity>
@@ -240,17 +283,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff6e7',
     },
-    chatContainer: {
-        paddingTop: 20,
-        paddingHorizontal: 10,
-        paddingBottom: 100, // Ensures chat content does not overlap with buttons
-    },
     userMessageContainer: {
         alignSelf: 'flex-end',
         backgroundColor: '#fff6e7',
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#fff6e7',
+        borderColor: '#333',
         marginVertical: 5,
         padding: 10,
         maxWidth: '70%',
@@ -307,19 +345,19 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         position: 'absolute',
-        bottom: 80, // Adjusted to be slightly above the bottom of the screen
-        right: 20,  // Align with the right side of the screen
-        flexDirection: 'column', // Stack the buttons vertically
+        bottom: 100,
+        right: 20,
+        flexDirection: 'column',
         justifyContent: 'space-between',
-        height: 120, // Total height for both buttons with spacing
+        height: 120,
     },
     scrollButton: {
-        backgroundColor: '#000', // Black button color
-        padding: 12,             // Size of the button
-        borderRadius: 30,         // Perfect circular shape
+        backgroundColor: '#000',
+        padding: 12,
+        borderRadius: 30,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 10,         // Space between the two buttons
+        marginBottom: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.3,
@@ -327,5 +365,45 @@ const styles = StyleSheet.create({
     },
     infoButton: {
         marginLeft: 10,
+    },
+    errorContainer: {
+        position: 'absolute',
+        bottom: '50%',
+        left: '10%',
+        right: '10%',
+        backgroundColor: 'black',
+        borderRadius: 20,
+        padding: 10,
+        alignItems: 'center',
+    },
+    errorText: {
+        color: 'white',
+        fontSize: 16,
+    },
+    bottomSheet: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'black',
+        padding: 20,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+    },
+    bottomSheetTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#fff6e7',
+        marginBottom: 10,
+    },
+    bottomSheetText: {
+        fontSize: 16,
+        color: '#fff6e7',
+        marginBottom: 20,
+    },
+    closeButton: {
+        fontSize: 16,
+        color: '#fff6e7',
+        textAlign: 'center',
     },
 });
