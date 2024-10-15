@@ -1,7 +1,12 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { Alert, ActivityIndicator, View } from 'react-native'; // Import ActivityIndicator for loading
-import { auth } from './firebase';  // Import the initialized auth object
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { Alert, ActivityIndicator, View, StyleSheet, Text, Image } from 'react-native';
+import { auth } from './firebase'; // Import the initialized auth object
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged 
+} from 'firebase/auth';
 
 export const AuthContext = createContext();
 
@@ -9,10 +14,11 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      setLoading(false);
+      setLoading(false); // Stop loading once the user is fetched
     });
 
     return () => unsubscribe();
@@ -20,31 +26,31 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = async (email, password) => {
     try {
-      setLoading(true); // Start loading when sign-in is in progress
-      await signInWithEmailAndPassword(auth, email, password);  // Use the correct function signature
+      setLoading(true);
+      await signInWithEmailAndPassword(auth, email, password);
       Alert.alert("Success", "Logged in successfully");
     } catch (error) {
       Alert.alert("Login Error", error.message);
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
   const signUp = async (email, password) => {
     try {
-      setLoading(true); // Start loading when sign-up is in progress
-      await createUserWithEmailAndPassword(auth, email, password);  // Use the correct function signature
+      setLoading(true);
+      await createUserWithEmailAndPassword(auth, email, password);
       Alert.alert("Success", "User registered successfully");
     } catch (error) {
       Alert.alert("Sign Up Error", error.message);
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
   const signOutUser = async () => {
     try {
-      await signOut(auth);  // Sign out the user using the correct auth object
+      await signOut(auth);
       setUser(null);
       Alert.alert("Success", "Logged out successfully");
     } catch (error) {
@@ -54,8 +60,14 @@ export const AuthProvider = ({ children }) => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View style={styles.loadingContainer}>
+        <Image
+          source={require('../assets/spaceship.png')} // Replace with your app's logo
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.loadingText}>Preparing for launch...</Text>
+        <ActivityIndicator size="large" color="#333" />
       </View>
     );
   }
@@ -66,3 +78,23 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+// Styles for the loading screen and the overall design
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff6e7', // Light cream background
+  },
+  logo: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#333',
+    marginBottom: 10,
+  },
+});

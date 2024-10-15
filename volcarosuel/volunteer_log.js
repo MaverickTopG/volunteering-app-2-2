@@ -3,16 +3,18 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   Modal,
   TouchableOpacity,
   StyleSheet,
   FlatList,
   Alert,
+  ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { AuthContext } from '../auth/AuthContext'; // Adjust the path to your AuthContext
 import { db } from '../auth/firebase'; // Import Firestore db
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import Ionicons from 'react-native-vector-icons/Ionicons'; // Importing Ionicons for icons
 
 const VolunteerLogs = () => {
   const { user } = useContext(AuthContext); // Get current authenticated user
@@ -88,6 +90,10 @@ const VolunteerLogs = () => {
       });
       fetchVolunteerLogs(); // Refresh logs after adding a new entry
       setShowModal(false);
+      setNewHours('');
+      setSelectedSite('');
+      setCustomSite('');
+      setIsCustomSite(false);
     } catch (error) {
       Alert.alert('Error', error.message);
     }
@@ -103,28 +109,33 @@ const VolunteerLogs = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.totalHoursText}>
-        Total Hours: {totalHours} hrs {/* Display cumulative total */}
-      </Text>
+    <SafeAreaView style={styles.container}>
+      {/* Floating Header */}
+      <View style={styles.header}>
+        <Text style={styles.totalHoursText}>
+          Total Hours: {totalHours} hrs
+        </Text>
+      </View>
 
       {loading ? (
-        <Text>Loading...</Text>
+        <ActivityIndicator size="large" color="#000" style={{ flex: 1 }} />
       ) : logs.length === 0 ? (
-        <Text style={styles.noLogsText}>Time to start racking those points up!</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={styles.noLogsText}>Time to start racking those points up!</Text>
+        </View>
       ) : (
         <FlatList
           data={logs}
           keyExtractor={(item) => item.id}
           renderItem={renderLogItem}
+          contentContainerStyle={styles.logsContainer}
+          style={styles.logsList}
+          showsVerticalScrollIndicator={false}
         />
       )}
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => setShowModal(true)}
-      >
-        <Text style={styles.addButtonText}>+</Text>
+      <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
+        <Ionicons name="add" size={30} color="#fff6e7" />
       </TouchableOpacity>
 
       {/* Modal for adding a new log */}
@@ -142,36 +153,18 @@ const VolunteerLogs = () => {
               placeholderTextColor="#aaa"
             />
 
-            <TouchableOpacity
-              style={styles.siteButton}
-              onPress={() => setIsCustomSite(false)}
-            >
-              <Text style={styles.siteButtonText}>
-                {selectedSite || 'Select a site'}
-              </Text>
-            </TouchableOpacity>
+            {!isCustomSite && (
+              <TouchableOpacity
+                style={styles.siteButton}
+                onPress={() => setIsCustomSite(true)}
+              >
+                <Text style={styles.siteButtonText}>
+                  {selectedSite || 'Enter a custom site'}
+                </Text>
+              </TouchableOpacity>
+            )}
 
-            <FlatList
-              data={sites}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => setSelectedSite(item)}
-                  style={styles.siteItem}
-                >
-                  <Text style={styles.siteText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
-
-            <TouchableOpacity
-              style={styles.customSiteButton}
-              onPress={() => setIsCustomSite(true)}
-            >
-              <Text style={styles.customSiteButtonText}>Enter Custom Site</Text>
-            </TouchableOpacity>
-
-            {isCustomSite && (
+            {isCustomSite ? (
               <TextInput
                 style={styles.input}
                 placeholder="Enter custom site name"
@@ -179,28 +172,82 @@ const VolunteerLogs = () => {
                 onChangeText={(text) => setCustomSite(text)}
                 placeholderTextColor="#aaa"
               />
+            ) : (
+              <FlatList
+                data={sites}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => setSelectedSite(item)}
+                    style={[
+                      styles.siteItem,
+                      selectedSite === item && styles.selectedSiteItem,
+                    ]}
+                  >
+                    <Text style={styles.siteText}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+                style={styles.sitesList}
+              />
             )}
 
-            <Button title="Add Log" onPress={handleAddLog} />
-            <Button title="Cancel" onPress={() => setShowModal(false)} />
+            <TouchableOpacity style={styles.modalButton} onPress={handleAddLog}>
+              <Text style={styles.modalButtonText}>Add Log</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => {
+                setShowModal(false);
+                setNewHours('');
+                setSelectedSite('');
+                setCustomSite('');
+                setIsCustomSite(false);
+              }}
+            >
+              <Text style={styles.modalButtonText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
+
+export default VolunteerLogs;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#fff6e7',
+  },
+  header: {
+    backgroundColor: '#fff6e7',
+    paddingTop: 20,
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    // Elevation for Android
+    elevation: 3,
+    zIndex: 1,
   },
   totalHoursText: {
     fontSize: 22,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
+    color: 'black',
+  },
+  logsList: {
+    flex: 1,
+    marginTop: 10, // To provide space below the header
+  },
+  logsContainer: {
+    paddingBottom: 80,
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
   noLogsText: {
     fontSize: 18,
@@ -209,83 +256,113 @@ const styles = StyleSheet.create({
     color: '#aaa',
   },
   logItem: {
+    backgroundColor: '#fff6e7',
+    borderRadius: 20,
+    marginVertical: 5,
     padding: 15,
-    backgroundColor: '#f9f9f9',
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   logText: {
     fontSize: 16,
-    color: '#333',
+    color: 'black',
   },
   addButton: {
     position: 'absolute',
     bottom: 30,
     right: 30,
-    backgroundColor: '#007BFF',
+    backgroundColor: '#000',
     width: 60,
     height: 60,
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  addButtonText: {
-    fontSize: 30,
-    color: '#fff',
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    // Elevation for Android
+    elevation: 5,
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
   },
   modalContent: {
-    width: '80%',
+    marginHorizontal: 20,
+    backgroundColor: '#fff6e7',
+    borderRadius: 20,
     padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    alignItems: 'stretch',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    color: 'black',
     marginBottom: 20,
     textAlign: 'center',
   },
   input: {
-    height: 40,
-    borderColor: '#ccc',
+    height: 50,
+    borderColor: '#333',
     borderWidth: 1,
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    fontSize: 16,
+    backgroundColor: '#fff6e7',
+    color: 'black',
     marginBottom: 15,
-    paddingHorizontal: 10,
   },
   siteButton: {
-    height: 40,
+    height: 50,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#fff6e7',
+    borderColor: '#333',
+    borderWidth: 1,
+    borderRadius: 25,
+    paddingHorizontal: 20,
     marginBottom: 15,
   },
   siteButtonText: {
     fontSize: 16,
-    color: '#333',
+    color: 'black',
+  },
+  sitesList: {
+    maxHeight: 150,
+    marginBottom: 15,
   },
   siteItem: {
     padding: 10,
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: '#fff6e7',
+    borderColor: '#333',
+    borderWidth: 1,
+    borderRadius: 20,
+    marginVertical: 5,
+  },
+  selectedSiteItem: {
+    backgroundColor: '#d1e7dd',
   },
   siteText: {
     fontSize: 16,
-    color: '#333',
+    color: 'black',
   },
-  customSiteButton: {
-    marginTop: 10,
+  modalButton: {
+    backgroundColor: '#000',
+    padding: 15,
+    borderRadius: 25,
+    alignItems: 'center',
+    marginVertical: 5,
   },
-  customSiteButtonText: {
-    color: '#007BFF',
-    textAlign: 'center',
+  modalButtonText: {
+    color: '#fff6e7',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    backgroundColor: 'gray',
   },
 });
-
-export default VolunteerLogs;

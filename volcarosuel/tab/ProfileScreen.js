@@ -20,7 +20,7 @@ import axios from 'axios';
 
 const ChatGPT = () => {
     const [data, setData] = useState([{ type: 'bot', text: 'How may I help you?' }]);
-    const apiKey = 'your-api-key'; // Replace with your valid OpenAI API key
+    const apiKey = 'sk-proj-fjaLyfKk3xm7YLCSLhy5T3BlbkFJWzNG2GteXN7XN9goMdtj'; // Replace with your valid OpenAI API key
     const apiUrl = 'https://api.openai.com/v1/chat/completions';
     const modelId = 'gpt-3.5-turbo';
     const [textInput, setTextInput] = useState('');
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-end',
         backgroundColor: '#fff6e7',
         borderRadius: 20,
-        borderWidth: 1,
+        borderWidth: 0,
         borderColor: '#333',
         marginVertical: 5,
         padding: 10,
