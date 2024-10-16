@@ -19,6 +19,15 @@ const DATA = [
     address: '400 Magnolia Ave, Larkspur, CA 94939',
     email: '415-927-5022',
   },
+  {
+    title: 'The Book Exchange',
+    location: 'Not specified',
+    date: '1913',
+    poster: require('../../assets/bookexchange.png'),
+    description: 'The Book Exchange offers a platform for exchanging used books to promote reading and literacy. Volunteers can help organize books, manage exchanges, and assist with community outreach efforts to encourage book donations and literacy programs.',
+    address: '400 Magnolia Ave, Larkspur, CA 94939',
+   
+  },
 
 ];
 

@@ -21,7 +21,10 @@ const DisplayScreen = () => {
   return (
     <View style={styles.container}>
       <SafeAreaView />
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false} // Hide the scroll bar
+      >
         <View style={styles.titleContainer}>
           <Text style={styles.titleText}>{item.title}</Text>
           <View style={styles.subtitleContainer}>
@@ -29,9 +32,13 @@ const DisplayScreen = () => {
             <Text style={styles.dateText}>{item.date}</Text>
           </View>
         </View>
+
+        {/* Image Container */}
         <View style={styles.imageContainer}>
           <Image source={item.poster} style={styles.image} />
         </View>
+
+        {/* Description Section */}
         <View style={styles.descriptionContainer}>
           <Text style={styles.descriptionText}>{item.description}</Text>
           <TouchableOpacity onPress={handleAddressPress}>
@@ -39,9 +46,13 @@ const DisplayScreen = () => {
           </TouchableOpacity>
           <Text style={styles.emailText}>{item.email}</Text>
         </View>
+
+        {/* Swipe Button */}
         <View style={styles.swipeButtonContainer}>
           <SwipeButton onToggle={handleSwipe} />
         </View>
+
+        {/* Extra Padding to allow scrolling up a bit */}
         <View style={styles.scrollPadding} />
       </ScrollView>
     </View>
@@ -51,27 +62,31 @@ const DisplayScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff6e7', // Light cream background
   },
   contentContainer: {
     flexGrow: 1,
-    padding: 10,
-    paddingBottom: 100, 
+    padding: 20,
+    paddingBottom: 20,  // Allow room for scrolling up
   },
   titleContainer: {
     backgroundColor: '#fff6e7',
-    borderRadius: 10,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'white',
-    padding: 15,
+    borderColor: '#333',
+    padding: 20,
     width: '100%',
     alignSelf: 'center',
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
   },
   titleText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'black',
+    color: '#333',
     marginBottom: 10,
   },
   subtitleContainer: {
@@ -80,53 +95,58 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 18,
-    color: 'black',
+    color: '#333',
   },
   dateText: {
     fontSize: 16,
-    color: 'black',
+    color: '#333',
   },
   imageContainer: {
     alignItems: 'center',
     marginBottom: 20,
+    width: '100%',
   },
   image: {
-    width: '50%',
-    height: 250, // Adjust the height to fill the area
-    borderRadius: 10,
-    resizeMode: 'contain',
+    width: '100%',  // Make image take full width of container
+    height: 250,    // Keep a consistent height
+    borderRadius: 15,
+    resizeMode: 'contain',  // Ensure the image covers the area
   },
   descriptionContainer: {
     backgroundColor: '#fff6e7',
-    borderRadius: 10,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'black',
-    padding: 15,
+    borderColor: '#333',
+    padding: 20,
     width: '100%',
     alignSelf: 'center',
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
   },
   descriptionText: {
     fontSize: 18,
-    color: 'black',
+    color: '#333',
     marginBottom: 10,
   },
   addressText: {
     fontSize: 16,
-    color: 'black',
+    color: 'black',  // Accent color for address
     marginBottom: 10,
-    textDecorationLine:'underline',
+    textDecorationLine: 'underline',
   },
   emailText: {
     fontSize: 16,
-    color: 'black',
+    color: '#333',
   },
   swipeButtonContainer: {
     alignItems: 'center',
     marginTop: 20,
   },
   scrollPadding: {
-    height: 10, 
+    height: 100,  // Extra padding to avoid collision with bottom navigation
   },
 });
 
