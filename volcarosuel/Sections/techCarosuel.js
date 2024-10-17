@@ -19,6 +19,7 @@ const DATA = [
     description: 'Marin County Parks offers volunteer opportunities for teens to participate in landscape maintenance, habitat restoration, and park beautification projects. Volunteers help keep parks clean, safe, and inviting for all visitors while supporting environmental conservation efforts.',
     address: '3501 Civic Center Drive, Suite 260, San Rafael, CA 94903',
     email: '415-473-2823',
+    website:'https://www.parks.marincounty.org/discoverlearn/volunteer',
   },
   {
     title: 'Mill Valley Public Works',
@@ -28,6 +29,7 @@ const DATA = [
     description: ' Mill Valley Public Works provides volunteer opportunities for teens to assist with various public works projects, including park maintenance, street clean-ups, and infrastructure improvements. Volunteers help enhance the city’s public spaces and contribute to community well-being.',
     address: '26 Corte Madera Avenue, Mill Valley, CA 94941',
     email: '415-384-4800',
+    website:'https://www.cityofmillvalley.org/725/Volunteering',
   },
   {
     title: 'Slide Ranch',
@@ -37,6 +39,7 @@ const DATA = [
     description: ' Slide Ranch offers volunteer opportunities for teens to assist with sustainable farming, environmental education, and habitat restoration. Volunteers help with farm chores, maintain trails, and support educational programs that connect people to nature and sustainable agriculture.',
     address: '2025 Shoreline Highway, Muir Beach, CA 94965',
     email: '415-381-6155',
+    website:'https://www.slideranch.org/volunteer',
   },
 ];
 

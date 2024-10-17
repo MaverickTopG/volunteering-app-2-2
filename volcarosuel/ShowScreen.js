@@ -1,21 +1,52 @@
+// VolunteerScreen.js
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { 
+  View, 
+  StyleSheet, 
+  Dimensions, 
+  Text, 
+  TouchableOpacity, 
+  Image, 
+  SafeAreaView, 
+  ScrollView, 
+  Linking, 
+  Alert 
+} from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import SwipeButton from './SwipeButton';
+import { RFPercentage } from 'react-native-responsive-fontsize';
+import { MaterialIcons } from '@expo/vector-icons';
+import SwipeButton from './SwipeButton'; // Ensure SwipeButton is correctly implemented
 
-const DisplayScreen = () => {
-  const route = useRoute();
+const { width, height } = Dimensions.get('window');
+
+const VolunteerScreen = () => {
   const navigation = useNavigation();
-  const { item } = route.params;
+  const route = useRoute();
+  const { item } = route.params; // Receive the selected item from navigation
 
+  // Function to handle opening the website with improved error handling
+  const handleWebsitePress = () => {
+    if (item.website) {
+      Linking.canOpenURL(item.website)
+        .then((supported) => {
+          if (supported) {
+            Linking.openURL(item.website);
+          } else {
+            Alert.alert('Error', 'Unable to open the website.');
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to open URL:', err);
+          Alert.alert('Error', 'An unexpected error occurred.');
+        });
+    }
+  };
+
+  // Function to handle swipe action
   const handleSwipe = (isToggled) => {
     if (isToggled) {
       navigation.goBack();
     }
-  };
-
-  const handleAddressPress = () => {
-    navigation.navigate('Map', { address: item.address });
   };
 
   return (
@@ -25,6 +56,7 @@ const DisplayScreen = () => {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false} // Hide the scroll bar
       >
+        {/* Title Section */}
         <View style={styles.titleContainer}>
           <Text style={styles.titleText}>{item.title}</Text>
           <View style={styles.subtitleContainer}>
@@ -41,10 +73,37 @@ const DisplayScreen = () => {
         {/* Description Section */}
         <View style={styles.descriptionContainer}>
           <Text style={styles.descriptionText}>{item.description}</Text>
-          <TouchableOpacity onPress={handleAddressPress}>
+          
+          {/* Address Section */}
+          <TouchableOpacity 
+            onPress={() => {
+              // Assuming you have a 'Map' screen set up to handle address navigation
+              navigation.navigate('Map', { address: item.address });
+            }}
+            accessibilityLabel={`Open map for address: ${item.address}`}
+            accessibilityRole="button"
+          >
             <Text style={styles.addressText}>{item.address}</Text>
           </TouchableOpacity>
-          <Text style={styles.emailText}>{item.email}</Text>
+          
+          {/* Email Section */}
+          {item.email && (
+            <Text style={styles.emailText}>Contact: {item.email}</Text>
+          )}
+
+          {/* Website Section */}
+          {item.website && (
+            <TouchableOpacity 
+              onPress={handleWebsitePress} 
+              style={styles.websiteButton}
+              accessibilityLabel={`Visit website for ${item.title}`}
+              accessibilityRole="button"
+              activeOpacity={0.7} // Adds feedback when pressed
+            >
+              <Text style={styles.websiteText}>Visit Website</Text>
+              <MaterialIcons name="open-in-new" size={20} color="black" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Swipe Button */}
@@ -58,6 +117,8 @@ const DisplayScreen = () => {
     </View>
   );
 };
+
+export default VolunteerScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -140,6 +201,25 @@ const styles = StyleSheet.create({
   emailText: {
     fontSize: 16,
     color: '#333',
+    marginBottom: 15,
+  },
+  websiteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff6e7',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    width: '100%',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'black', // Accent color border
+  },
+  websiteText: {
+    color: 'black',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   swipeButtonContainer: {
     alignItems: 'center',
@@ -149,5 +229,3 @@ const styles = StyleSheet.create({
     height: 100,  // Extra padding to avoid collision with bottom navigation
   },
 });
-
-export default DisplayScreen;

@@ -19,6 +19,8 @@ const DATA = [
     description: 'Hooves for Harmony provides equine therapy to individuals of all ages with a focus on mental health and emotional well-being. The organization uses the therapeutic power of horses to help clients develop trust, self-esteem, and emotional regulation. Volunteers at Hooves for Harmony assist in therapy sessions, help with workshops, manage community outreach initiatives, and care for the horses. This is a wonderful opportunity for teens interested in mental health and animal therapy, allowing them to make a significant impact on the lives of clients and the well-being of the horses.',
     address: 'Morning Star Farm, Novato, CA 94948',
     email: '530-410-4422 or heatherparker1111@gmail.com',
+    website:'https://www.hoovesforharmony.org/volunteer',
+    
   },
   {
     title: 'WILDCARE',
@@ -28,6 +30,7 @@ const DATA = [
     description: ' WILDCARE is a wildlife rehabilitation and nature education center that serves the San Francisco Bay Area. They provide medical care and rehabilitation for injured, orphaned, and ill wildlife with the goal of releasing them back into their natural habitats. Volunteers at WILDCARE assist with animal care, support environmental education programs, help with community outreach, and participate in habitat restoration projects. This is an excellent opportunity for teens interested in wildlife conservation and wanting to contribute to the care and rehabilitation of local wildlife.',
     address: '220 S Garrard Blvd, Point Richmond, CA 94801',
     email: '415-456-7283',
+    website:'https://discoverwildcare.org/volunteer/',
   },
 ];
 

@@ -18,6 +18,8 @@ const DATA = [
     description: 'Grateful Gatherings Marin helps families in need by providing furniture and household items to create safe and comfortable homes. They collect donations from the community and organize volunteers to deliver and set up the items in the homes of families transitioning out of homelessness or crisis. Volunteers help collect donations, assist with delivery and setup, support administrative tasks, and participate in community outreach. This opportunity is great for teens who want to help families in need and contribute to community well-being by providing essential household items to create a stable home environment.',
     address: '1940 Broadway, Suite 101, Oakland, CA 94612',
     email: '415-482-8805',
+    website:'https://gratefulgatherings.org/',
+   
   },
 ];
 
