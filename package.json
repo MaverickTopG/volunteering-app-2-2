@@ -28,7 +28,7 @@
     "expo-linear-gradient": "~13.0.2",
     "expo-location": "~17.0.1",
     "expo-speech": "~12.0.2",
-    "expo-splash-screen": "~0.27.5",
+    "expo-splash-screen": "~0.27.6",
     "expo-status-bar": "~1.12.1",
     "faker": "^5.5.3",
     "firebase": "^10.14.0",

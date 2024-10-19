@@ -7,7 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 
 const { width, height } = Dimensions.get('window');
-const familyImage = require('../../assets/family.png');
+
 
 const DATA = [
   {

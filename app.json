@@ -2,12 +2,12 @@
   "expo": {
     "name": "NexoLink",
     "slug": "snack-e35a9482-38e0-4709-8097-c86cd1817f3e",
-    "version": "1.0.0",
+    "version": "1.4.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app_logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/download.jpg",
+      "image": "./assets/splashscreen.png",
       "resizeMode": "cover",
       "backgroundColor":"#000000"
     },

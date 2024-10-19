@@ -1,33 +1,66 @@
+// CustomSideBarMenu.js
+
 import React, { useEffect, useRef, useContext } from 'react';
-import { View, Text, StyleSheet, Animated, Image, Dimensions, Alert } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Animated, 
+  TouchableOpacity, 
+  Dimensions, 
+  Alert 
+} from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
-import { DrawerContentScrollView, DrawerItem, useDrawerStatus } from '@react-navigation/drawer';
+import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { AuthContext } from '../auth/AuthContext'; // Import AuthContext
 import { signOut } from 'firebase/auth';  // Import Firebase signOut function
 import { auth } from '../auth/firebase';  // Import the initialized auth object from Firebase
+import { useDrawerStatus } from '@react-navigation/drawer'; // Import useDrawerStatus hook
 
 const { width, height } = Dimensions.get('window');
 
 const CustomSideBarMenu = (props) => {
   const { user, setUser } = useContext(AuthContext); // Use AuthContext for authentication
   const rotation = useRef(new Animated.Value(0)).current; // Rotation animation value
+  const isDrawerOpen = useDrawerStatus() === 'open'; // Check if drawer is open
 
-  const isDrawerOpen = useDrawerStatus() === 'open';
+  const animationRef = useRef(null); // Reference to the animation
 
   useEffect(() => {
     if (isDrawerOpen) {
-      startRotationAnimation(); // Start rotation when the drawer opens
+      startRotationAnimation();
+    } else {
+      stopRotationAnimation();
     }
+
+    // Cleanup on unmount
+    return () => {
+      stopRotationAnimation();
+    };
   }, [isDrawerOpen]);
 
   const startRotationAnimation = () => {
-    Animated.timing(rotation, {
-      toValue: 1, // Rotate 360 degrees (1 in interpolation)
-      duration: 2000, // Duration of rotation
-      useNativeDriver: true,
-    }).start(() => {
-      rotation.setValue(0); // Reset rotation value after animation completes
-    });
+    // Reset rotation value
+    rotation.setValue(0);
+
+    // Define the rotation animation
+    animationRef.current = Animated.loop(
+      Animated.timing(rotation, {
+        toValue: 1, // Rotate from 0 to 360 degrees
+        duration: 4000, // Duration for one full rotation
+        useNativeDriver: true,
+      })
+    );
+
+    // Start the animation
+    animationRef.current.start();
+  };
+
+  const stopRotationAnimation = () => {
+    if (animationRef.current) {
+      animationRef.current.stop(); // Stop the animation
+      rotation.setValue(0); // Reset rotation value
+    }
   };
 
   const handleLogout = async () => {
@@ -40,56 +73,78 @@ const CustomSideBarMenu = (props) => {
     }
   };
 
+  const handleSpaceshipPress = () => {
+    if (user && user.email) {
+      Alert.alert('Registered Email', user.email);
+    } else {
+      Alert.alert('No Email Found', 'You are not logged in.');
+    }
+  };
+
+  // Interpolate rotation value to degrees
+  const rotateInterpolate = rotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
   return (
     <View style={styles.container}>
-      <DrawerContentScrollView {...props}>
-        <View style={styles.header}>
-          <View style={styles.boxContainer}>
-            <View style={styles.box}>
-              <Text style={styles.boxText}>NexoLink</Text>
-            </View>
-          </View>
-        </View>
-        <DrawerItem
-          label="Home"
-          labelStyle={styles.drawerItemLabel}
-          style={styles.drawerItem}
-          onPress={() => props.navigation.navigate('NexoLink')}
-        />
-        <DrawerItem
-          label="Volunteer Logs"
-          labelStyle={styles.drawerItemLabel}
-          style={styles.drawerItem}
-          onPress={() => props.navigation.navigate('VolunteerLogs')}
-        />
-
-        {user && (
+      <DrawerContentScrollView {...props} contentContainerStyle={styles.drawerContent}>
+        
+        {/* Navigation Items */}
+        <View style={styles.navSection}>
           <DrawerItem
-            label="Logout"
+            label="Home"
             labelStyle={styles.drawerItemLabel}
+            icon={() => null} // No icon
+            onPress={() => props.navigation.navigate('NexoLink')}
             style={styles.drawerItem}
-            onPress={handleLogout}
+            accessibilityLabel="Navigate to Home"
+            accessibilityRole="button"
           />
+          <DrawerItem
+            label="Volunteer Logs"
+            labelStyle={styles.drawerItemLabel}
+            icon={() => null} // No icon
+            onPress={() => props.navigation.navigate('VolunteerLogs')}
+            style={styles.drawerItem}
+            accessibilityLabel="Navigate to Volunteer Logs"
+            accessibilityRole="button"
+          />
+        </View>
+
+        {/* Logout Item */}
+        {user && (
+          <View style={styles.logoutSection}>
+            <DrawerItem
+              label="Logout"
+              labelStyle={styles.drawerItemLabel}
+              icon={() => null} // No icon
+              onPress={handleLogout}
+              style={styles.drawerItem}
+              accessibilityLabel="Logout from the app"
+              accessibilityRole="button"
+            />
+          </View>
         )}
       </DrawerContentScrollView>
 
-      <Animated.View
-        style={[
-          styles.spaceshipContainer,
-          {
-            transform: [
-              {
-                rotate: rotation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0deg', '360deg'], // Rotate once from 0 to 360 degrees
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <Image source={require('../assets/spaceship.png')} style={styles.spaceship} />
-      </Animated.View>
+      {/* Rotating Spaceship */}
+      <TouchableOpacity style={styles.spaceshipContainer} onPress={handleSpaceshipPress}>
+        <Animated.Image
+          source={require('../assets/spaceship.png')} // Your spaceship image
+          style={[
+            styles.spaceship,
+            {
+              transform: [
+                {
+                  rotate: rotateInterpolate,
+                },
+              ],
+            },
+          ]}
+        />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -97,52 +152,41 @@ const CustomSideBarMenu = (props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7',
+    backgroundColor: '#fff6e7', // Light cream background
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
+  drawerContent: {
+    paddingTop: 20,
+    paddingHorizontal: 10,
   },
-  boxContainer: {
-    backgroundColor: '#fff6e7',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-  },
-  box: {
-    backgroundColor: 'black',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-  },
-  boxText: {
-    fontSize: RFValue(16),
-    fontWeight: 'bold',
-    color: '#fff6e7',
+  navSection: {
+    marginTop: 10,
   },
   drawerItem: {
-    backgroundColor: 'black',
-    marginVertical: 5,
-    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    // No background or border to have no boxes around items
   },
   drawerItemLabel: {
-    color: '#fff6e7',
+    color: '#000000', // Black text
     fontSize: RFValue(16),
-    paddingHorizontal: 20,
+    marginTop:10,
+  },
+  logoutSection: {
+    marginTop: 20,
   },
   spaceshipContainer: {
     position: 'absolute',
-    bottom: 50,
-    right: 180,
-    width: 50,
-    height: 50,
+    bottom: 30,
+    left: 30,
+    width: 60,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
   spaceship: {
-    width: 40,
-    height: 40,
-    tintColor: 'black',
+    width: 50,
+    height: 50,
+    // No tintColor since it's a custom image
   },
 });
 

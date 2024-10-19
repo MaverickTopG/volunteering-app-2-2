@@ -29,10 +29,15 @@ const VolunteerLogs = () => {
 
   const sites = [
     'Hooves for Harmony',
-    'Children Carousel',
-    'Hospital Carousel',
+    'WILDCARE',
+    'Grateful Gatherings Marin',
     'Seniors Carousel',
     'Tech Carousel',
+    'Larkspur Library',
+    'The Book Exchange',
+    'Marin County Parks & Landscape',
+    'Mill Valley Public Works',
+    'Slide Ranch',
   ];
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { AuthProvider, AuthContext } from './auth/AuthContext'; // Adjust the path
+import { AuthProvider, AuthContext } from './auth/AuthContext';  // Adjust the path
 import DrawerNavigator from './navigation/drawer';
 import LoginScreen from './auth/LoginScreen';  // Adjust path
 import RegisterScreen from './auth/RegisterScreen';  // Adjust path
@@ -15,7 +15,7 @@ const StackNav = () => {
   const { user, loading } = useContext(AuthContext);  // Get user and loading status from AuthContext
 
   if (loading) {
-    return null; // You can add a splash screen or loading indicator here
+    return null; // You can add a loading indicator here if needed
   }
 
   return (
