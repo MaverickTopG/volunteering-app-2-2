@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff6e7', // Light cream background
   },
   drawerContent: {
-    paddingTop: 20,
+    paddingTop: height*0.1,
     paddingHorizontal: 10,
   },
   navSection: {
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     marginTop:10,
   },
   logoutSection: {
-    marginTop: 20,
+    marginTop: 0,
   },
   spaceshipContainer: {
     position: 'absolute',

@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/splashscreen.png",
       "resizeMode": "cover",
-      "backgroundColor":"#000000"
+      "backgroundColor": "#000000"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
@@ -18,7 +18,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ayanshsingh.nexolink"
     },
     "android": {
       "adaptiveIcon": {
@@ -31,6 +32,11 @@
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "41026c81-0bd5-407c-a8ec-1e685b1f38d0"
+      }
+    }
   }
 }

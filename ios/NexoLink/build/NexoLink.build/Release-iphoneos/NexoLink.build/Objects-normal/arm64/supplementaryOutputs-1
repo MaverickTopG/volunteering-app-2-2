@@ -1,0 +1,9 @@
+"/Users/ayanshsingh/Downloads/Nexolink/ios/NexoLink/NexoLink/AppDelegate.swift":
+  swiftmodule: "/Users/ayanshsingh/Downloads/Nexolink/ios/NexoLink/build/NexoLink.build/Release-iphoneos/NexoLink.build/Objects-normal/arm64/NexoLink.swiftmodule"
+  dependencies: "/Users/ayanshsingh/Downloads/Nexolink/ios/NexoLink/build/NexoLink.build/Release-iphoneos/NexoLink.build/Objects-normal/arm64/NexoLink-master.d"
+  swiftdoc: "/Users/ayanshsingh/Downloads/Nexolink/ios/NexoLink/build/NexoLink.build/Release-iphoneos/NexoLink.build/Objects-normal/arm64/NexoLink.swiftdoc"
+  abi-baseline-json: "/Users/ayanshsingh/Downloads/Nexolink/ios/NexoLink/build/NexoLink.build/Release-iphoneos/NexoLink.build/Objects-normal/arm64/NexoLink.abi.json"
+  diagnostics: "/Users/ayanshsingh/Downloads/Nexolink/ios/NexoLink/build/NexoLink.build/Release-iphoneos/NexoLink.build/Objects-normal/arm64/NexoLink-master.dia"
+  swiftsourceinfo: "/Users/ayanshsingh/Downloads/Nexolink/ios/NexoLink/build/NexoLink.build/Release-iphoneos/NexoLink.build/Objects-normal/arm64/NexoLink.swiftsourceinfo"
+  objc-header: "/Users/ayanshsingh/Downloads/Nexolink/ios/NexoLink/build/NexoLink.build/Release-iphoneos/NexoLink.build/Objects-normal/arm64/NexoLink-Swift.h"
+  const-values: "/Users/ayanshsingh/Downloads/Nexolink/ios/NexoLink/build/NexoLink.build/Release-iphoneos/NexoLink.build/Objects-normal/arm64/NexoLink-master.swiftconstvalues"

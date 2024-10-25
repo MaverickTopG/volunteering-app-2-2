@@ -1,0 +1,682 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		6D5449671DF88BABCF42B224 /* Pods_NexoLinkTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85834543DAF31754B2FD9B98 /* Pods_NexoLinkTests.framework */; };
+		C71A4AED147129E897C24DE0 /* Pods_NexoLink.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7FE79797E8A80965DCD8EFE7 /* Pods_NexoLink.framework */; };
+		EC90DB9C7FC8BCC432D456B6 /* Pods_NexoLink_NexoLinkUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 29D4434C75257E6D7CFCDDFC /* Pods_NexoLink_NexoLinkUITests.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		BFA8953A2CC44B59000A99AD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BFA8951B2CC44B57000A99AD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BFA895222CC44B57000A99AD;
+			remoteInfo = NexoLink;
+		};
+		BFA895442CC44B59000A99AD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BFA8951B2CC44B57000A99AD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BFA895222CC44B57000A99AD;
+			remoteInfo = NexoLink;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		2001E3BF0872DEC3ACA3E146 /* Pods-NexoLink-NexoLinkUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NexoLink-NexoLinkUITests.release.xcconfig"; path = "Target Support Files/Pods-NexoLink-NexoLinkUITests/Pods-NexoLink-NexoLinkUITests.release.xcconfig"; sourceTree = "<group>"; };
+		29D4434C75257E6D7CFCDDFC /* Pods_NexoLink_NexoLinkUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NexoLink_NexoLinkUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B2F2CDAA5A712CAC3E891BE /* Pods-NexoLink.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NexoLink.release.xcconfig"; path = "Target Support Files/Pods-NexoLink/Pods-NexoLink.release.xcconfig"; sourceTree = "<group>"; };
+		7FE79797E8A80965DCD8EFE7 /* Pods_NexoLink.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NexoLink.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		85834543DAF31754B2FD9B98 /* Pods_NexoLinkTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NexoLinkTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		925F4030A2B55CE62A14F2C5 /* Pods-NexoLinkTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NexoLinkTests.debug.xcconfig"; path = "Target Support Files/Pods-NexoLinkTests/Pods-NexoLinkTests.debug.xcconfig"; sourceTree = "<group>"; };
+		9A471C59C47441BE75356223 /* Pods-NexoLink-NexoLinkUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NexoLink-NexoLinkUITests.debug.xcconfig"; path = "Target Support Files/Pods-NexoLink-NexoLinkUITests/Pods-NexoLink-NexoLinkUITests.debug.xcconfig"; sourceTree = "<group>"; };
+		BFA895232CC44B57000A99AD /* NexoLink.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NexoLink.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BFA895392CC44B59000A99AD /* NexoLinkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NexoLinkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BFA895432CC44B59000A99AD /* NexoLinkUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NexoLinkUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C557C0635217EDEBE156BB92 /* Pods-NexoLinkTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NexoLinkTests.release.xcconfig"; path = "Target Support Files/Pods-NexoLinkTests/Pods-NexoLinkTests.release.xcconfig"; sourceTree = "<group>"; };
+		E2B003E63951A53BCDFC5435 /* Pods-NexoLink.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NexoLink.debug.xcconfig"; path = "Target Support Files/Pods-NexoLink/Pods-NexoLink.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BFA895202CC44B57000A99AD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C71A4AED147129E897C24DE0 /* Pods_NexoLink.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BFA895362CC44B59000A99AD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6D5449671DF88BABCF42B224 /* Pods_NexoLinkTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BFA895402CC44B59000A99AD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EC90DB9C7FC8BCC432D456B6 /* Pods_NexoLink_NexoLinkUITests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4DF8690512E3A3716BB83297 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7FE79797E8A80965DCD8EFE7 /* Pods_NexoLink.framework */,
+				29D4434C75257E6D7CFCDDFC /* Pods_NexoLink_NexoLinkUITests.framework */,
+				85834543DAF31754B2FD9B98 /* Pods_NexoLinkTests.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		974C166EE77B4ABFEF92F0C1 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				E2B003E63951A53BCDFC5435 /* Pods-NexoLink.debug.xcconfig */,
+				2B2F2CDAA5A712CAC3E891BE /* Pods-NexoLink.release.xcconfig */,
+				9A471C59C47441BE75356223 /* Pods-NexoLink-NexoLinkUITests.debug.xcconfig */,
+				2001E3BF0872DEC3ACA3E146 /* Pods-NexoLink-NexoLinkUITests.release.xcconfig */,
+				925F4030A2B55CE62A14F2C5 /* Pods-NexoLinkTests.debug.xcconfig */,
+				C557C0635217EDEBE156BB92 /* Pods-NexoLinkTests.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		BFA8951A2CC44B57000A99AD = {
+			isa = PBXGroup;
+			children = (
+				BFA895242CC44B57000A99AD /* Products */,
+				974C166EE77B4ABFEF92F0C1 /* Pods */,
+				4DF8690512E3A3716BB83297 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		BFA895242CC44B57000A99AD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BFA895232CC44B57000A99AD /* NexoLink.app */,
+				BFA895392CC44B59000A99AD /* NexoLinkTests.xctest */,
+				BFA895432CC44B59000A99AD /* NexoLinkUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BFA895222CC44B57000A99AD /* NexoLink */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BFA8954C2CC44B59000A99AD /* Build configuration list for PBXNativeTarget "NexoLink" */;
+			buildPhases = (
+				4491D0D2091FC10D1F458E83 /* [CP] Check Pods Manifest.lock */,
+				BFA8951F2CC44B57000A99AD /* Sources */,
+				BFA895202CC44B57000A99AD /* Frameworks */,
+				BFA895212CC44B57000A99AD /* Resources */,
+				A6E8E675765936D0ED71130E /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NexoLink;
+			productName = NexoLink;
+			productReference = BFA895232CC44B57000A99AD /* NexoLink.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BFA895382CC44B59000A99AD /* NexoLinkTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BFA895512CC44B59000A99AD /* Build configuration list for PBXNativeTarget "NexoLinkTests" */;
+			buildPhases = (
+				20E10C1C46833CFBC573A102 /* [CP] Check Pods Manifest.lock */,
+				BFA895352CC44B59000A99AD /* Sources */,
+				BFA895362CC44B59000A99AD /* Frameworks */,
+				BFA895372CC44B59000A99AD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BFA8953B2CC44B59000A99AD /* PBXTargetDependency */,
+			);
+			name = NexoLinkTests;
+			productName = NexoLinkTests;
+			productReference = BFA895392CC44B59000A99AD /* NexoLinkTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		BFA895422CC44B59000A99AD /* NexoLinkUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BFA895542CC44B59000A99AD /* Build configuration list for PBXNativeTarget "NexoLinkUITests" */;
+			buildPhases = (
+				9ACF305F8B8B33C9246AD604 /* [CP] Check Pods Manifest.lock */,
+				BFA8953F2CC44B59000A99AD /* Sources */,
+				BFA895402CC44B59000A99AD /* Frameworks */,
+				BFA895412CC44B59000A99AD /* Resources */,
+				41E38D3E5F74C94F2773FE4C /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BFA895452CC44B59000A99AD /* PBXTargetDependency */,
+			);
+			name = NexoLinkUITests;
+			productName = NexoLinkUITests;
+			productReference = BFA895432CC44B59000A99AD /* NexoLinkUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BFA8951B2CC44B57000A99AD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					BFA895222CC44B57000A99AD = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					BFA895382CC44B59000A99AD = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = BFA895222CC44B57000A99AD;
+					};
+					BFA895422CC44B59000A99AD = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = BFA895222CC44B57000A99AD;
+					};
+				};
+			};
+			buildConfigurationList = BFA8951E2CC44B57000A99AD /* Build configuration list for PBXProject "NexoLink" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = BFA8951A2CC44B57000A99AD;
+			minimizedProjectReferenceProxies = 1;
+			productRefGroup = BFA895242CC44B57000A99AD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BFA895222CC44B57000A99AD /* NexoLink */,
+				BFA895382CC44B59000A99AD /* NexoLinkTests */,
+				BFA895422CC44B59000A99AD /* NexoLinkUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BFA895212CC44B57000A99AD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BFA895372CC44B59000A99AD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BFA895412CC44B59000A99AD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		20E10C1C46833CFBC573A102 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-NexoLinkTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		41E38D3E5F74C94F2773FE4C /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-NexoLink-NexoLinkUITests/Pods-NexoLink-NexoLinkUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-NexoLink-NexoLinkUITests/Pods-NexoLink-NexoLinkUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-NexoLink-NexoLinkUITests/Pods-NexoLink-NexoLinkUITests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		4491D0D2091FC10D1F458E83 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-NexoLink-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		9ACF305F8B8B33C9246AD604 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-NexoLink-NexoLinkUITests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A6E8E675765936D0ED71130E /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-NexoLink/Pods-NexoLink-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-NexoLink/Pods-NexoLink-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-NexoLink/Pods-NexoLink-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BFA8951F2CC44B57000A99AD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BFA895352CC44B59000A99AD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BFA8953F2CC44B59000A99AD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BFA8953B2CC44B59000A99AD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BFA895222CC44B57000A99AD /* NexoLink */;
+			targetProxy = BFA8953A2CC44B59000A99AD /* PBXContainerItemProxy */;
+		};
+		BFA895452CC44B59000A99AD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BFA895222CC44B57000A99AD /* NexoLink */;
+			targetProxy = BFA895442CC44B59000A99AD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		BFA8954D2CC44B59000A99AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E2B003E63951A53BCDFC5435 /* Pods-NexoLink.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = N8Z976DCZ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NexoLink/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ayanshsingh.nexolink;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BFA8954E2CC44B59000A99AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2B2F2CDAA5A712CAC3E891BE /* Pods-NexoLink.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = N8Z976DCZ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NexoLink/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ayanshsingh.nexolink;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		BFA8954F2CC44B59000A99AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		BFA895502CC44B59000A99AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BFA895522CC44B59000A99AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 925F4030A2B55CE62A14F2C5 /* Pods-NexoLinkTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = N8Z976DCZ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ayansh.NexoLinkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NexoLink.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NexoLink";
+			};
+			name = Debug;
+		};
+		BFA895532CC44B59000A99AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C557C0635217EDEBE156BB92 /* Pods-NexoLinkTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = N8Z976DCZ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ayansh.NexoLinkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NexoLink.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NexoLink";
+			};
+			name = Release;
+		};
+		BFA895552CC44B59000A99AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9A471C59C47441BE75356223 /* Pods-NexoLink-NexoLinkUITests.debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = N8Z976DCZ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ayansh.NexoLinkUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = NexoLink;
+			};
+			name = Debug;
+		};
+		BFA895562CC44B59000A99AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2001E3BF0872DEC3ACA3E146 /* Pods-NexoLink-NexoLinkUITests.release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = N8Z976DCZ4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Ayansh.NexoLinkUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = NexoLink;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BFA8951E2CC44B57000A99AD /* Build configuration list for PBXProject "NexoLink" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BFA8954F2CC44B59000A99AD /* Debug */,
+				BFA895502CC44B59000A99AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BFA8954C2CC44B59000A99AD /* Build configuration list for PBXNativeTarget "NexoLink" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BFA8954D2CC44B59000A99AD /* Debug */,
+				BFA8954E2CC44B59000A99AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BFA895512CC44B59000A99AD /* Build configuration list for PBXNativeTarget "NexoLinkTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BFA895522CC44B59000A99AD /* Debug */,
+				BFA895532CC44B59000A99AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BFA895542CC44B59000A99AD /* Build configuration list for PBXNativeTarget "NexoLinkUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BFA895552CC44B59000A99AD /* Debug */,
+				BFA895562CC44B59000A99AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BFA8951B2CC44B57000A99AD /* Project object */;
+}

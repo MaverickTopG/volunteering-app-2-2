@@ -1,0 +1,6 @@
+framework module Pods_NexoLink_NexoLinkUITests {
+  umbrella header "Pods-NexoLink-NexoLinkUITests-umbrella.h"
+
+  export *
+  module * { export * }
+}
