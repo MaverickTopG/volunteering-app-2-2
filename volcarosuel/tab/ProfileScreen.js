@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: 'black',
+        backgroundColor: '#fff6e7',
         padding: 20,
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
@@ -393,17 +393,17 @@ const styles = StyleSheet.create({
     bottomSheetTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#fff6e7',
+        color: 'black',
         marginBottom: 10,
     },
     bottomSheetText: {
         fontSize: 16,
-        color: '#fff6e7',
+        color: 'black',
         marginBottom: 20,
     },
     closeButton: {
         fontSize: 16,
-        color: '#fff6e7',
+        color: 'black',
         textAlign: 'center',
     },
 });

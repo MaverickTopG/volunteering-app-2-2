@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'NexoLink' in project 'NexoLink' (no dependencies)

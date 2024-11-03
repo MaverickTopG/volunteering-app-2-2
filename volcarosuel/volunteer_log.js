@@ -15,9 +15,10 @@ import { AuthContext } from '../auth/AuthContext'; // Adjust the path to your Au
 import { db } from '../auth/firebase'; // Import Firestore db
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Importing Ionicons for icons
+import { useNavigation } from '@react-navigation/native';
 
 const VolunteerLogs = () => {
-  const { user } = useContext(AuthContext); // Get current authenticated user
+  const { user, signOut } = useContext(AuthContext); // Get current authenticated user and signOut function
   const [logs, setLogs] = useState([]);
   const [totalHours, setTotalHours] = useState(0); // State to store cumulative hours
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ const VolunteerLogs = () => {
   const [selectedSite, setSelectedSite] = useState('');
   const [customSite, setCustomSite] = useState(''); // For custom site input
   const [isCustomSite, setIsCustomSite] = useState(false); // Track if using custom site
+  const navigation = useNavigation();
 
   const sites = [
     'Hooves for Harmony',
@@ -41,7 +43,10 @@ const VolunteerLogs = () => {
   ];
 
   useEffect(() => {
-    if (user) {
+    if (!user) {
+      // If user is not authenticated, redirect to Login screen
+      navigation.navigate('Login');
+    } else {
       fetchVolunteerLogs();
     }
   }, [user]);
@@ -104,6 +109,11 @@ const VolunteerLogs = () => {
     }
   };
 
+  const handleSignOut = () => {
+    signOut();
+    navigation.navigate('Login'); // Redirect to Login after signing out
+  };
+
   const renderLogItem = ({ item }) => (
     <View style={styles.logItem}>
       <Text style={styles.logText}>Site: {item.site}</Text>
@@ -120,6 +130,9 @@ const VolunteerLogs = () => {
         <Text style={styles.totalHoursText}>
           Total Hours: {totalHours} hrs
         </Text>
+        <TouchableOpacity onPress={handleSignOut}>
+          <Ionicons name="log-out-outline" size={24} color="black" />
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -231,6 +244,8 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     paddingHorizontal: 20,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     // Shadow for iOS
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

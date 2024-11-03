@@ -12,19 +12,35 @@ import {
 } from 'react-native';
 import { AuthContext } from './AuthContext'; // Adjust the path to your AuthContext
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons'; // Import for back icon (make sure to install @expo/vector-icons if not done already)
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { signIn } = useContext(AuthContext); // Use the signIn method from AuthContext
-  const navigation = useNavigation(); // For navigating to RegisterScreen
+  const navigation = useNavigation(); // For navigating to RegisterScreen or going back
 
   const handleLogin = () => {
-    signIn(email, password);
+    signIn(email, password).then(() => {
+      // After successful login, navigate to NexoLink (AnimalTabNavigator)
+      navigation.navigate('NexoLink');
+    }).catch(error => {
+      console.error(error);
+      Alert.alert('Login Failed', 'Please check your credentials and try again.');
+    });
+  };
+
+  const handleBackPress = () => {
+    navigation.navigate('NexoLink'); // Navigate to the NexoLink (AnimalTabNavigator)
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Back Button */}
+      <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+        <Ionicons name="arrow-back" size={24} color="black" />
+      </TouchableOpacity>
+
       {/* Logo at the top */}
       <View style={styles.logoContainer}>
         <Image
@@ -76,6 +92,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff6e7', // Matching the light cream color
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    zIndex: 1,
   },
   logoContainer: {
     alignItems: 'center',
