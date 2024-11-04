@@ -113,20 +113,8 @@ const CustomSideBarMenu = (props) => {
           />
         </View>
 
-        {/* Logout Item */}
-        {user && (
-          <View style={styles.logoutSection}>
-            <DrawerItem
-              label="Logout"
-              labelStyle={styles.drawerItemLabel}
-              icon={() => null} // No icon
-              onPress={handleLogout}
-              style={styles.drawerItem}
-              accessibilityLabel="Logout from the app"
-              accessibilityRole="button"
-            />
-          </View>
-        )}
+        
+        
       </DrawerContentScrollView>
 
       {/* Rotating Spaceship */}

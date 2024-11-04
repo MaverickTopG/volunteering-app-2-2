@@ -111,7 +111,7 @@ const VolunteerLogs = () => {
 
   const handleSignOut = () => {
     signOut();
-    navigation.navigate('Login'); // Redirect to Login after signing out
+    navigation.navigate('NexoLink'); // Redirect to NexoLink (AnimalTabNavigator) after signing out
   };
 
   const renderLogItem = ({ item }) => (

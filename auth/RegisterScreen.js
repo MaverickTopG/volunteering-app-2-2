@@ -9,17 +9,25 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { AuthContext } from './AuthContext';  // Adjust the path to your AuthContext
+import { AuthContext } from './AuthContext'; // Adjust the path to your AuthContext
 import { useNavigation } from '@react-navigation/native';
 
 const RegisterScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signUp } = useContext(AuthContext);  // Use the signUp method from AuthContext
-  const navigation = useNavigation();  // For navigating back to login
+  const { signUp } = useContext(AuthContext); // Use the signUp method from AuthContext
+  const navigation = useNavigation(); // For navigating back to login
 
-  const handleSignUp = () => {
-    signUp(email, password);
+
+  const handleSignUp = async () => {
+    const success = await signUp(email, password);
+    if (success) {
+      // Navigate directly to the NexoLink screen after successful sign-up
+      navigation.navigate('NexoLink');
+    }
+  };
+  const handleNavigateToLogin = () => {
+    navigation.navigate('VolunteerLogs'); // Navigate to the Login screen within the NexoLink context
   };
 
   return (
@@ -55,7 +63,7 @@ const RegisterScreen = () => {
             <Text style={styles.buttonText}>Sign Up</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <TouchableOpacity onPress={handleNavigateToLogin}>
             <Text style={styles.loginText}>Already have an account? Log in</Text>
           </TouchableOpacity>
         </View>
@@ -69,7 +77,7 @@ export default RegisterScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7',  // Matching the light cream color
+    backgroundColor: '#fff6e7', // Matching the light cream color
   },
   contentContainer: {
     flex: 1,
@@ -92,7 +100,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderColor: '#333',
     borderWidth: 1,
-    borderRadius: 25,  // Rounded input fields
+    borderRadius: 25, // Rounded input fields
     paddingHorizontal: 20,
     fontSize: 16,
     backgroundColor: '#fff6e7',
@@ -100,15 +108,15 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   button: {
-    backgroundColor: '#000',  // Black button for contrast
+    backgroundColor: '#000', // Black button for contrast
     padding: 15,
-    borderRadius: 25,  // Rounded button
+    borderRadius: 25, // Rounded button
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 20,
   },
   buttonText: {
-    color: '#fff6e7',  // Cream-colored text for consistency
+    color: '#fff6e7', // Cream-colored text for consistency
     fontSize: 16,
     fontWeight: 'bold',
   },

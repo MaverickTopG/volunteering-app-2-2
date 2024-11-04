@@ -36,11 +36,7 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Back Button */}
-      <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-        <Ionicons name="arrow-back" size={24} color="black" />
-      </TouchableOpacity>
-
+   
       {/* Logo at the top */}
       <View style={styles.logoContainer}>
         <Image
