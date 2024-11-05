@@ -3,27 +3,16 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import CustomSideBarMenu from './CustomSideBarMenu';
 import AnimalTabNavigator from '../volcarosuel/tab/AnimalTabNavigator.js';
 import VolunteerLogs from '../volcarosuel/volunteer_log.js';
-import LoginScreen from '../auth/LoginScreen'; // Ensure correct path to LoginScreen
+import LoginScreen from '../auth/LoginScreen';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, StyleSheet, StatusBar } from 'react-native';
-import { AuthContext } from '../auth/AuthContext'; // Adjust path to AuthContext
+import { AuthContext } from '../auth/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 
 const Drawer = createDrawerNavigator();
 
 const DrawerNavigator = () => {
-  const { user } = useContext(AuthContext); // Get user state from AuthContext
-  const navigation = useNavigation();
-
-  const handleVolunteerLogsPress = () => {
-    if (!user) {
-      // If the user is not authenticated, navigate to the Login screen
-      navigation.navigate('Login');
-    } else {
-      // If authenticated, navigate to VolunteerLogs
-      navigation.navigate('VolunteerLogs');
-    }
-  };
+  const { user } = useContext(AuthContext);
 
   return (
     <View style={{ flex: 1 }}>
@@ -55,17 +44,7 @@ const DrawerNavigator = () => {
         />
         <Drawer.Screen
           name="VolunteerLogs"
-          component={user ? VolunteerLogs : LoginScreen} // Conditionally render VolunteerLogs or LoginScreen
-          listeners={{
-            drawerItemPress: (e) => {
-              if (!user) {
-                // Prevent default action of opening the screen
-                e.preventDefault();
-                // Navigate to Login screen instead
-                navigation.navigate('Login');
-              }
-            },
-          }}
+          component={user ? VolunteerLogs : LoginScreen}
           options={{
             drawerLabel: 'Volunteer Logs',
             headerTitle: 'Volunteer Logs',
