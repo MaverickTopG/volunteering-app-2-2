@@ -46,18 +46,7 @@ const DATA = [
     website: 'https://www.hoovesforharmony.org/volunteer',
     county: 'Marin County',
   },
-  {
-    title: 'Hooves Harmony',
-    location: 'Redding, CA',
-    date: '2015',
-    poster: require('../../assets/Hooves for Harmony.jpeg'),
-    description:
-      'Hooves for Harmony provides equine therapy to individuals of all ages with a focus on mental health and emotional well-being. The organization uses the therapeutic power of horses to help clients develop trust, self-esteem, and emotional regulation. Volunteers at Hooves for Harmony assist in therapy sessions, help with workshops, manage community outreach initiatives, and care for the horses.',
-    address: 'Morning Star Farm, Novato, CA 94948',
-    email: '530-410-4422 or heatherparker1111@gmail.com',
-    website: 'https://www.hoovesforharmony.org/volunteer',
-    county: 'Shasta County',
-  },
+
 ];
 
 // Group data by county

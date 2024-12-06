@@ -38,9 +38,6 @@ target 'NexoLink' do
   use_expo_modules!
   config = use_native_modules!
 
-  # Add modular headers for specific dependencies to resolve the issue
-  pod 'GoogleUtilities', :modular_headers => true
-
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
   use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
 
@@ -51,6 +48,9 @@ target 'NexoLink' do
     :app_path => "#{Pod::Config.instance.installation_root}/..",
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
+
+  # Apply modular headers for Firebase dependencies
+  pod 'GoogleUtilities', :modular_headers => true
 
   post_install do |installer|
     react_native_post_install(
