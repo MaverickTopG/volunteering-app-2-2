@@ -9,7 +9,7 @@
     <key>EXUpdatesLaunchWaitMs</key>
     <integer>0</integer>
     <key>EXUpdatesSDKVersion</key>
-    <string>51.0.0</string>
+    <string>52.0.0</string>
     <key>EXUpdatesURL</key>
     <string>https://exp.host/@ayanshsingh/snack-e35a9482-38e0-4709-8097-c86cd1817f3e</string>
   </dict>

@@ -67,10 +67,10 @@ const AnimalTabNavigator = () => {
         icon = "eye";
         break;
       case "Home":
-        icon = "home";
+        icon = "search";
         break;
       case "Search":
-        icon = "search";
+        icon = "home";
         break;
       case "Map":
         icon = "map";
