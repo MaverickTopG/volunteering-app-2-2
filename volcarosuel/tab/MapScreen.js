@@ -189,16 +189,11 @@ const MapScreen = () => {
       <MapboxGL.MapView style={styles.map} zoomEnabled>
         <MapboxGL.Camera ref={cameraRef} />
 
-        <MapboxGL.UserLocation
-          visible
-          onUpdate={(location) =>
-            setUserLocation([location.coords.longitude, location.coords.latitude])
-          }
-        />
+      
 
-        {destination && (
+        {/* {destination && (
           <MapboxGL.PointAnnotation id="destination" coordinate={destination} />
-        )}
+        )} */}
 
         {route && (
           <MapboxGL.ShapeSource
