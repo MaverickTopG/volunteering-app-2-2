@@ -16,10 +16,9 @@ MapboxGL.setAccessToken('sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJx
 
 const MapScreen = () => {
   const [address, setAddress] = useState('');
-  const [manualLocation, setManualLocation] = useState('');
+  const [homeAddress, setHomeAddress] = useState('');
+  const [isHomeModalVisible, setIsHomeModalVisible] = useState(true);
   const [homeLocation, setHomeLocation] = useState(null);
-  const [homeAddress, setHomeAddress] = useState(''); // For home address input
-  const [isHomeModalVisible, setIsHomeModalVisible] = useState(false); // Modal state
   const [destination, setDestination] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [route, setRoute] = useState(null);
@@ -86,7 +85,6 @@ const MapScreen = () => {
         setHomeLocation(coords);
         setUserLocation(coords);
 
-        // Center the camera on the home location
         if (cameraRef.current) {
           cameraRef.current.setCamera({
             centerCoordinate: coords,
@@ -95,7 +93,7 @@ const MapScreen = () => {
           });
         }
 
-        setIsHomeModalVisible(false); // Close the modal
+        setIsHomeModalVisible(false);
         Alert.alert('Success', 'Home location has been set.');
       } else {
         Alert.alert('Error', 'Address not found.');
@@ -127,28 +125,25 @@ const MapScreen = () => {
         const { geometry, duration, distance } = response.data.routes[0];
         setRoute({
           coordinates: geometry.coordinates,
-          duration: Math.ceil(duration / 60), // Convert to minutes
-          distance: (distance / 1609.34).toFixed(2), // Convert to miles
+          duration: Math.ceil(duration / 60),
+          distance: (distance / 1609.34).toFixed(2),
         });
         setTripDetails({
-          eta: Math.ceil(duration / 60), // Minutes
-          distance: (distance / 1609.34).toFixed(2), // Miles
+          eta: Math.ceil(duration / 60),
+          distance: (distance / 1609.34).toFixed(2),
         });
 
-        // Auto-zoom to encapsulate the entire route
         const routeBounds = geometry.coordinates.reduce(
-          (bounds, coord) => {
-            return [
-              [
-                Math.min(bounds[0][0], coord[0]),
-                Math.min(bounds[0][1], coord[1]),
-              ],
-              [
-                Math.max(bounds[1][0], coord[0]),
-                Math.max(bounds[1][1], coord[1]),
-              ],
-            ];
-          },
+          (bounds, coord) => [
+            [
+              Math.min(bounds[0][0], coord[0]),
+              Math.min(bounds[0][1], coord[1]),
+            ],
+            [
+              Math.max(bounds[1][0], coord[0]),
+              Math.max(bounds[1][1], coord[1]),
+            ],
+          ],
           [
             [Infinity, Infinity],
             [-Infinity, -Infinity],
@@ -165,13 +160,12 @@ const MapScreen = () => {
       }
     } catch (error) {
       console.error('Error fetching directions:', error);
-      Alert.alert('Error', 'Failed to calculate route. Check console for details.');
+      Alert.alert('Error', 'Failed to calculate route.');
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -185,15 +179,12 @@ const MapScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Map */}
-      <MapboxGL.MapView style={styles.map} zoomEnabled>
+      <MapboxGL.MapView style={styles.map}>
         <MapboxGL.Camera ref={cameraRef} />
 
-      
-
-        {/* {destination && (
+        {destination && (
           <MapboxGL.PointAnnotation id="destination" coordinate={destination} />
-        )} */}
+        )}
 
         {route && (
           <MapboxGL.ShapeSource
@@ -219,7 +210,6 @@ const MapScreen = () => {
         )}
       </MapboxGL.MapView>
 
-      {/* Trip Details */}
       {tripDetails && (
         <View style={styles.tripDetailsContainer}>
           <Text style={styles.tripHeaderText}>Your Trip</Text>
@@ -228,7 +218,6 @@ const MapScreen = () => {
         </View>
       )}
 
-      {/* Camera Button */}
       <TouchableOpacity
         onPress={() => {
           if (userLocation && cameraRef.current) {
@@ -246,7 +235,6 @@ const MapScreen = () => {
         <Ionicons name="locate" size={24} color="white" />
       </TouchableOpacity>
 
-      {/* Home Button */}
       <TouchableOpacity
         onPress={() => setIsHomeModalVisible(true)}
         style={styles.homeButton}
@@ -254,7 +242,6 @@ const MapScreen = () => {
         <Ionicons name="home" size={24} color="white" />
       </TouchableOpacity>
 
-      {/* Home Address Modal */}
       <Modal
         transparent
         visible={isHomeModalVisible}

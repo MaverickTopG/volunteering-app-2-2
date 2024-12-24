@@ -33,6 +33,17 @@ const DATA = [
     website:'https://gratefulgatherings.org/',
     county:'Marin County',
   },
+  {
+    title: 'RAD Camp',
+    location: 'Irvine, CA',
+    date: '2014',
+    poster: require('../../assets/image.png'),
+    description: 'RAD camp offers volunteer opportunities to support individuals with developmental disabilities. Volunteers are at the core of RAD Camp’s mission, serving as one-on-one counselors for campers during summer camps and assisting with activities like arts and crafts, sports, and music. They also support year-round events and virtual programs that extend the RAD Camp experience. Volunteering at RAD Camp is a rewarding way to make a meaningful impact, build lasting friendships, and contribute to a supportive community.',
+    address: '199 Technology Dr, Suite 100, Irvine, CA 92618',
+    email: 'Camp@RADCamp.org or 949-387-5219',
+    website:'https://radcamp.org/volunteer/',
+    county:'Orange County',
+  },
 
 ];
 

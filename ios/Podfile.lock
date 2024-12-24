@@ -1964,7 +1964,7 @@ PODS:
     - Yoga
   - RNSVG (15.8.0):
     - React-Core
-  - RNVectorIcons (10.1.0):
+  - RNVectorIcons (10.2.0):
     - DoubleConversion
     - glog
     - RCT-Folly (= 2024.01.01.00)
@@ -2398,7 +2398,7 @@ SPEC CHECKSUMS:
   RNReanimated: 6df033a2ec944640e21b8ee0721eda0a1c041c9b
   RNScreens: 8cbab1d643e30c420deb1ba22dfc933228cbb67b
   RNSVG: 8b1a777d54096b8c2a0fd38fc9d5a454332bbb4d
-  RNVectorIcons: d85e362dde65b24370b7d4774d67c31d030afcc6
+  RNVectorIcons: 0cbcb1c0cb6da1ca1d43d3d990255e584bb99028
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Turf: aa2ede4298009639d10db36aba1a7ebaad072a5e
   Yoga: fcc198acd4a55599b3468cfb6ebc526baff5f06e

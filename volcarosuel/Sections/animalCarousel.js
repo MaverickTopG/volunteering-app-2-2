@@ -46,6 +46,31 @@ const DATA = [
     website: 'https://www.hoovesforharmony.org/volunteer',
     county: 'Marin County',
   },
+  {
+    title: 'The Little Red Dog',
+    location: 'Laguna Hills, CA',
+    date: '2011',
+    poster: require('../../assets/little dog.jpg'),
+    description:
+      'The Little Red Dog is a non-profit organization based in Orange County, California, dedicated to rescuing, rehabilitating, and rehoming dogs from high-kill shelters. Their mission is to eliminate euthanasia and end animal cruelty by educating the community on dog behavior and responsible pet ownership. The organization helps dogs of all breeds and sizes, focusing on saving those that are often overlooked due to age, medical conditions, or behavioral issues.',
+    address: '23046 Avenida de la Carlota Suite 600, Laguna Hills, CA 92653',
+    email: '949-427-0925 or info@thelittlereddog.org',
+    website: 'https://thelittlereddog.org/volunteer-form',
+    county: 'Orange County',
+  },
+  {
+    title: 'Hanaeleh Horse Rescue',
+    location: 'Trabuco Canyon, CA',
+    date: '2004',
+    poster: require('../../assets/horsey.png'),
+    description:
+      'Volunteering at Hanaeleh Horse Rescue offers a unique opportunity to support the care and rehabilitation of rescued horses. Volunteers assist with feeding, grooming, cleaning stalls, and maintaining the facility. They also help with fundraising, outreach, and administrative tasks. No prior horse experience is required—just a willingness to learn and a passion for animal welfare. Volunteers play a vital role in ensuring the safety and well-being of the horses while supporting Hanaeleh’s mission.',
+    address: 'Trabuco Canyon, Orange County, California',
+    email: 'info@hanaeleh.org or 949-842-7408',
+    website: 'https://www.hanaeleh.org/thank-you-for-inquiring-about-becoming-a-hanaeleh-volunteer/',
+    county: 'Orange County',
+  },
+
 
 ];
 
