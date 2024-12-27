@@ -22,7 +22,7 @@ const RegisterScreen = () => {
     const success = await signUp(email, password);
     if (success) {
       // Navigate directly to the NexoLink screen after successful sign-up
-      navigation.navigate('NexoLink');
+      navigation.navigate('Login');
     }
   };
 

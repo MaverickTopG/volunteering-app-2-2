@@ -9,15 +9,14 @@ import TechCarousel from '../Sections/environmentCarosuel';
 import FamilyCarousel from '../Sections/familyCarosuel';
 import HospitalCarousel from '../Sections/hospitalCarousel';
 import SeniorCarousel from '../Sections/libraryCarosuel';
-import SearchScreen from './SearchScreen';
-import AIScreen from './ProfileScreen';
-import VolunteerLogs from '../volunteer_log';
+import SearchScreen from '../screens/SearchScreen';
+import AIScreen from '../screens/ProfileScreen';
+import VolunteerLogs from '../screens/volunteer_log';
 import LoginScreen from '../../auth/LoginScreen';
 import RegisterScreen from '../../auth/RegisterScreen';
-import DisplayScreen from '../ShowScreen';
-import MapScreen from './MapScreen';
-import SplashScreen from './Splashscreen';
-import { CarouselProvider } from './CarosuelSelection';
+import DisplayScreen from '../displayer/ShowScreen';
+import MapScreen from '../screens/MapScreen';
+import SplashScreen from '../screens/Splashscreen';
 
 const Stack = createStackNavigator();
 
@@ -125,7 +124,6 @@ const AnimalTabNavigator = () => {
   };
 
   return (
-    <CarouselProvider>
       <View style={{ flex: 1 }}>
         <CurvedBottomBarExpo.Navigator
           style={styles.bottomBar}
@@ -181,7 +179,6 @@ const AnimalTabNavigator = () => {
           />
         </CurvedBottomBarExpo.Navigator>
       </View>
-    </CarouselProvider>
   );
 };
 

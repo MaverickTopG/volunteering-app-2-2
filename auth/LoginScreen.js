@@ -39,6 +39,8 @@ const LoginScreen = () => {
           style={styles.logo}
           resizeMode="contain"
         />
+        {/* Text added below the logo */}
+        <Text style={styles.titleText}>Volunteer Logs</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -92,11 +94,18 @@ const styles = StyleSheet.create({
     width: 200, // Adjust the size of your logo
     height: 200,
   },
+  titleText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 20, // Add some spacing between the icon and the text
+    textAlign: 'center',
+  },
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
-    marginTop: -50, // Adjust to position inputs closer to the logo
+    marginTop: -110, // Adjust to position inputs closer to the logo
   },
   inputContainer: {
     // Additional styling if needed

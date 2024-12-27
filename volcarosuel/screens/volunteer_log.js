@@ -11,8 +11,8 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-import { AuthContext } from '../auth/AuthContext'; // Adjust the path to your AuthContext
-import { db } from '../auth/firebase'; // Import Firestore db
+import { AuthContext } from '../../auth/AuthContext'; // Adjust the path to your AuthContext
+import { db } from '../../auth/firebase'; // Import Firestore db
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Importing Ionicons for icons
 import { useNavigation } from '@react-navigation/native';

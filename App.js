@@ -5,17 +5,15 @@ import { AuthProvider } from './auth/AuthContext';  // Adjust the path
 import DrawerNavigator from './navigation/drawer';
 import LoginScreen from './auth/LoginScreen';  // Adjust path
 import RegisterScreen from './auth/RegisterScreen';
-import { CarouselProvider } from './volcarosuel/tab/CarosuelSelection.js';
 import { registerRootComponent } from 'expo';
-import AnimalTabNavigator from './volcarosuel/tab/AnimalTabNavigator.js';
+import AnimalTabNavigator from './volcarosuel/Navigators/AnimalTabNavigator.js';
 import AppUpdateChecker from './AppUpdateChecker.js';
-
 import AnimalCarousel from './volcarosuel/Sections/animalCarousel.js'; // Adjust path
 import TechCarousel from './volcarosuel/Sections/environmentCarosuel.js'; // Adjust path
 import FamilyCarousel from './volcarosuel/Sections/familyCarosuel.js'; // Adjust path
 import HospitalCarousel from './volcarosuel/Sections/hospitalCarousel.js'; // Adjust path
 import SeniorCarousel from './volcarosuel/Sections/libraryCarosuel.js'; // Adjust path
-import DisplayScreen from './volcarosuel/ShowScreen'; // Adjust path
+import DisplayScreen from './volcarosuel/displayer/ShowScreen.js'; // Adjust path
 
 const Stack = createStackNavigator();
 
@@ -55,10 +53,11 @@ const StackNav = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={DrawerNavigator} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
+    
       <Stack.Screen name="AnimalTabNavigator" component={AnimalTabNavigator} />
       <Stack.Screen name="CarouselStack" component={CarouselStack} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
     </Stack.Navigator>
   );
 };
@@ -71,11 +70,9 @@ const App = () => {
 
   return (
     <AuthProvider>
-      <CarouselProvider>
-        <NavigationContainer>
-          <StackNav />
-        </NavigationContainer>
-      </CarouselProvider>
+      <NavigationContainer>
+        <StackNav />
+      </NavigationContainer>
     </AuthProvider>
   );
 };

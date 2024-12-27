@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert('Login Success', 'You are now logged in.');
     } catch (error) {
       Alert.alert('Login Error', error.message);
     } finally {
@@ -40,7 +39,6 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert('Sign Up Success', 'Your account has been created.');
     } catch (error) {
       Alert.alert('Sign Up Error', error.message);
     } finally {
@@ -52,7 +50,6 @@ export const AuthProvider = ({ children }) => {
     try {
       await signOut(auth);
       setUser(null);
-      Alert.alert('Logout Success', 'You have been logged out.');
     } catch (error) {
       Alert.alert('Logout Error', error.message);
     }

@@ -13,7 +13,6 @@ import {
   Alert 
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { RFPercentage } from 'react-native-responsive-fontsize';
 import { MaterialIcons } from '@expo/vector-icons';
 import SwipeButton from './SwipeButton'; // Ensure SwipeButton is correctly implemented
 

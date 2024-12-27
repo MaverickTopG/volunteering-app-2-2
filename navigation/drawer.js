@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import CustomSideBarMenu from './CustomSideBarMenu';
-import AnimalTabNavigator from '../volcarosuel/tab/AnimalTabNavigator.js';
+import AnimalTabNavigator from '../volcarosuel/Navigators/AnimalTabNavigator';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, StyleSheet, StatusBar } from 'react-native';
 
