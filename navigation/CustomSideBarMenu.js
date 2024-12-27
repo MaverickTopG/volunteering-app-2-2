@@ -101,16 +101,7 @@ const CustomSideBarMenu = (props) => {
             style={styles.drawerItem}
             accessibilityLabel="Navigate to Home"
             accessibilityRole="button"
-          />
-          <DrawerItem
-            label="Volunteer Logs"
-            labelStyle={styles.drawerItemLabel}
-            icon={() => null} // No icon
-            onPress={() => props.navigation.navigate('VolunteerLogs')}
-            style={styles.drawerItem}
-            accessibilityLabel="Navigate to Volunteer Logs"
-            accessibilityRole="button"
-          />
+          />   
         </View>
 
         

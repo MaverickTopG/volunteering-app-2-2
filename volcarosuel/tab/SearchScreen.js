@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Modal, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useCarousel } from './CarosuelSelection';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-
-const { width } = Dimensions.get('window');
 
 const DATA = [
   { id: '1', title: 'Animal', name: 'AnimalCarousel' },
@@ -18,11 +14,9 @@ const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const navigation = useNavigation();
-  const { setSelectedCarousel } = useCarousel();
 
   const handleCarouselSelect = (carouselName) => {
-    setSelectedCarousel(carouselName);
-    navigation.navigate('Home');
+    navigation.navigate('CarouselStack', { carouselName }); // Navigate to the dynamic carousel stack
   };
 
   const filteredData = DATA.filter(item =>
@@ -35,10 +29,6 @@ const SearchScreen = () => {
     </TouchableOpacity>
   );
 
-  const handleSearch = () => {
-    setSearchQuery('');
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -49,12 +39,6 @@ const SearchScreen = () => {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-          <Ionicons name="close-outline" size={24} color="#333333" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setIsBottomSheetVisible(true)} style={styles.infoButton}>
-          <Ionicons name="information-circle-outline" size={24} color="#333333" />
-        </TouchableOpacity>
       </View>
       <FlatList
         data={filteredData}
@@ -110,20 +94,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     fontSize: 16,
   },
-  searchButton: {
-    marginLeft: 10,
-    backgroundColor: '#fff6e7',
-    padding: 10,
-    borderRadius: 25,
-  },
-  infoButton: {
-    marginLeft: 10,
-    backgroundColor: 'transparent',
-  },
   listContent: {
     paddingHorizontal: 10,
     paddingBottom: 20,
-    bottom: -20,
   },
   item: {
     padding: 20,
@@ -133,12 +106,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#333333',
     alignItems: 'center',
-    width: width * 0.9,
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
   },
   title: {
     fontSize: 18,

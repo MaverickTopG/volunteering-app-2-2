@@ -23,40 +23,28 @@ const { width } = Dimensions.get('window');
 const DATA = [
 
   {
-    title: 'Marin County Parks & Landscape',
-    location: 'San Rafael, CA',
-    date: '1972',
-    poster: require('../../assets/download.png'),
-    description: 'Marin County Parks offers volunteer opportunities for teens to participate in landscape maintenance, habitat restoration, and park beautification projects. Volunteers help keep parks clean, safe, and inviting for all visitors while supporting environmental conservation efforts.',
-    address: '3501 Civic Center Drive, Suite 260, San Rafael, CA 94903',
-    email: '415-473-2823',
-    website: 'https://www.parks.marincounty.org/discoverlearn/volunteer',
+    title: 'Larkspur Library',
+    location: 'Larkspur, CA',
+    date: '1913',
+    poster: require('../../assets/larkspur.png'),
+    description: 'Larkspur Library welcomes teen volunteers to assist with a range of activities including event planning, organizing books, and helping with childrens programs. Volunteers play a vital role in supporting the library’s mission to serve the community.',
+    address: '400 Magnolia Ave, Larkspur, CA 94939',
+    email: '415-927-5022',
+    website: 'https://www.ci.larkspur.ca.us/926/Volunteer',
     county: 'Marin County',
   },
-  {
-    title: 'Mill Valley Public Works',
-    location: 'Mill Valley, CA',
-    date: '1900',
-    poster: require('../../assets/millvalley.png'),
-    description: ' Mill Valley Public Works provides volunteer opportunities for teens to assist with various public works projects, including park maintenance, street clean-ups, and infrastructure improvements. Volunteers help enhance the city’s public spaces and contribute to community well-being.',
-    address: '26 Corte Madera Avenue, Mill Valley, CA 94941',
-    email: '415-384-4800',
-    website: 'https://www.cityofmillvalley.org/725/Volunteering',
-    county: 'Marin County',
 
-  },
   {
-    title: 'Slide Ranch',
-    location: 'Muir Beach, CA',
-    date: '1970',
-    poster: require('../../assets/slide ranch.png'),
-    description: ' Slide Ranch offers volunteer opportunities for teens to assist with sustainable farming, environmental education, and habitat restoration. Volunteers help with farm chores, maintain trails, and support educational programs that connect people to nature and sustainable agriculture.',
-    address: '2025 Shoreline Highway, Muir Beach, CA 94965',
-    email: '415-381-6155',
-    website: 'https://www.slideranch.org/volunteer',
+    title: 'The Book Exchange',
+    location: 'Not specified',
+    date: '1913',
+    poster: require('../../assets/bookexchange.png'),
+    description: 'The Book Exchange offers a platform for exchanging used books to promote reading and literacy. Volunteers can help organize books, manage exchanges, and assist with community outreach efforts to encourage book donations and literacy programs.',
+    address: '400 Magnolia Ave, Larkspur, CA 94939',
+    website: 'https://bookexchangemarin.org/volunteer/',
     county: 'Marin County',
-
   },
+
 ];
 
 // Group data by county
@@ -80,7 +68,7 @@ const ITEM_HEIGHT = 85;
 const MARGIN = 10;
 const INACTIVE_TIME = 10000; // 10 seconds
 
-const VolunteerScreen = () => {
+const VolunteerScreen = ({ route }) => {
   const navigation = useNavigation();
   const [activeSection, setActiveSection] = useState(null);
   const [searchVisible, setSearchVisible] = useState(false);
@@ -89,6 +77,9 @@ const VolunteerScreen = () => {
   const timer = useRef(null);
   const listRef = useRef(null);
   const searchBarTimer = useRef(null);
+
+  // Retrieve data passed from Search Screen (if any)
+  const { searchScreenData } = route.params || {};
 
   const handleCardPress = (item) => {
     clearTimeout(timer.current);
@@ -105,14 +96,6 @@ const VolunteerScreen = () => {
     }
   };
 
-  const handleDoubleTap = () => {
-    setSearchVisible((prev) => !prev);
-    if (!searchVisible) {
-      clearTimeout(searchBarTimer.current);
-      Keyboard.dismiss();
-    }
-  };
-
   const handleSearch = (query) => {
     setSearchQuery(query);
     const sectionIndex = SECTIONS.findIndex((section) =>
@@ -125,6 +108,10 @@ const VolunteerScreen = () => {
         viewOffset: 100,
       });
     }
+  };
+
+  const handleBackPress = () => {
+    navigation.navigate('SearchScreen', { data: searchScreenData }); // Navigate explicitly to Search Screen
   };
 
   const rMiniBarStyle = useAnimatedStyle(() => {
@@ -190,8 +177,12 @@ const VolunteerScreen = () => {
   }, [searchVisible]);
 
   return (
-    <TapGestureHandler numberOfTaps={2} onActivated={handleDoubleTap}>
+    <TapGestureHandler numberOfTaps={2} onActivated={() => setSearchVisible(!searchVisible)}>
       <SafeAreaView style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+  <MaterialIcons name="arrow-back" size={24} color="#333" />
+</TouchableOpacity>
+
         {searchVisible && (
           <View style={styles.searchBar}>
             <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
@@ -205,7 +196,7 @@ const VolunteerScreen = () => {
           </View>
         )}
         <Animated.View style={[styles.header, rMiniBarStyle]}>
-          <Text style={styles.headerText}>Environment</Text>
+          <Text style={styles.headerText}>Library</Text>
         </Animated.View>
         <SectionList
           ref={listRef}
@@ -245,6 +236,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
+  backButton: {
+    position: 'absolute',
+    top: -10,
+    left: 5, 
+    padding: 10, 
+    zIndex: 3, 
+  },
+  
   headerText: {
     fontSize: RFPercentage(3),
     fontWeight: 'bold',
@@ -322,23 +321,23 @@ const styles = StyleSheet.create({
     right: 20,
     height: 50,
     backgroundColor: '#fff6e7',
-    borderRadius: 25, // Rounded corners for smooth look
+    borderRadius: 25,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 10, // Soft shadow
+    shadowRadius: 10,
     zIndex: 2,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#333',
-    marginLeft: 10, // Space between icon and input
+    marginLeft: 10,
   },
   searchIcon: {
-    marginRight: 10, // Space between icon and input
+    marginRight: 10,
   },
 });

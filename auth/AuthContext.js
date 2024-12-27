@@ -1,11 +1,11 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { Alert, ActivityIndicator, View, StyleSheet, Text, Image } from 'react-native';
 import { auth } from './firebase'; // Import the initialized auth object
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
 } from 'firebase/auth';
 
 export const AuthContext = createContext();
@@ -28,9 +28,9 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert("Success", "Logged in successfully");
+      Alert.alert('Login Success', 'You are now logged in.');
     } catch (error) {
-      Alert.alert("Login Error", error.message);
+      Alert.alert('Login Error', error.message);
     } finally {
       setLoading(false);
     }
@@ -40,9 +40,9 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert("Success", "User registered successfully");
+      Alert.alert('Sign Up Success', 'Your account has been created.');
     } catch (error) {
-      Alert.alert("Sign Up Error", error.message);
+      Alert.alert('Sign Up Error', error.message);
     } finally {
       setLoading(false);
     }
@@ -52,9 +52,9 @@ export const AuthProvider = ({ children }) => {
     try {
       await signOut(auth);
       setUser(null);
-      Alert.alert("Success", "Logged out successfully");
+      Alert.alert('Logout Success', 'You have been logged out.');
     } catch (error) {
-      Alert.alert("Logout Error", error.message);
+      Alert.alert('Logout Error', error.message);
     }
   };
 
@@ -73,19 +73,18 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut: signOutUser }}>
+    <AuthContext.Provider value={{ user, signIn, signUp, signOut: signOutUser }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Styles for the loading screen and the overall design
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff6e7', // Light cream background
+    backgroundColor: '#fff6e7',
   },
   logo: {
     width: 150,

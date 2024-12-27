@@ -18,7 +18,6 @@ const RegisterScreen = () => {
   const { signUp } = useContext(AuthContext); // Use the signUp method from AuthContext
   const navigation = useNavigation(); // For navigating back to login
 
-
   const handleSignUp = async () => {
     const success = await signUp(email, password);
     if (success) {
@@ -26,8 +25,9 @@ const RegisterScreen = () => {
       navigation.navigate('NexoLink');
     }
   };
+
   const handleNavigateToLogin = () => {
-    navigation.navigate('VolunteerLogs'); // Navigate to the Login screen within the NexoLink context
+    navigation.navigate('Login'); // Navigate to the Login screen
   };
 
   return (

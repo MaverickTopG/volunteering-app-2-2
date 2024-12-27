@@ -74,6 +74,7 @@ const DATA = [
 
 ];
 
+
 // Group data by county
 const groupByCounty = (data) => {
   const counties = {};
@@ -95,7 +96,7 @@ const ITEM_HEIGHT = 85;
 const MARGIN = 10;
 const INACTIVE_TIME = 10000; // 10 seconds
 
-const VolunteerScreen = () => {
+const VolunteerScreen = ({ route }) => {
   const navigation = useNavigation();
   const [activeSection, setActiveSection] = useState(null);
   const [searchVisible, setSearchVisible] = useState(false);
@@ -104,6 +105,9 @@ const VolunteerScreen = () => {
   const timer = useRef(null);
   const listRef = useRef(null);
   const searchBarTimer = useRef(null);
+
+  // Retrieve data passed from Search Screen (if any)
+  const { searchScreenData } = route.params || {};
 
   const handleCardPress = (item) => {
     clearTimeout(timer.current);
@@ -120,14 +124,6 @@ const VolunteerScreen = () => {
     }
   };
 
-  const handleDoubleTap = () => {
-    setSearchVisible((prev) => !prev);
-    if (!searchVisible) {
-      clearTimeout(searchBarTimer.current);
-      Keyboard.dismiss();
-    }
-  };
-
   const handleSearch = (query) => {
     setSearchQuery(query);
     const sectionIndex = SECTIONS.findIndex((section) =>
@@ -140,6 +136,10 @@ const VolunteerScreen = () => {
         viewOffset: 100,
       });
     }
+  };
+
+  const handleBackPress = () => {
+    navigation.navigate('SearchScreen', { data: searchScreenData }); // Navigate explicitly to Search Screen
   };
 
   const rMiniBarStyle = useAnimatedStyle(() => {
@@ -205,8 +205,12 @@ const VolunteerScreen = () => {
   }, [searchVisible]);
 
   return (
-    <TapGestureHandler numberOfTaps={2} onActivated={handleDoubleTap}>
+    <TapGestureHandler numberOfTaps={2} onActivated={() => setSearchVisible(!searchVisible)}>
       <SafeAreaView style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+  <MaterialIcons name="arrow-back" size={24} color="#333" />
+</TouchableOpacity>
+
         {searchVisible && (
           <View style={styles.searchBar}>
             <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
@@ -260,6 +264,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
+  backButton: {
+    position: 'absolute',
+    top: -10,
+    left: 5, 
+    padding: 10, 
+    zIndex: 3, 
+  },
+  
   headerText: {
     fontSize: RFPercentage(3),
     fontWeight: 'bold',
@@ -337,23 +349,23 @@ const styles = StyleSheet.create({
     right: 20,
     height: 50,
     backgroundColor: '#fff6e7',
-    borderRadius: 25, // Rounded corners for smooth look
+    borderRadius: 25,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 10, // Soft shadow
+    shadowRadius: 10,
     zIndex: 2,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#333',
-    marginLeft: 10, // Space between icon and input
+    marginLeft: 10,
   },
   searchIcon: {
-    marginRight: 10, // Space between icon and input
+    marginRight: 10,
   },
 });

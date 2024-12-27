@@ -1,27 +1,32 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Animated, StyleSheet, TouchableOpacity, View, Image } from 'react-native';
 import { CurvedBottomBarExpo } from 'react-native-curved-bottom-bar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { AuthContext } from '../../auth/AuthContext'; // AuthContext for authentication state
 import AnimalCarousel from '../Sections/animalCarousel';
-import SearchScreen from './SearchScreen';
-import TechCarousel from '../Sections/techCarosuel';
-import FamilyCarousel from '../Sections/childrenCarosuel';
+import TechCarousel from '../Sections/environmentCarosuel';
+import FamilyCarousel from '../Sections/familyCarosuel';
 import HospitalCarousel from '../Sections/hospitalCarousel';
-import SeniorCarousel from '../Sections/seniorsCarousel';
+import SeniorCarousel from '../Sections/libraryCarosuel';
+import SearchScreen from './SearchScreen';
 import AIScreen from './ProfileScreen';
+import VolunteerLogs from '../volunteer_log';
+import LoginScreen from '../../auth/LoginScreen';
+import RegisterScreen from '../../auth/RegisterScreen';
 import DisplayScreen from '../ShowScreen';
 import MapScreen from './MapScreen';
 import SplashScreen from './Splashscreen';
-import { CarouselProvider, useCarousel } from './CarosuelSelection';
+import { CarouselProvider } from './CarosuelSelection';
 
 const Stack = createStackNavigator();
 
-const HomeStack = () => {
-  const { selectedCarousel } = useCarousel();
+// Carousel Stack for Dynamic Navigation
+const CarouselStack = ({ route }) => {
+  const { carouselName } = route.params || {};
   let CarouselComponent;
-  switch (selectedCarousel) {
+
+  switch (carouselName) {
     case 'TechCarousel':
       CarouselComponent = TechCarousel;
       break;
@@ -41,51 +46,69 @@ const HomeStack = () => {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen
-        name="Carousel"
-        component={CarouselComponent}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="DisplayScreen"
-        component={DisplayScreen}
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="Carousel" component={CarouselComponent} />
+      <Stack.Screen name="DisplayScreen" component={DisplayScreen} />
     </Stack.Navigator>
   );
 };
 
-const AnimalTabNavigator = () => {
-  const navigation = useNavigation();
-  const { setSelectedCarousel } = useCarousel();
+// Volunteer Logs Stack with Auth Integration
+const VolunteerLogsStack = () => {
+  const { user } = useContext(AuthContext);
 
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {user ? (
+        // Authenticated users
+        <Stack.Screen name="VolunteerLogs" component={VolunteerLogs} />
+      ) : (
+        // Unauthenticated users with proper transitions
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+};
+
+const TabStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SearchScreen" component={SearchScreen} />
+      <Stack.Screen name="CarouselStack" component={CarouselStack} />
+    </Stack.Navigator>
+  );
+};
+
+// Tab Navigator
+const AnimalTabNavigator = () => {
   const _renderIcon = (routeName, selectedTab) => {
-    let icon = "";
+    let icon = '';
 
     switch (routeName) {
-      case "Show":
-        icon = "eye";
+      case 'Show':
+        icon = 'eye';
         break;
-      case "Home":
-        icon = "search";
+      case 'Vlogs':
+        icon = 'search';
         break;
-      case "Search":
-        icon = "home";
+      case 'Search':
+        icon = 'home';
         break;
-      case "Map":
-        icon = "map";
+      case 'Map':
+        icon = 'map';
         break;
-      case "Profile":
-        icon = "person";
+      case 'Profile':
+        icon = 'person';
         break;
-
     }
 
     return (
       <Ionicons
         name={icon}
         size={25}
-        color={routeName === selectedTab ? "#fff" : "#ffffff40"}
+        color={routeName === selectedTab ? '#fff6e7' : '#ffffff40'}
       />
     );
   };
@@ -109,7 +132,7 @@ const AnimalTabNavigator = () => {
           height={65}
           circleWidth={75}
           bgColor="black"
-          initialRouteName="Show"
+          initialRouteName="Search"
           borderTopLeftRight
           renderCircle={({ selectedTab, navigate }) => (
             <Animated.View style={styles.circleContainer}>
@@ -118,7 +141,7 @@ const AnimalTabNavigator = () => {
                 onPress={() => navigate('Show')}
               >
                 <Image
-                  source={require('../../assets/spaceship.png')} // Update the path to your image
+                  source={require('../../assets/spaceship.png')}
                   style={styles.spaceshipIcon}
                 />
               </TouchableOpacity>
@@ -126,19 +149,18 @@ const AnimalTabNavigator = () => {
           )}
           tabBar={renderTabBar}
         >
-               <CurvedBottomBarExpo.Screen
+          <CurvedBottomBarExpo.Screen
             name="Search"
             position="LEFT"
-            component={SearchScreen}
+            component={TabStack}
             options={{ headerShown: false }}
           />
           <CurvedBottomBarExpo.Screen
-            name="Home"
+            name="Vlogs"
             position="LEFT"
-            component={HomeStack}
+            component={AIScreen}
             options={{ headerShown: false }}
           />
-     
           <CurvedBottomBarExpo.Screen
             name="Map"
             position="RIGHT"
@@ -148,7 +170,7 @@ const AnimalTabNavigator = () => {
           <CurvedBottomBarExpo.Screen
             name="Profile"
             position="RIGHT"
-            component={AIScreen}
+            component={VolunteerLogsStack}
             options={{ headerShown: false }}
           />
           <CurvedBottomBarExpo.Screen
@@ -167,10 +189,10 @@ export default AnimalTabNavigator;
 
 const styles = StyleSheet.create({
   bottomBar: {
-    position: "absolute",
+    position: 'absolute',
     borderRadius: 20,
     elevation: 1000,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 0.5,
@@ -182,10 +204,10 @@ const styles = StyleSheet.create({
     width: 75,
     height: 75,
     borderRadius: 37.5,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "black",
-    shadowColor: "#1A1A23",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'black',
+    shadowColor: '#1A1A23',
     shadowOffset: {
       width: 0,
       height: 0.5,
@@ -208,14 +230,14 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    borderColor: "black",
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: 'black',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   spaceshipIcon: {
-    width: 30, // Adjust the size of the image as needed
+    width: 30,
     height: 30,
-    tintColor: '#fff6e7', // Apply the color to the image
+    tintColor: '#fff6e7',
   },
 });
