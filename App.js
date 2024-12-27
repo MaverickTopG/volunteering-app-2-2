@@ -4,12 +4,11 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { AuthProvider } from './auth/AuthContext';  // Adjust the path
 import DrawerNavigator from './navigation/drawer';
 import LoginScreen from './auth/LoginScreen';  // Adjust path
-import RegisterScreen from './auth/RegisterScreen';  // Adjust path
+import RegisterScreen from './auth/RegisterScreen';  
 import { CarouselProvider } from './volcarosuel/tab/CarosuelSelection.js';
 import { registerRootComponent } from 'expo';
 import AnimalTabNavigator from './volcarosuel/tab/AnimalTabNavigator.js';
-import AppUpdateChecker from './AppUpdateChecker'; // Import the update checker
-
+import AppUpdateChecker from './AppUpdateChecker.js'; 
 const Stack = createStackNavigator();
 
 // Main Stack Navigator

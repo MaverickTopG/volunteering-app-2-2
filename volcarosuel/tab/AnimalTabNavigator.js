@@ -126,18 +126,19 @@ const AnimalTabNavigator = () => {
           )}
           tabBar={renderTabBar}
         >
+               <CurvedBottomBarExpo.Screen
+            name="Search"
+            position="LEFT"
+            component={SearchScreen}
+            options={{ headerShown: false }}
+          />
           <CurvedBottomBarExpo.Screen
             name="Home"
             position="LEFT"
             component={HomeStack}
             options={{ headerShown: false }}
           />
-          <CurvedBottomBarExpo.Screen
-            name="Search"
-            position="LEFT"
-            component={SearchScreen}
-            options={{ headerShown: false }}
-          />
+     
           <CurvedBottomBarExpo.Screen
             name="Map"
             position="RIGHT"

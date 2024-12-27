@@ -14,6 +14,13 @@ import axios from 'axios';
 
 MapboxGL.setAccessToken('sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA');
 
+const INITIAL_HOME_ADDRESS = 'San Francisco'; // Default home address
+const SAN_FRANCISCO_BOUNDS = [
+  [-123.173825, 37.639830], // Southwest corner
+  [-122.281780, 37.929824], // Northeast corner
+];
+
+
 const MapScreen = () => {
   const [address, setAddress] = useState('');
   const [homeAddress, setHomeAddress] = useState('');
@@ -26,14 +33,17 @@ const MapScreen = () => {
   const cameraRef = useRef(null);
 
   useEffect(() => {
-    if (userLocation && cameraRef.current) {
-      cameraRef.current.setCamera({
-        centerCoordinate: userLocation,
-        zoomLevel: 15,
-        animationDuration: 1000,
-      });
+    // Set initial view to San Francisco
+    if (cameraRef.current) {
+      cameraRef.current.fitBounds(
+        SAN_FRANCISCO_BOUNDS[0], // Southwest corner
+        SAN_FRANCISCO_BOUNDS[1], // Northeast corner
+        50 // Padding in pixels to give some margin
+      );
     }
-  }, [userLocation]);
+    fetchCoordinatesForHomeLocation(INITIAL_HOME_ADDRESS);
+  }, []);
+
 
   const handleSearch = async () => {
     if (!address.trim()) {
@@ -66,8 +76,8 @@ const MapScreen = () => {
     }
   };
 
-  const fetchCoordinatesForHomeLocation = async () => {
-    if (!homeAddress.trim()) {
+  const fetchCoordinatesForHomeLocation = async (addressToSet = homeAddress) => {
+    if (!addressToSet.trim()) {
       Alert.alert('Error', 'Please enter your home address.');
       return;
     }
@@ -75,7 +85,7 @@ const MapScreen = () => {
     try {
       const response = await axios.get(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          homeAddress
+          addressToSet
         )}&format=json&limit=1`
       );
 
@@ -88,13 +98,15 @@ const MapScreen = () => {
         if (cameraRef.current) {
           cameraRef.current.setCamera({
             centerCoordinate: coords,
-            zoomLevel: 15,
+            zoomLevel: 10,
             animationDuration: 1000,
           });
         }
 
-        setIsHomeModalVisible(false);
-        Alert.alert('Success', 'Home location has been set.');
+        if (addressToSet !== INITIAL_HOME_ADDRESS) {
+          setIsHomeModalVisible(false);
+          Alert.alert('Success', 'Home location has been set.');
+        }
       } else {
         Alert.alert('Error', 'Address not found.');
       }
@@ -123,38 +135,30 @@ const MapScreen = () => {
 
       if (response.data.routes.length > 0) {
         const { geometry, duration, distance } = response.data.routes[0];
+        // Convert duration to hours and minutes
+        const totalMinutes = Math.ceil(duration / 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const eta = hours > 0 ? `${hours} hours ${minutes} min` : `${minutes} min`;
+
         setRoute({
           coordinates: geometry.coordinates,
           duration: Math.ceil(duration / 60),
           distance: (distance / 1609.34).toFixed(2),
         });
         setTripDetails({
-          eta: Math.ceil(duration / 60),
+          eta: eta, // Show ETA in hours and minutes
           distance: (distance / 1609.34).toFixed(2),
         });
 
-        const routeBounds = geometry.coordinates.reduce(
-          (bounds, coord) => [
-            [
-              Math.min(bounds[0][0], coord[0]),
-              Math.min(bounds[0][1], coord[1]),
-            ],
-            [
-              Math.max(bounds[1][0], coord[0]),
-              Math.max(bounds[1][1], coord[1]),
-            ],
-          ],
-          [
-            [Infinity, Infinity],
-            [-Infinity, -Infinity],
-          ]
-        );
-
-        cameraRef.current.setCamera({
-          bounds: routeBounds,
-          padding: { top: 50, bottom: 50, left: 50, right: 50 },
-          animationDuration: 1000,
-        });
+        // Auto-zoom to fit the route
+        if (cameraRef.current) {
+          cameraRef.current.fitBounds(
+            geometry.coordinates[0],
+            geometry.coordinates[geometry.coordinates.length - 1],
+            50 // Padding
+          );
+        }
       } else {
         Alert.alert('Error', 'No routes found.');
       }
@@ -182,8 +186,16 @@ const MapScreen = () => {
       <MapboxGL.MapView style={styles.map}>
         <MapboxGL.Camera ref={cameraRef} />
 
+        {homeLocation && (
+          <MapboxGL.PointAnnotation id="homeLocation" coordinate={homeLocation}>
+            <View style={styles.blueMarker} />
+          </MapboxGL.PointAnnotation>
+        )}
+
         {destination && (
-          <MapboxGL.PointAnnotation id="destination" coordinate={destination} />
+          <MapboxGL.PointAnnotation id="destination" coordinate={destination}>
+            <View style={styles.redMarker} />
+          </MapboxGL.PointAnnotation>
         )}
 
         {route && (
@@ -213,7 +225,7 @@ const MapScreen = () => {
       {tripDetails && (
         <View style={styles.tripDetailsContainer}>
           <Text style={styles.tripHeaderText}>Your Trip</Text>
-          <Text style={styles.tripDetailText}>ETA: {tripDetails.eta} mins</Text>
+          <Text style={styles.tripDetailText}>Time: {tripDetails.eta} </Text>
           <Text style={styles.tripDetailText}>Distance: {tripDetails.distance} miles</Text>
         </View>
       )}
@@ -246,11 +258,19 @@ const MapScreen = () => {
         transparent
         visible={isHomeModalVisible}
         animationType="slide"
-        onRequestClose={() => setIsHomeModalVisible(false)}
+        onRequestClose={() => setIsHomeModalVisible(false)} // Close modal on back button press
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Set Home Address</Text>
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => setIsHomeModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="black" />
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>Set Current Address</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="Enter your home address"
@@ -258,14 +278,15 @@ const MapScreen = () => {
               onChangeText={setHomeAddress}
             />
             <TouchableOpacity
-              onPress={fetchCoordinatesForHomeLocation}
+              onPress={() => fetchCoordinatesForHomeLocation(homeAddress)}
               style={styles.modalButton}
             >
-              <Text style={styles.modalButtonText}>Set Home</Text>
+              <Text style={styles.modalButtonText}>Submit</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
     </View>
   );
 };
@@ -350,60 +371,76 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
+  blueMarker: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#4285F4',
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  redMarker: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#FF0000',
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '85%', // Slightly wider for better usability
-    backgroundColor: '#fff6e7', // Light cream color to match your app
+    width: '85%',
+    backgroundColor: '#fff6e7',
     padding: 20,
-    borderRadius: 15, // More rounded edges for a modern look
+    borderRadius: 15,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 5, // Elevation for a subtle shadow
+    elevation: 5,
   },
   modalTitle: {
-    fontSize: 20, // Slightly larger font for the title
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333', // Dark text for contrast
-    marginBottom: 15, // More space between the title and input
+    color: '#333333',
+    marginBottom: 15,
   },
   modalInput: {
     width: '100%',
-    height: 45, // Slightly taller for better usability
-    backgroundColor: '#fff6e7', // White background for input
-    borderColor: '#333333', // Subtle border for contrast
+    height: 45,
+    backgroundColor: '#fff6e7',
+    borderColor: '#333333',
     borderWidth: 1,
-    borderRadius: 10, // Rounded input field
+    borderRadius: 10,
     paddingHorizontal: 15,
-    marginBottom: 20, // More space between input and button
-    fontSize: 16, // Larger font for readability
+    marginBottom: 20,
+    fontSize: 16,
     color: '#333333',
   },
   modalButton: {
-    backgroundColor: '#333333', // Dark button to contrast with the background
+    backgroundColor: '#333333',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8, // Rounded button
+    borderRadius: 8,
     alignItems: 'center',
   },
   modalButtonText: {
-    color: '#fff6e7', // Light text to contrast with dark button
-    fontSize: 16, // Slightly larger text
-    fontWeight: 'bold', // Bold text for emphasis
+    color: '#fff6e7',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  backButton: {
+  closeButton: {
     position: 'absolute',
-    top: 30,
-    left: 10,
-    backgroundColor: '#333333', 
+    top: 10,
+    right: 10,
     padding: 8,
-    borderRadius: 20, 
+    borderRadius: 20, // Circular button
+    zIndex: 10,
   },
 
 });
