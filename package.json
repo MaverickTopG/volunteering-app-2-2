@@ -20,6 +20,7 @@
     "@rnmapbox/maps": "^10.1.33",
     "@supabase/supabase-js": "^2.45.4",
     "axios": "^1.7.2",
+    "compare-versions": "^6.1.1",
     "expo": "^52.0.21",
     "expo-av": "~15.0.1",
     "expo-blur": "~14.0.1",
