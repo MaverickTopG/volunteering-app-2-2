@@ -32,9 +32,11 @@ const VolunteerLogs = () => {
   const sites = [
     'Hooves for Harmony',
     'WILDCARE',
+    'The Little Red Dog',
+    'Hanaeleh Horse Rescue',
     'Grateful Gatherings Marin',
-    'Seniors Carousel',
-    'Tech Carousel',
+    'RAD Camp',
+    'Mission Hospital',
     'Larkspur Library',
     'The Book Exchange',
     'Marin County Parks & Landscape',

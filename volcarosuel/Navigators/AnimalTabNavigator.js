@@ -17,6 +17,8 @@ import RegisterScreen from '../../auth/RegisterScreen';
 import DisplayScreen from '../displayer/ShowScreen';
 import MapScreen from '../screens/MapScreen';
 import SplashScreen from '../screens/Splashscreen';
+import DeleteScreen from '../../auth/deleteScreen';
+
 
 const Stack = createStackNavigator();
 
@@ -65,6 +67,7 @@ const VolunteerLogsStack = () => {
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Delete" component={DeleteScreen} />
         </>
       )}
     </Stack.Navigator>

@@ -8,30 +8,24 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { AuthContext } from './AuthContext'; // Adjust the path to your AuthContext
 import { useNavigation } from '@react-navigation/native';
 
-const RegisterScreen = () => {
+
+const DeleteScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { signUp } = useContext(AuthContext); // Use the signUp method from AuthContext
-  const navigation = useNavigation(); // For navigating between screens
+  const { deleteAccount } = useContext(AuthContext); // Use the deleteAccount method from AuthContext
+  const navigation = useNavigation(); // For navigating back to login
 
-  const handleSignUp = async () => {
-    const success = await signUp(email, password);
-    if (success) {
-      // Navigate directly to the Login screen after successful sign-up
-      navigation.navigate('Login');
-    }
+  const handleDeleteAccount = async () => {
+    const success = await deleteAccount(email, password);
   };
 
   const handleNavigateToLogin = () => {
     navigation.navigate('Login'); // Navigate to the Login screen
-  };
-
-  const handleNavigateToDelete = () => {
-    navigation.navigate('Delete'); // Navigate to the Delete Account screen
   };
 
   return (
@@ -41,7 +35,7 @@ const RegisterScreen = () => {
         style={styles.contentContainer}
       >
         <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>Create Account</Text>
+          <Text style={styles.headerText}>Delete Account</Text>
         </View>
 
         <View style={styles.inputContainer}>
@@ -63,17 +57,12 @@ const RegisterScreen = () => {
             secureTextEntry
           />
 
-          <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-            <Text style={styles.buttonText}>Sign Up</Text>
+          <TouchableOpacity style={styles.button} onPress={handleDeleteAccount}>
+            <Text style={styles.buttonText}>Delete Account</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleNavigateToLogin}>
-            <Text style={styles.linkText}>Already have an account? Log in</Text>
-          </TouchableOpacity>
-
-          {/* New Button for Delete Account */}
-          <TouchableOpacity onPress={handleNavigateToDelete}>
-            <Text style={styles.linkText}>Delete Account</Text>
+            <Text style={styles.loginText}>Cancel and go back to Login</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -81,7 +70,7 @@ const RegisterScreen = () => {
   );
 };
 
-export default RegisterScreen;
+export default DeleteScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -117,7 +106,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   button: {
-    backgroundColor: '#000', // Black button for contrast
+    backgroundColor: 'red', // Red button to signify danger
     padding: 15,
     borderRadius: 25, // Rounded button
     alignItems: 'center',
@@ -129,11 +118,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  linkText: {
-    color: '#333', // Matching the color in the screenshot
+  loginText: {
+    color: '#333',
     textAlign: 'center',
     fontSize: 16,
     marginTop: 10,
-    textDecorationLine: 'underline', // Optional for making it more link-like
   },
 });

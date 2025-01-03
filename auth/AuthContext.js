@@ -6,7 +6,11 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  deleteUser,
+  EmailAuthProvider, 
+  reauthenticateWithCredential,y
 } from 'firebase/auth';
+;
 
 export const AuthContext = createContext();
 
@@ -34,17 +38,20 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-
   const signUp = async (email, password) => {
     try {
       setLoading(true);
       await createUserWithEmailAndPassword(auth, email, password);
+      Alert.alert('Success', 'Account created successfully!'); // Show success message
+      return true;
     } catch (error) {
       Alert.alert('Sign Up Error', error.message);
+      return false;
     } finally {
       setLoading(false);
     }
   };
+  
 
   const signOutUser = async () => {
     try {
@@ -54,6 +61,29 @@ export const AuthProvider = ({ children }) => {
       Alert.alert('Logout Error', error.message);
     }
   };
+
+  const deleteAccount = async (email, password) => {
+    try {
+      setLoading(true);
+  
+      // Authenticate the user with the provided email and password
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  
+      // If authentication succeeds, delete the account
+      const currentUser = userCredential.user; // Get the authenticated user
+      await deleteUser(currentUser);
+  
+      Alert.alert('Success', 'Your account and its content have been deleted.');
+      return true;
+    } catch (error) {
+      Alert.alert('Error', error.message); // Show error message if authentication or deletion fails
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  
 
   if (loading) {
     return (
@@ -70,7 +100,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signUp, signOut: signOutUser }}>
+    <AuthContext.Provider value={{ user, signIn, signUp, signOut: signOutUser, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );
