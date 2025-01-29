@@ -168,6 +168,7 @@ const VolunteerLogs = () => {
               style={styles.input}
               placeholder="Enter hours"
               keyboardType="numeric"
+              keyboardAppearance="dark" 
               value={newHours}
               onChangeText={(text) => setNewHours(text)}
               placeholderTextColor="#aaa"
@@ -188,6 +189,7 @@ const VolunteerLogs = () => {
               <TextInput
                 style={styles.input}
                 placeholder="Enter custom site name"
+                keyboardAppearance="dark" 
                 value={customSite}
                 onChangeText={(text) => setCustomSite(text)}
                 placeholderTextColor="#aaa"

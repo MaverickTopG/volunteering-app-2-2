@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
+    <key>MGLMapboxAccessToken</key>
+    <string>sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>We need your location to show it on the map</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>We need your location to show it on the map</string>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
     <key>CFBundleDevelopmentRegion</key>
@@ -28,6 +34,12 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>com.ayanshsingh.nexolink</string>
+        </array>
+      </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+snack-e35a9482-38e0-4709-8097-c86cd1817f3e</string>
         </array>
       </dict>
     </array>

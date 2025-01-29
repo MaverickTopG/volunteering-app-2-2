@@ -53,11 +53,14 @@ const RegisterScreen = () => {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            keyboardAppearance="dark" 
+
           />
           <TextInput
             style={styles.input}
             placeholder="Password"
             placeholderTextColor="#aaa"
+            keyboardAppearance="dark" 
             value={password}
             onChangeText={setPassword}
             secureTextEntry

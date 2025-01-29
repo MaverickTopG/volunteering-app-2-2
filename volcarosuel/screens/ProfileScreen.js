@@ -213,6 +213,7 @@ const ChatGPT = () => {
                             style={styles.searchInput}
                             placeholder="Ask me anything!"
                             placeholderTextColor="black"
+                            keyboardAppearance="dark" 
                             value={textInput}
                             onChangeText={setTextInput}
                             onFocus={handleFocus}

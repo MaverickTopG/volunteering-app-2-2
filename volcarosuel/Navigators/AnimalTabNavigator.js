@@ -171,13 +171,13 @@ const AnimalTabNavigator = () => {
           <CurvedBottomBarExpo.Screen
             name="Profile"
             position="RIGHT"
-            component={VolunteerLogsStack}
+            component={SplashScreen}
             options={{ headerShown: false }}
           />
           <CurvedBottomBarExpo.Screen
             name="Show"
             position="CIRCLE"
-            component={SplashScreen}
+            component={VolunteerLogsStack}
             options={{ headerShown: false }}
           />
         </CurvedBottomBarExpo.Navigator>

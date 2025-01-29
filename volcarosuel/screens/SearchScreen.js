@@ -36,6 +36,7 @@ const SearchScreen = () => {
           style={styles.searchInput}
           placeholder="Search..."
           placeholderTextColor="#333333"
+          keyboardAppearance="dark" 
           value={searchQuery}
           onChangeText={setSearchQuery}
         />

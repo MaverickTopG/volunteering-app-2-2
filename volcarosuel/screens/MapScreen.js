@@ -1,448 +1,506 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
+  Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Text,
   Alert,
-  Modal,
+  ScrollView,
+  ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import Geolocation from 'react-native-geolocation-service';
 import axios from 'axios';
 
-MapboxGL.setAccessToken('sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA');
-
-const INITIAL_HOME_ADDRESS = 'San Francisco'; // Default home address
-const SAN_FRANCISCO_BOUNDS = [
-  [-123.173825, 37.639830], // Southwest corner
-  [-122.281780, 37.929824], // Northeast corner
-];
-
+// ★ Use your own Mapbox Access Token
+MapboxGL.setAccessToken(
+  'sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA'
+);
 
 const MapScreen = () => {
+  // State
   const [address, setAddress] = useState('');
-  const [homeAddress, setHomeAddress] = useState('');
-  const [isHomeModalVisible, setIsHomeModalVisible] = useState(true);
-  const [homeLocation, setHomeLocation] = useState(null);
   const [destination, setDestination] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [route, setRoute] = useState(null);
   const [tripDetails, setTripDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showRouteDetails, setShowRouteDetails] = useState(false);
+
+  // Volunteer addresses (will be geocoded into coords)
+  const [volunteerLocations, setVolunteerLocations] = useState([
+    {
+      id: 1,
+      name: 'Community Kitchen',
+      address: '123 Main Street, San Francisco, CA',
+      coords: null,
+    },
+    {
+      id: 2,
+      name: 'Shelter Home',
+      address: '789 Oak Avenue, San Francisco, CA',
+      coords: null,
+    },
+    {
+      id: 3,
+      name: 'Food Bank',
+      address: '456 Market Street, San Francisco, CA',
+      coords: null,
+    },
+  ]);
+
+  // Refs
   const cameraRef = useRef(null);
+  const animationDuration = 1000;
 
   useEffect(() => {
-    // Set initial view to San Francisco
-    if (cameraRef.current) {
-      cameraRef.current.fitBounds(
-        SAN_FRANCISCO_BOUNDS[0], // Southwest corner
-        SAN_FRANCISCO_BOUNDS[1], // Northeast corner
-        50 // Padding in pixels to give some margin
-      );
-    }
-    fetchCoordinatesForHomeLocation(INITIAL_HOME_ADDRESS);
+    // Disable Mapbox telemetry
+    MapboxGL.setTelemetryEnabled(false);
+
+    // iOS location authorization
+    Geolocation.requestAuthorization('whenInUse')
+      .then(() => {
+        getCurrentLocation();
+      })
+      .catch((error) => {
+        Alert.alert(
+          'Location Services Disabled',
+          'Please enable location services for a better experience.'
+        );
+        console.error('Location auth error:', error);
+      });
+
+    // Fetch volunteer location coordinates on startup
+    fetchVolunteerCoordinates();
   }, []);
 
+  // ====== LOCATION & CAMERA ======
+  const getCurrentLocation = () => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        const { longitude, latitude } = position.coords;
+        const coords = [longitude, latitude];
+        setUserLocation(coords);
+        updateCamera(coords, 14);
+      },
+      (error) => {
+        Alert.alert(
+          'Location Unavailable',
+          'Please enable location services for a better experience.'
+        );
+        console.error('Geolocation error:', error);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+  };
 
+  const updateCamera = (coords, zoom = 14) => {
+    cameraRef.current?.setCamera({
+      centerCoordinate: coords,
+      zoomLevel: zoom,
+      pitch: 45,
+      animationDuration,
+      altitude: 2000,
+    });
+  };
+
+  // ====== VOLUNTEER LOCATION LOOKUP ======
+  const fetchVolunteerCoordinates = async () => {
+    try {
+      const updated = await Promise.all(
+        volunteerLocations.map(async (loc) => {
+          const coords = await fetchCoordinatesFromAddress(loc.address);
+          return { ...loc, coords };
+        })
+      );
+      // Remove any that have no coords
+      setVolunteerLocations(updated.filter((loc) => loc.coords !== null));
+    } catch (error) {
+      console.error('Error fetching volunteer coords:', error);
+    }
+  };
+
+  const fetchCoordinatesFromAddress = async (addr) => {
+    try {
+      const response = await axios.get(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+          addr
+        )}&format=json&limit=1`
+      );
+      if (response.data?.length > 0) {
+        const { lat, lon } = response.data[0];
+        return [parseFloat(lon), parseFloat(lat)];
+      }
+      console.warn('Address not found:', addr);
+      return null;
+    } catch (error) {
+      console.error('Nominatim error:', error);
+      return null;
+    }
+  };
+
+  // ====== SEARCH & ROUTING ======
   const handleSearch = async () => {
     if (!address.trim()) {
-      Alert.alert('Error', 'Please enter an address to search.');
+      Alert.alert('Error', 'Please enter a destination address');
       return;
     }
 
-    fetchCoordinatesAndCalculateRoute(address);
-  };
-
-  const fetchCoordinatesAndCalculateRoute = async (addressToSearch) => {
+    setLoading(true);
     try {
-      const response = await axios.get(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          addressToSearch
-        )}&format=json&limit=1`
-      );
-
-      if (response.data.length > 0) {
-        const { lat, lon } = response.data[0];
-        const destinationCoords = [parseFloat(lon), parseFloat(lat)];
-        setDestination(destinationCoords);
-        calculateRoute(destinationCoords);
+      const coords = await fetchCoordinatesFromAddress(address);
+      if (coords) {
+        setDestination(coords);
+        calculateRoute(coords);
+        updateCamera(coords, 12);
       } else {
-        Alert.alert('Error', 'Address not found.');
+        Alert.alert('Error', 'Address not found');
       }
     } catch (error) {
-      console.error('Error fetching address coordinates:', error);
-      Alert.alert('Error', 'Failed to fetch address coordinates.');
-    }
-  };
-
-  const fetchCoordinatesForHomeLocation = async (addressToSet = homeAddress) => {
-    if (!addressToSet.trim()) {
-      Alert.alert('Error', 'Please enter your home address.');
-      return;
-    }
-
-    try {
-      const response = await axios.get(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          addressToSet
-        )}&format=json&limit=1`
-      );
-
-      if (response.data.length > 0) {
-        const { lat, lon } = response.data[0];
-        const coords = [parseFloat(lon), parseFloat(lat)];
-        setHomeLocation(coords);
-        setUserLocation(coords);
-
-        if (cameraRef.current) {
-          cameraRef.current.setCamera({
-            centerCoordinate: coords,
-            zoomLevel: 10,
-            animationDuration: 1000,
-          });
-        }
-
-        if (addressToSet !== INITIAL_HOME_ADDRESS) {
-          setIsHomeModalVisible(false);
-          Alert.alert('Success', 'Home location has been set.');
-        }
-      } else {
-        Alert.alert('Error', 'Address not found.');
-      }
-    } catch (error) {
-      console.error('Error fetching coordinates for home location:', error);
-      Alert.alert('Error', 'Failed to set home location.');
+      Alert.alert('Error', 'Failed to search address');
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const calculateRoute = async (destinationCoords) => {
-    if (!userLocation) {
-      Alert.alert(
-        'Error',
-        'Unable to calculate route. Ensure location services are enabled or manually set your location.'
-      );
-      return;
-    }
-
-    const [userLon, userLat] = userLocation;
-    const [destLon, destLat] = destinationCoords;
+    if (!userLocation) return;
 
     try {
       const response = await axios.get(
-        `https://api.mapbox.com/directions/v5/mapbox/driving/${userLon},${userLat};${destLon},${destLat}?geometries=geojson&access_token=sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA`
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${userLocation[0]},${userLocation[1]};${destinationCoords[0]},${destinationCoords[1]}?geometries=geojson&access_token=sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA`
       );
-
       if (response.data.routes.length > 0) {
-        const { geometry, duration, distance } = response.data.routes[0];
-        // Convert duration to hours and minutes
+        const { geometry, distance, duration } = response.data.routes[0];
+        setRoute(geometry);
+
+        // Format trip details
+        const miles = (distance / 1609.34).toFixed(1);
         const totalMinutes = Math.ceil(duration / 60);
         const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        const eta = hours > 0 ? `${hours} hours ${minutes} min` : `${minutes} min`;
+        const remainingMinutes = totalMinutes % 60;
+        const eta =
+          hours > 0 ? `${hours} hr ${remainingMinutes} min` : `${totalMinutes} min`;
 
-        setRoute({
-          coordinates: geometry.coordinates,
-          duration: Math.ceil(duration / 60),
-          distance: (distance / 1609.34).toFixed(2),
-        });
-        setTripDetails({
-          eta: eta, // Show ETA in hours and minutes
-          distance: (distance / 1609.34).toFixed(2),
-        });
-
-        // Auto-zoom to fit the route
-        if (cameraRef.current) {
-          cameraRef.current.fitBounds(
-            geometry.coordinates[0],
-            geometry.coordinates[geometry.coordinates.length - 1],
-            50 // Padding
-          );
-        }
+        setTripDetails({ miles, eta });
+        setShowRouteDetails(true);
       } else {
-        Alert.alert('Error', 'No routes found.');
+        Alert.alert('No routes found');
       }
     } catch (error) {
-      console.error('Error fetching directions:', error);
-      Alert.alert('Error', 'Failed to calculate route.');
+      Alert.alert('Error', 'Failed to calculate route');
+      console.error('Routing error:', error);
     }
   };
 
+  // Optionally "fly" camera
+  const handleNavigation = () => {
+    if (!userLocation || !destination) return;
+    cameraRef.current?.flyTo([destination, userLocation], animationDuration);
+  };
+
+  // Render route on map
+  const renderRoute = () => (
+    <MapboxGL.ShapeSource id="routeSource" shape={route}>
+      <MapboxGL.LineLayer
+        id="routeLayer"
+        style={{
+          lineColor: '#4066F7',
+          lineWidth: 4,
+          lineOpacity: 0.8,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }}
+      />
+    </MapboxGL.ShapeSource>
+  );
+
+  // ====== RENDER ======
   return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Enter address"
-          placeholderTextColor="black"
-          value={address}
-          onChangeText={setAddress}
-        />
-        <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-          <Ionicons name="search" size={24} color="black" />
-        </TouchableOpacity>
+    <SafeAreaView style={styles.rootContainer}>
+      {/* Header bar with app name & search box */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerTitle}>NexoLink</Text>
+        <View style={styles.searchWrapper}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Enter address"
+            placeholderTextColor="#666"
+            value={address}
+            onChangeText={setAddress}
+            onSubmitEditing={handleSearch}
+          />
+          <TouchableOpacity onPress={handleSearch}>
+            {loading ? (
+              <ActivityIndicator color="#4066F7" />
+            ) : (
+              <Ionicons name="search" size={24} color="#4066F7" />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <MapboxGL.MapView style={styles.map}>
-        <MapboxGL.Camera ref={cameraRef} />
+      {/* Map behind everything */}
+      <View style={styles.mapContainer}>
+        <MapboxGL.MapView style={StyleSheet.absoluteFill} styleURL={MapboxGL.StyleURL.Street}>
+          <MapboxGL.Camera ref={cameraRef} />
+          <MapboxGL.UserLocation visible={true} />
 
-        {homeLocation && (
-          <MapboxGL.PointAnnotation id="homeLocation" coordinate={homeLocation}>
-            <View style={styles.blueMarker} />
-          </MapboxGL.PointAnnotation>
-        )}
-
-        {destination && (
-          <MapboxGL.PointAnnotation id="destination" coordinate={destination}>
-            <View style={styles.redMarker} />
-          </MapboxGL.PointAnnotation>
-        )}
-
-        {route && (
-          <MapboxGL.ShapeSource
-            id="routeSource"
-            shape={{
-              type: 'Feature',
-              geometry: {
-                type: 'LineString',
-                coordinates: route.coordinates,
-              },
-            }}
+          {/* 3D Terrain & 3D Buildings */}
+          <MapboxGL.RasterDemSource
+            id="mapbox-dem"
+            url="mapbox://mapbox.mapbox-terrain-dem-v1"
+            tileSize={512}
           >
-            <MapboxGL.LineLayer
-              id="routeLayer"
-              style={{
-                lineColor: '#4285F4',
-                lineWidth: 6,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
-            />
-          </MapboxGL.ShapeSource>
-        )}
-      </MapboxGL.MapView>
+            <MapboxGL.Terrain sourceID="mapbox-dem" style={{ exaggeration: 1.5 }} />
+          </MapboxGL.RasterDemSource>
 
-      {tripDetails && (
-        <View style={styles.tripDetailsContainer}>
-          <Text style={styles.tripHeaderText}>Your Trip</Text>
-          <Text style={styles.tripDetailText}>Time: {tripDetails.eta} </Text>
-          <Text style={styles.tripDetailText}>Distance: {tripDetails.distance} miles</Text>
-        </View>
-      )}
+          <MapboxGL.FillExtrusionLayer
+            id="3d-buildings"
+            sourceID="composite"
+            sourceLayerID="building"
+            filter={['==', 'extrude', 'true']}
+            style={{
+              fillExtrusionColor: '#ddd',
+              fillExtrusionHeight: ['get', 'height'],
+              fillExtrusionBase: ['get', 'min_height'],
+              fillExtrusionOpacity: 0.6,
+            }}
+          />
 
-      <TouchableOpacity
-        onPress={() => {
-          if (userLocation && cameraRef.current) {
-            cameraRef.current.setCamera({
-              centerCoordinate: userLocation,
-              zoomLevel: 15,
-              animationDuration: 1000,
-            });
-          } else {
-            Alert.alert('Error', 'User location not available.');
-          }
-        }}
-        style={styles.cameraButton}
-      >
-        <Ionicons name="locate" size={24} color="white" />
-      </TouchableOpacity>
+          {/* Route */}
+          {route && renderRoute()}
 
-      <TouchableOpacity
-        onPress={() => setIsHomeModalVisible(true)}
-        style={styles.homeButton}
-      >
-        <Ionicons name="home" size={24} color="white" />
-      </TouchableOpacity>
+          {/* Destination Marker */}
+          {destination && (
+            <MapboxGL.PointAnnotation id="destination" coordinate={destination}>
+              <View style={styles.markerContainer}>
+                <Ionicons name="location-sharp" size={32} color="#4066F7" />
+                <Text style={styles.markerText}>Destination</Text>
+              </View>
+            </MapboxGL.PointAnnotation>
+          )}
 
-      <Modal
-        transparent
-        visible={isHomeModalVisible}
-        animationType="slide"
-        onRequestClose={() => setIsHomeModalVisible(false)} // Close modal on back button press
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            {/* Close Button */}
-            <TouchableOpacity
-              onPress={() => setIsHomeModalVisible(false)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={24} color="black" />
-            </TouchableOpacity>
+          {/* Volunteer Markers */}
+          {volunteerLocations.map((v) => {
+            if (!v.coords) return null;
+            return (
+              <MapboxGL.PointAnnotation
+                key={v.id}
+                id={`vol-${v.id}`}
+                coordinate={v.coords}
+              >
+                <View style={styles.volunteerMarker}>
+                  <Ionicons name="people" size={28} color="#2ECC71" />
+                  <Text style={styles.volunteerMarkerText}>{v.name}</Text>
+                </View>
+              </MapboxGL.PointAnnotation>
+            );
+          })}
+        </MapboxGL.MapView>
 
-            <Text style={styles.modalTitle}>Set Current Address</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Enter your home address"
-              value={homeAddress}
-              onChangeText={setHomeAddress}
-            />
-            <TouchableOpacity
-              onPress={() => fetchCoordinatesForHomeLocation(homeAddress)}
-              style={styles.modalButton}
-            >
-              <Text style={styles.modalButtonText}>Submit</Text>
+        {/* Route Details Card */}
+        {showRouteDetails && tripDetails && (
+          <View style={styles.routeDetailsContainer}>
+            <Text style={styles.routeDetailsTitle}>Route Details</Text>
+            <View style={styles.detailsRow}>
+              <Ionicons name="time" size={20} color="#666" />
+              <Text style={styles.detailText}>{tripDetails.eta}</Text>
+            </View>
+            <View style={styles.detailsRow}>
+              <Ionicons name="speedometer" size={20} color="#666" />
+              <Text style={styles.detailText}>{tripDetails.miles} miles</Text>
+            </View>
+            <TouchableOpacity style={styles.navigateButton} onPress={handleNavigation}>
+              <Text style={styles.navigateButtonText}>Start Navigation</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+        )}
 
-    </View>
+        {/* Bottom volunteer location list */}
+        <ScrollView
+          horizontal
+          style={styles.volunteerList}
+          showsHorizontalScrollIndicator={false}
+        >
+          {volunteerLocations.map((loc) => {
+            if (!loc.coords) return null;
+            return (
+              <TouchableOpacity
+                key={loc.id}
+                style={styles.volunteerCard}
+                onPress={() => updateCamera(loc.coords)}
+              >
+                <Ionicons name="location" size={20} color="#2ECC71" />
+                <Text style={styles.volunteerCardText}>{loc.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Floating Home Button (example: zoom out or go to a “home” coords if you have them) */}
+        <TouchableOpacity
+          style={styles.fabHome}
+          onPress={() => Alert.alert('Home pressed', 'Go Home logic here!')}
+        >
+          <Ionicons name="home" size={24} color="#fff" />
+        </TouchableOpacity>
+
+        {/* Floating Location Button (re-center on user) */}
+        <TouchableOpacity style={styles.fabLocate} onPress={getCurrentLocation}>
+          <Ionicons name="locate" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
+export default MapScreen;
+
+/* ---------------- STYLES ------------------ */
 const styles = StyleSheet.create({
-  container: {
+  rootContainer: {
     flex: 1,
+    backgroundColor: '#fff6e7', // Cream
   },
-  map: {
-    flex: 1,
+  headerContainer: {
+    backgroundColor: '#fff6e7',
+    padding: 10,
+    alignItems: 'center',
   },
-  searchContainer: {
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  searchWrapper: {
+    width: '90%',
+    height: 50,
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff6e7',
-    paddingHorizontal: 10,
-    paddingVertical: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   searchInput: {
     flex: 1,
-    height: 50,
-    backgroundColor: '#fff6e7',
-    color: '#333333',
-    borderColor: '#333333',
-    borderWidth: 1,
-    borderRadius: 25,
-    paddingHorizontal: 20,
     fontSize: 16,
+    color: '#333',
   },
-  searchButton: {
-    marginLeft: 10,
-    padding: 10,
-  },
-  tripDetailsContainer: {
-    position: 'absolute',
-    bottom: 120,
-    left: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  tripHeaderText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  tripDetailText: {
-    fontSize: 16,
-  },
-  cameraButton: {
-    position: 'absolute',
-    bottom: 80,
-    right: 20,
-    width: 50,
-    height: 50,
-    backgroundColor: 'black',
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  homeButton: {
-    position: 'absolute',
-    bottom: 140,
-    right: 20,
-    width: 50,
-    height: 50,
-    backgroundColor: 'black',
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  blueMarker: {
-    width: 20,
-    height: 20,
-    backgroundColor: '#4285F4',
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  redMarker: {
-    width: 20,
-    height: 20,
-    backgroundColor: '#FF0000',
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  modalContainer: {
+  mapContainer: {
     flex: 1,
+    position: 'relative',
+  },
+  /* Markers */
+  markerContainer: {
+    alignItems: 'center',
+  },
+  markerText: {
+    color: '#4066F7',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  volunteerMarker: {
+    alignItems: 'center',
+  },
+  volunteerMarkerText: {
+    color: '#2ECC71',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  /* Route Details Card */
+  routeDetailsContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 10,
+    right: 10,
+    backgroundColor: '#ffffffcc',
+    borderRadius: 12,
+    padding: 16,
+  },
+  routeDetailsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  detailText: {
+    fontSize: 15,
+    color: '#666',
+    marginLeft: 8,
+  },
+  navigateButton: {
+    backgroundColor: '#4066F7',
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  navigateButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  /* Volunteer List */
+  volunteerList: {
+    position: 'absolute',
+    bottom: 16,
+    left: 10,
+    right: 10,
+  },
+  volunteerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginRight: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 2,
+  },
+  volunteerCardText: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  /* Floating Action Buttons */
+  fabHome: {
+    position: 'absolute',
+    right: 20,
+    bottom: 140,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContent: {
-    width: '85%',
-    backgroundColor: '#fff6e7',
-    padding: 20,
-    borderRadius: 15,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 15,
-  },
-  modalInput: {
-    width: '100%',
-    height: 45,
-    backgroundColor: '#fff6e7',
-    borderColor: '#333333',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    fontSize: 16,
-    color: '#333333',
-  },
-  modalButton: {
-    backgroundColor: '#333333',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    color: '#fff6e7',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  closeButton: {
+  fabLocate: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    padding: 8,
-    borderRadius: 20, // Circular button
-    zIndex: 10,
+    right: 20,
+    bottom: 70,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#4066F7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-
 });
-
-export default MapScreen;

@@ -10,44 +10,40 @@ import {
   Modal, 
   Image, 
   SafeAreaView, 
-  ScrollView 
+  ScrollView, 
+  Linking 
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
 
-const WelcomeScreen = () => {
-  // Animation refs
+const GoFundMeScreen = () => {
   const logoScale = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
 
-  // State for typed text and modal visibility
   const [typedText, setTypedText] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const indexRef = useRef(0); // Use ref for index
+  const indexRef = useRef(0);
 
-  const fullText = "A volunteer's guidebook.";
+  const fullText = "Empowering volunteers!";
 
   useFocusEffect(
     React.useCallback(() => {
       const startAnimations = () => {
-        // Reset animation values
         logoScale.setValue(0);
         textOpacity.setValue(0);
 
-        // Animate logo scaling
         Animated.spring(logoScale, {
           toValue: 1,
           friction: 5,
           useNativeDriver: true,
         }).start();
 
-        // Animate text opacity after logo animation
         Animated.timing(textOpacity, {
           toValue: 1,
           duration: 800,
-          delay: 500, // Delay to start after logo animation
+          delay: 500,
           useNativeDriver: true,
         }).start();
       };
@@ -61,20 +57,16 @@ const WelcomeScreen = () => {
       };
 
       startAnimations();
-      setTypedText(''); // Reset text
+      setTypedText('');
       indexRef.current = 0;
-      setTimeout(typeText, 1000); // Start typing after a delay
-
+      setTimeout(typeText, 1000);
     }, [logoScale, textOpacity])
   );
 
-  const openModal = () => {
-    setModalVisible(true);
-  };
+  const openModal = () => setModalVisible(true);
+  const closeModal = () => setModalVisible(false);
 
-  const closeModal = () => {
-    setModalVisible(false);
-  };
+  const goFundMeUrl = 'https://www.gofundme.com/YOUR_CAMPAIGN_LINK'; // Replace with your actual GoFundMe link
 
   return (
     <SafeAreaView style={styles.container}>
@@ -90,7 +82,7 @@ const WelcomeScreen = () => {
 
       <ScrollView 
         contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false} // Hide the scroll bar
+        showsVerticalScrollIndicator={false}
       >
         {/* Logo */}
         <Animated.View style={[styles.logoContainer, { transform: [{ scale: logoScale }] }]}>
@@ -103,13 +95,21 @@ const WelcomeScreen = () => {
 
         {/* App Name */}
         <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
-          <Text style={styles.title}>NexoLink</Text>
+          <Text style={styles.title}>NexoLink Fundraiser</Text>
         </Animated.View>
 
         {/* Typed Text */}
         <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
           <Text style={styles.typingText}>{typedText}</Text>
         </Animated.View>
+
+        {/* Donate Now Button */}
+        <TouchableOpacity 
+          style={styles.donateButton} 
+          onPress={() => Linking.openURL(goFundMeUrl)}
+        >
+          <Text style={styles.donateButtonText}>Donate Now</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Modal */}
@@ -121,9 +121,10 @@ const WelcomeScreen = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.bottomSheet}>
-            <Text style={styles.bottomSheetTitle}>About This App</Text>
+            <Text style={styles.bottomSheetTitle}>Why We Need Your Help</Text>
             <Text style={styles.bottomSheetText}>
-              This app is a volunteer's guidebook designed to help you find volunteer opportunities in various sectors such as animal care, environment, family support, hospitals, and library in California. Explore the different sections to find opportunities that match your interests and start making a difference today!
+              We're raising funds to keep NexoLink as a nonprofit and to purchase subscriptions that will enhance the app’s features.
+              Your support helps us improve volunteering accessibility and impact more lives.
             </Text>
             <TouchableOpacity onPress={closeModal}>
               <Text style={styles.closeButton}>Close</Text>
@@ -135,38 +136,35 @@ const WelcomeScreen = () => {
   );
 };
 
-// Styles adjusted to match the app's UI
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7', // Light cream background to match the app's theme
-    position: 'relative', // Ensure absolute positioning is relative to this container
+    backgroundColor: '#fff6e7', 
+    position: 'relative',
   },
   contentContainer: {
     flexGrow: 1,
     padding: 20,
     alignItems: 'center',
-    justifyContent: 'center', // Center content vertically
+    justifyContent: 'center',
   },
   logoContainer: {
     marginBottom: height * 0.05,
   },
   logo: {
-    width: width * 0.3, // Adjusted size for better visibility
+    width: width * 0.3,
     height: width * 0.3,
     resizeMode: 'contain',
-    // Remove tintColor to display original logo colors
-    // If you need to tint the logo, ensure it aligns with the app's color scheme
-    // tintColor: "#333",
   },
   textContainer: {
     alignItems: 'center',
     marginBottom: height * 0.02,
   },
   title: {
-    fontSize: width * 0.07, // Responsive font size
+    fontSize: width * 0.07,
     fontWeight: 'bold',
-    color: '#333', // Dark color for better contrast
+    color: '#333',
   },
   typingText: {
     fontSize: width * 0.05,
@@ -175,21 +173,38 @@ const styles = StyleSheet.create({
   },
   infoButton: {
     position: 'absolute',
-    top: 20, // Adjust based on your SafeArea
+    top: 20,
     right: 20,
     zIndex: 10,
+  },
+  donateButton: {
+    marginTop: 20,
+    backgroundColor: 'black',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3, // For Android shadow
+  },
+  donateButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   bottomSheet: {
     backgroundColor: '#fff6e7',
     padding: 20,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    maxHeight: height * 0.5, // Limit height for better usability
+    maxHeight: height * 0.5,
   },
   bottomSheetTitle: {
     fontSize: 20,
@@ -204,10 +219,10 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 16,
-    color: 'black', // Accent color for the close button
+    color: 'black',
     textAlign: 'center',
     fontWeight: 'bold',
   },
 });
 
-export default WelcomeScreen;
+export default GoFundMeScreen;
