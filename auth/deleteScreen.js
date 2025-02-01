@@ -44,6 +44,7 @@ const DeleteScreen = () => {
             placeholder="Email"
             placeholderTextColor="#aaa"
             value={email}
+            keyboardAppearance="dark" 
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -52,6 +53,7 @@ const DeleteScreen = () => {
             style={styles.input}
             placeholder="Password"
             placeholderTextColor="#aaa"
+            keyboardAppearance="dark" 
             value={password}
             onChangeText={setPassword}
             secureTextEntry
