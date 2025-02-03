@@ -16,6 +16,8 @@ import { RFPercentage } from 'react-native-responsive-fontsize';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TapGestureHandler } from 'react-native-gesture-handler';
+import SearchScreen from '../screens/SearchScreen';
+
 
 const { width } = Dimensions.get('window');
 
@@ -139,7 +141,7 @@ const VolunteerScreen = ({ route }) => {
   };
 
   const handleBackPress = () => {
-    navigation.navigate('SearchScreen', { data: searchScreenData }); // Navigate explicitly to Search Screen
+    navigation.navigate('Searchscreen', { data: searchScreenData }); // Navigate explicitly to Search Screen
   };
 
   const rMiniBarStyle = useAnimatedStyle(() => {

@@ -11,7 +11,7 @@ import {
   Modal,
   FlatList,
   Image,
-  Keyboard,         
+  Keyboard,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
@@ -21,7 +21,7 @@ import axios from 'axios';
 import Geolocation from 'react-native-geolocation-service';
 
 const ChatGPT = () => {
-  // Reference to the TextInput to focus programmatically.
+  // Refs
   const textInputRef = useRef(null);
   const flatListRef = useRef(null);
 
@@ -40,12 +40,15 @@ const ChatGPT = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Hard-coded API key (for demonstration only).
+  // API configuration.
   const apiKey = 'YOUR_API_KEY_HERE';
   const apiUrl = 'https://api.openai.com/v1/chat/completions';
   const modelId = 'gpt-3.5-turbo';
 
-  // Typing indicator with animated dots.
+  // Control whether the input bar is visible.
+  const [showInput, setShowInput] = useState(false);
+
+  // Typing indicator component.
   const TypingIndicator = () => {
     const dot1Opacity = useRef(new Animated.Value(0)).current;
     const dot2Opacity = useRef(new Animated.Value(0)).current;
@@ -78,10 +81,9 @@ const ChatGPT = () => {
     );
   };
 
-  // Animated message bubble for fade-in effect.
+  // Animated message bubble.
   const AnimatedMessage = ({ item }) => {
     const fadeAnimMessage = useRef(new Animated.Value(0)).current;
-
     useEffect(() => {
       Animated.timing(fadeAnimMessage, {
         toValue: 1,
@@ -89,7 +91,6 @@ const ChatGPT = () => {
         useNativeDriver: true,
       }).start();
     }, []);
-
     return (
       <Animated.View style={{ opacity: fadeAnimMessage }}>
         <View
@@ -105,15 +106,13 @@ const ChatGPT = () => {
     );
   };
 
-  // Sends user input to either a custom response or the ChatGPT API.
+  // Sends user input to the API or returns a custom response.
   const handleSend = async () => {
     const message = textInput.trim();
     if (!message) return;
-
     setIsLoading(true);
     const lowerMessage = message.toLowerCase();
 
-    // Custom response for "Nexolink" queries.
     if (
       lowerMessage.includes('what is nexolink') ||
       (lowerMessage.includes('nexolink') && lowerMessage.includes('app')) ||
@@ -121,7 +120,7 @@ const ChatGPT = () => {
     ) {
       const nexolinkResponse =
         'Nexolink is a revolutionary platform designed to connect volunteers with opportunities in their communities. It streamlines the process of finding and engaging in meaningful volunteer work, empowering you to make a positive impact. How else can I assist you today?';
-      setData((prevData) => [
+      setData(prevData => [
         ...prevData,
         { type: 'user', text: message },
         { type: 'bot', text: nexolinkResponse },
@@ -133,8 +132,7 @@ const ChatGPT = () => {
       return;
     }
 
-    // Otherwise, send the user message to the API.
-    setData((prevData) => [...prevData, { type: 'user', text: message }]);
+    setData(prevData => [...prevData, { type: 'user', text: message }]);
     setTextInput('');
     try {
       const response = await axios.post(
@@ -153,7 +151,7 @@ const ChatGPT = () => {
         }
       );
       const botReply = response.data.choices[0].message.content;
-      setData((prevData) => [...prevData, { type: 'bot', text: botReply }]);
+      setData(prevData => [...prevData, { type: 'bot', text: botReply }]);
       setError('');
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (err) {
@@ -163,7 +161,6 @@ const ChatGPT = () => {
       } else {
         setError('An error occurred while fetching response. Please try again.');
       }
-
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 0,
@@ -181,76 +178,91 @@ const ChatGPT = () => {
     }
   };
 
-  // Render each chat item.
   const renderItem = ({ item }) => <AnimatedMessage item={item} />;
   const isChatEmpty = data.length <= 1;
 
-  // When you tap on the logo, focus the input.
+  // When the logo is pressed, show the input bar and focus the TextInput.
   const handleLogoPress = () => {
-    if (textInputRef.current) {
-      textInputRef.current.focus();
+    setShowInput(true);
+    setTimeout(() => {
+      if (textInputRef.current) {
+        textInputRef.current.focus();
+      }
+    }, 100);
+  };
+
+  // When the chat area is tapped, if the input is visible, dismiss the keyboard and hide the input bar.
+  const handleChatAreaPress = () => {
+    if (showInput) {
+      setShowInput(false);
+      Keyboard.dismiss();
     }
   };
 
   return (
-    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.contentContainer}
-        >
-          {/* If chat is empty, show intro with logo wrapped in TouchableOpacity */}
-          {isChatEmpty ? (
-            <View style={styles.centerIntroContainer}>
-              <TouchableOpacity onPress={handleLogoPress}>
-                <Image
-                  source={require('../../assets/spaceship.png')}
-                  style={styles.logoStyle}
-                  resizeMode="contain"
+    <SafeAreaView style={styles.container}>
+      {/* Chat area wrapped in TouchableWithoutFeedback so that taps outside the input hide it */}
+      <TouchableWithoutFeedback onPress={handleChatAreaPress}>
+        <View style={styles.chatArea}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.contentContainer}
+          >
+            {isChatEmpty ? (
+              <View style={styles.centerIntroContainer}>
+                <TouchableOpacity onPress={handleLogoPress}>
+                  <Image
+                    source={require('../../assets/spaceship.png')}
+                    style={styles.logoStyle}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+                <Text style={styles.introTitle}>Hi, I'm Nexolink.</Text>
+                <Text style={styles.introSubtitle}>How can I help you today?</Text>
+              </View>
+            ) : (
+              <View style={styles.chatContainer}>
+                <FlatList
+                  ref={flatListRef}
+                  data={data}
+                  renderItem={renderItem}
+                  keyExtractor={(item, index) => index.toString()}
+                  onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                  contentContainerStyle={styles.flatListContent}
+                  keyboardShouldPersistTaps="handled"
                 />
-              </TouchableOpacity>
-              <Text style={styles.introTitle}>Hi, I'm Nexolink.</Text>
-              <Text style={styles.introSubtitle}>How can I help you today?</Text>
-            </View>
-          ) : (
-            <View style={styles.chatContainer}>
-              <FlatList
-                ref={flatListRef}
-                data={data}
-                renderItem={renderItem}
-                keyExtractor={(item, index) => index.toString()}
-                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                contentContainerStyle={styles.flatListContent}
-                keyboardShouldPersistTaps="handled"
-              />
-              {isLoading && <TypingIndicator />}
-            </View>
-          )}
-          {error ? (
-            <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
-              <Text style={styles.errorText}>{error}</Text>
-            </Animated.View>
-          ) : null}
-          {/* Bottom Input Bar */}
-          <View style={styles.inputBar}>
-            <TextInput
-              ref={textInputRef}
-              style={styles.textInput}
-              placeholder="Message Nexolink"
-              placeholderTextColor="#aaa"
-              value={textInput}
-              onChangeText={setTextInput}
-              onSubmitEditing={handleSend}
-              blurOnSubmit={false}
-              returnKeyType="send"
-            />
-            <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-              <Ionicons name="send-outline" size={22} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+                {isLoading && <TypingIndicator />}
+              </View>
+            )}
+            {error ? (
+              <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
+                <Text style={styles.errorText}>{error}</Text>
+              </Animated.View>
+            ) : null}
+          </KeyboardAvoidingView>
+        </View>
+      </TouchableWithoutFeedback>
+
+      {/* Render the Input Bar below the chat area, only if showInput is true */}
+      {showInput && (
+        <View style={styles.inputBar}>
+          <TextInput
+            ref={textInputRef}
+            style={styles.textInput}
+            placeholder="Message Nexolink"
+            placeholderTextColor="#aaa"
+            value={textInput}
+            onChangeText={setTextInput}
+            onSubmitEditing={handleSend}
+            blurOnSubmit={false}
+            returnKeyType="send"
+          />
+          <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+            <Ionicons name="send-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
+    </SafeAreaView>
   );
 };
 
@@ -259,7 +271,10 @@ export default ChatGPT;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7', // Cream color
+    backgroundColor: '#fff6e7', // Cream background
+  },
+  chatArea: {
+    flex: 1,
   },
   contentContainer: {
     flex: 1,
@@ -290,7 +305,7 @@ const styles = StyleSheet.create({
   flatListContent: {
     paddingTop: 10,
     paddingHorizontal: 10,
-    paddingBottom: 80, // leave space for the input bar
+    paddingBottom: 80, // Leaves space for the input bar
   },
   userMessageContainer: {
     alignSelf: 'flex-end',
