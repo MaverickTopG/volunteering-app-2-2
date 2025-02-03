@@ -19,7 +19,7 @@ MapboxGL.setAccessToken(
   'sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA'
 );
 
-// Example volunteer sites
+// Example volunteer sites without coordinates initially.
 const VOLUNTEER_SITES = [
   {
     id: '1',
@@ -43,7 +43,7 @@ const MapScreen = () => {
   const [address, setAddress] = useState('');
   const [userLocation, setUserLocation] = useState(null);
 
-  // Geolocation fallback
+  // Geo fallback and home location states
   const [geoLocationFailed, setGeoLocationFailed] = useState(false);
   const [isHomeModalVisible, setIsHomeModalVisible] = useState(false);
   const [homeAddress, setHomeAddress] = useState('');
@@ -54,16 +54,17 @@ const MapScreen = () => {
   const [route, setRoute] = useState(null);
   const [tripDetails, setTripDetails] = useState(null);
 
-  // Navigation steps
+  // Navigation steps and mode (if needed)
   const [steps, setSteps] = useState([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [navigationMode, setNavigationMode] = useState(false);
 
-  // Volunteer sites
-  const [volunteerSites] = useState(VOLUNTEER_SITES);
+  // Volunteer sites – now stored in state with a setter.
+  const [volunteerSites, setVolunteerSites] = useState(VOLUNTEER_SITES);
 
   // Animations
   const instructionAnim = useRef(new Animated.Value(0)).current;
+  const searchBarAnim = useRef(new Animated.Value(0)).current;
 
   // Refs
   const cameraRef = useRef(null);
@@ -80,7 +81,29 @@ const MapScreen = () => {
     });
   }, []);
 
+  // Geocode volunteer sites on startup and update state with coordinates.
   useEffect(() => {
+    const fetchVolunteerCoordinates = async () => {
+      const updated = await Promise.all(
+        VOLUNTEER_SITES.map(async (site) => {
+          const coords = await fetchCoordsForAddress(site.address);
+          return { ...site, coords };
+        })
+      );
+      // Only include sites with valid coordinates.
+      setVolunteerSites(updated.filter((site) => site.coords));
+    };
+    fetchVolunteerCoordinates();
+  }, []);
+
+  // Animate search bar and instruction bar when navigation mode changes.
+  useEffect(() => {
+    Animated.timing(searchBarAnim, {
+      toValue: navigationMode ? 50 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
     Animated.timing(instructionAnim, {
       toValue: navigationMode ? 1 : 0,
       duration: 300,
@@ -102,7 +125,8 @@ const MapScreen = () => {
         const { longitude, latitude } = pos.coords;
         const coords = [longitude, latitude];
         setUserLocation(coords);
-        setHomeLocation(coords); 
+        // Set home location to current if not set
+        if (!homeLocation) setHomeLocation(coords);
         setGeoLocationFailed(false);
 
         cameraRef.current?.setCamera({
@@ -144,9 +168,7 @@ const MapScreen = () => {
       return;
     }
     try {
-      // Stop watch to avoid overriding
       stopLocationWatch();
-
       const coords = await fetchCoordsForAddress(homeAddress);
       if (coords) {
         setHomeLocation(coords);
@@ -169,7 +191,7 @@ const MapScreen = () => {
     }
   };
 
-  // Helper: geocode
+  // ====== Helper: Geocode an address ======
   const fetchCoordsForAddress = async (addr) => {
     try {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
@@ -212,11 +234,10 @@ const MapScreen = () => {
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLat / 2) ** 2 +
       Math.cos(toRad(lat1)) *
         Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+        Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
@@ -273,7 +294,7 @@ const MapScreen = () => {
         });
         setTripDetails({ eta: etaStr, distance: (distance / 1609.34).toFixed(2) });
 
-        // Fit route
+        // Fit route to map bounds.
         cameraRef.current?.fitBounds(
           geometry.coordinates[0],
           geometry.coordinates[geometry.coordinates.length - 1],
@@ -299,84 +320,30 @@ const MapScreen = () => {
   const stopNavigation = () => {
     setNavigationMode(false);
     setCurrentStepIndex(0);
-    // Clear route data so user can't “Start” again
     setSteps([]);
     setRoute(null);
     setTripDetails(null);
-    setDestination(null); // optional if you want to remove the red pin
+    setDestination(null); // Optionally remove destination marker.
   };
 
   // ====== Volunteer Markers ======
   const renderVolunteerMarkers = () =>
-    volunteerSites.map((site) => (
-      <MapboxGL.PointAnnotation
-        key={site.id}
-        id={`volunteer-${site.id}`}
-        coordinate={site.coords}
-        onSelected={() => Alert.alert('Volunteer Site', site.name)}
-      >
-        <View style={styles.blackMarker}>
-          <Ionicons name="location" size={26} color="black" />
-        </View>
-      </MapboxGL.PointAnnotation>
-    ));
-
-  // ====== Instructions Bar ======
-  const renderInstructionsBar = () => {
-    if (!steps.length || currentStepIndex >= steps.length) return null;
-
-    const step = steps[currentStepIndex];
-    const distanceM = step.distance;
-    const distanceLabel =
-      distanceM < 1000
-        ? `${Math.round(distanceM)} m`
-        : `${(distanceM / 1000).toFixed(1)} km`;
-
-    const instruction = step.maneuver.instruction || '';
-    const translateY = instructionAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [-100, 0],
-    });
-
-    return (
-      <Animated.View style={[styles.instructionsBar, { transform: [{ translateY }] }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.instrDistance}>{distanceLabel}</Text>
-          <Text style={styles.instrText}>{instruction}</Text>
-        </View>
-        <TouchableOpacity style={styles.endNavButton} onPress={stopNavigation}>
-          <Ionicons name="close" size={24} color="#000" />
-        </TouchableOpacity>
-      </Animated.View>
+    volunteerSites.map((site) =>
+      site.coords ? (
+        <MapboxGL.PointAnnotation
+          key={site.id}
+          id={`volunteer-${site.id}`}
+          coordinate={site.coords}
+          onSelected={() => Alert.alert('Volunteer Site', site.name)}
+        >
+          <View style={styles.blackMarker}>
+            <Ionicons name="location" size={26} color="black" />
+          </View>
+        </MapboxGL.PointAnnotation>
+      ) : null
     );
-  };
 
-  // ====== HOME BUTTON ======
-  const handleHomePress = () => {
-    if (homeLocation) {
-      // Ask if they'd like to update
-      Alert.alert(
-        'Home Location',
-        'Do you want to update your home location?',
-        [
-          {
-            text: 'Yes',
-            onPress: () => setIsHomeModalVisible(true),
-          },
-          {
-            text: 'No',
-            onPress: () => cameraRef.current?.flyTo(homeLocation, 1200),
-            style: 'cancel',
-          },
-        ]
-      );
-    } else {
-      // No home location yet
-      setIsHomeModalVisible(true);
-    }
-  };
-
-  // ====== Custom Blue Dot ======
+  // ====== Custom User Location Dot ======
   const renderUserLocationDot = () => {
     if (!userLocation) return null;
     return (
@@ -386,11 +353,9 @@ const MapScreen = () => {
     );
   };
 
-  // ====== RENDER ======
+  // ====== Render ======
   return (
     <SafeAreaView style={styles.container}>
-      {navigationMode && renderInstructionsBar()}
-
       {/* Top Search Bar */}
       <View style={styles.searchContainer}>
         <TextInput
@@ -405,16 +370,13 @@ const MapScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Map with 3D terrain + custom user dot */}
-      <MapboxGL.MapView style={styles.map}>
+      {/* Map with 3D terrain and buildings */}
+      <MapboxGL.MapView style={styles.map} styleURL={MapboxGL.StyleURL.Street}>
         <MapboxGL.Camera ref={cameraRef} />
+        <MapboxGL.UserLocation visible={true} />
 
         {/* 3D Terrain */}
-        <MapboxGL.RasterDemSource
-          id="mapbox-dem"
-          url="mapbox://mapbox.mapbox-terrain-dem-v1"
-          tileSize={512}
-        >
+        <MapboxGL.RasterDemSource id="mapbox-dem" url="mapbox://mapbox.mapbox-terrain-dem-v1" tileSize={512}>
           <MapboxGL.Terrain sourceID="mapbox-dem" style={{ exaggeration: 1.5 }} />
         </MapboxGL.RasterDemSource>
 
@@ -425,17 +387,20 @@ const MapScreen = () => {
           sourceLayerID="building"
           filter={['==', 'extrude', 'true']}
           style={{
-            fillExtrusionColor: '#aaa',
+            fillExtrusionColor: '#f5f5f5',
             fillExtrusionHeight: ['get', 'height'],
             fillExtrusionBase: ['get', 'min_height'],
-            fillExtrusionOpacity: 0.6,
+            fillExtrusionOpacity: 0.8,
           }}
         />
 
+        {/* Render Volunteer Markers */}
         {renderVolunteerMarkers()}
+
+        {/* Render Custom User Location Dot */}
         {renderUserLocationDot()}
 
-        {/* Destination marker */}
+        {/* Destination marker (red) */}
         {destination && (
           <MapboxGL.PointAnnotation id="destination" coordinate={destination}>
             <View style={styles.redMarker}>
@@ -444,7 +409,7 @@ const MapScreen = () => {
           </MapboxGL.PointAnnotation>
         )}
 
-        {/* Route line */}
+        {/* Route Line */}
         {route && (
           <MapboxGL.ShapeSource
             id="routeSource"
@@ -466,20 +431,19 @@ const MapScreen = () => {
         )}
       </MapboxGL.MapView>
 
-      {/* Bottom route details */}
+      {/* Bottom Route Details (if available and not in navigation mode) */}
       {tripDetails && !navigationMode && (
         <View style={styles.routeDetailsContainer}>
           <Text style={styles.routeHeader}>Route Details</Text>
           <Text style={styles.routeText}>ETA: {tripDetails.eta}</Text>
           <Text style={styles.routeText}>Distance: {tripDetails.distance} mi</Text>
-
           <TouchableOpacity style={styles.startNavBtn} onPress={startNavigation}>
             <Text style={styles.startNavBtnText}>Start Navigation</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Floating “Locate Me” button */}
+      {/* Floating “Locate Me” Button */}
       <TouchableOpacity
         style={styles.locateButton}
         onPress={() => {
@@ -493,12 +457,18 @@ const MapScreen = () => {
         <Ionicons name="locate" size={24} color="#fff" />
       </TouchableOpacity>
 
-      {/* Always-visible Home button */}
-      <TouchableOpacity style={styles.homeButton} onPress={handleHomePress}>
+      {/* Always-visible Home Button */}
+      <TouchableOpacity style={styles.homeButton} onPress={() => {
+        if (homeLocation) {
+          cameraRef.current?.flyTo(homeLocation, 1200);
+        } else {
+          setIsHomeModalVisible(true);
+        }
+      }}>
         <Ionicons name="home" size={24} color="#fff" />
       </TouchableOpacity>
 
-      {/* If location failed, show “Set Location” button */}
+      {/* “Set Location” Button if geolocation fails */}
       {geoLocationFailed && (
         <TouchableOpacity
           style={styles.setLocationButton}
@@ -517,14 +487,10 @@ const MapScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <TouchableOpacity
-              onPress={() => setIsHomeModalVisible(false)}
-              style={styles.closeButton}
-            >
+            <TouchableOpacity onPress={() => setIsHomeModalVisible(false)} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="black" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Set Your Current Address</Text>
-
             <TextInput
               style={styles.modalInput}
               placeholder="Enter your home address"
@@ -532,7 +498,6 @@ const MapScreen = () => {
               value={homeAddress}
               onChangeText={setHomeAddress}
             />
-
             <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSubmitHomeAddress}>
               <Text style={styles.modalSaveBtnText}>Save</Text>
             </TouchableOpacity>
@@ -545,12 +510,11 @@ const MapScreen = () => {
 
 export default MapScreen;
 
-// ====== Styles ======
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
 
-  // Search bar
+  // Search bar (at the top) with cream background and rounded bottom corners
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -581,7 +545,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
 
-  // Markers
+  // Marker Styles
   blackMarker: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -590,8 +554,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Custom "blue dot" for user location
   blueDot: {
     width: 18,
     height: 18,
@@ -601,7 +563,7 @@ const styles = StyleSheet.create({
     borderColor: 'white',
   },
 
-  // Route details
+  // Route details container
   routeDetailsContainer: {
     position: 'absolute',
     bottom: 120,
@@ -637,7 +599,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // Floating locate button
+  // Floating buttons for Locate and Home
   locateButton: {
     position: 'absolute',
     bottom: 640,
@@ -650,8 +612,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
-
-  // Home button
   homeButton: {
     position: 'absolute',
     bottom: 700,
@@ -665,7 +625,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
 
-  // “Set Location” if geolocation fails
+  // “Set Location” Button if geolocation fails
   setLocationButton: {
     position: 'absolute',
     bottom: 440,
@@ -682,7 +642,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Instructions bar
+  // Instructions bar (if navigation mode active)
   instructionsBar: {
     position: 'absolute',
     top: 670,
@@ -695,7 +655,7 @@ const styles = StyleSheet.create({
     padding: 12,
     zIndex: 20,
     alignItems: 'center',
-    borderRadius:20,
+    borderRadius: 20,
   },
   instrDistance: {
     fontSize: 18,
@@ -710,7 +670,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
 
-  // Modal fallback
+  // Modal styles for setting home address
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -753,7 +713,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
     borderRadius: 8,
     paddingVertical: 10,
-    bottom: 0,
     alignItems: 'center',
   },
   modalSaveBtnText: {

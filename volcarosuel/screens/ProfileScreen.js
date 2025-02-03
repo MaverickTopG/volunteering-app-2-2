@@ -1,87 +1,51 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
-  Keyboard,
-  TouchableWithoutFeedback,
+  StyleSheet,
+  Text,
+  Alert,
+  SafeAreaView,
   Animated,
-  KeyboardAvoidingView,
-  Platform,
   Modal,
   FlatList,
-  Dimensions,
+  Image,
+  Keyboard,         
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
+import Geolocation from 'react-native-geolocation-service';
 
 const ChatGPT = () => {
-  // Initial message introduces Nexolink as a volunteering companion.
-  const [data, setData] = useState([
-    {
-      type: 'bot',
-      text:
-        'Welcome to Nexolink – your volunteering companion. How can I help you find meaningful volunteer opportunities today?',
-    },
-  ]);
-  // Replace with your valid OpenAI API key.
-  const apiKey = ''; 
-  const apiUrl = 'https://api.openai.com/v1/chat/completions';
-  const modelId = 'gpt-3.5-turbo';
+  // Reference to the TextInput to focus programmatically.
+  const textInputRef = useRef(null);
+  const flatListRef = useRef(null);
+
+  // Animated value for error fade
+  const [fadeAnim] = useState(new Animated.Value(1));
+
+  // Initial welcome message.
+  const initialMessage = {
+    type: 'bot',
+    text:
+      "Welcome to Nexolink – your volunteering companion. How can I help you find meaningful volunteer opportunities today?",
+  };
+
+  const [data, setData] = useState([initialMessage]);
   const [textInput, setTextInput] = useState('');
   const [error, setError] = useState('');
-  const [inputPosition] = useState(new Animated.Value(0));
-  const [inputWidth] = useState(new Animated.Value(1));
-  const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [fadeAnim] = useState(new Animated.Value(1)); // For error message
-  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
-  const [showButtons, setShowButtons] = useState(true);
-  const buttonOpacity = useRef(new Animated.Value(1)).current;
-  const flatListRef = useRef();
-  const buttonTimeoutRef = useRef(null);
 
-  // Get screen dimensions.
-  const screenHeight = Dimensions.get('window').height;
+  // Hard-coded API key (for demonstration only).
+  const apiKey = 'YOUR_API_KEY_HERE';
+  const apiUrl = 'https://api.openai.com/v1/chat/completions';
+  const modelId = 'gpt-3.5-turbo';
 
-  useEffect(() => {
-    const showKeyboard = Keyboard.addListener('keyboardDidShow', keyboardDidShow);
-    const hideKeyboard = Keyboard.addListener('keyboardDidHide', keyboardDidHide);
-
-    return () => {
-      showKeyboard.remove();
-      hideKeyboard.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (showButtons) {
-      clearTimeout(buttonTimeoutRef.current);
-      buttonTimeoutRef.current = setTimeout(() => {
-        fadeOutButtons();
-      }, 5000);
-    }
-  }, [showButtons]);
-
-  const keyboardDidShow = (event) => {
-    Animated.timing(inputPosition, {
-      duration: event.duration,
-      toValue: -event.endCoordinates.height + 60,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const keyboardDidHide = (event) => {
-    Animated.timing(inputPosition, {
-      duration: event.duration,
-      toValue: 0,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  // Typing indicator with animated dots (mimicking Deepseek)
+  // Typing indicator with animated dots.
   const TypingIndicator = () => {
     const dot1Opacity = useRef(new Animated.Value(0)).current;
     const dot2Opacity = useRef(new Animated.Value(0)).current;
@@ -100,7 +64,7 @@ const ChatGPT = () => {
             Animated.timing(dot3Opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
           ]),
           Animated.delay(300),
-        ]).start(() => animate());
+        ]).start(animate);
       };
       animate();
     }, []);
@@ -114,7 +78,7 @@ const ChatGPT = () => {
     );
   };
 
-  // Animated message component for smooth chat transitions.
+  // Animated message bubble for fade-in effect.
   const AnimatedMessage = ({ item }) => {
     const fadeAnimMessage = useRef(new Animated.Value(0)).current;
 
@@ -128,21 +92,28 @@ const ChatGPT = () => {
 
     return (
       <Animated.View style={{ opacity: fadeAnimMessage }}>
-        <View style={item.type === 'user' ? styles.userMessageContainer : styles.botMessageContainer}>
+        <View
+          style={
+            item.type === 'user'
+              ? styles.userMessageContainer
+              : styles.botMessageContainer
+          }
+        >
           <Text style={styles.messageText}>{item.text}</Text>
         </View>
       </Animated.View>
     );
   };
 
-  // This function sends the user input to either a custom Nexolink response or the ChatGPT API.
+  // Sends user input to either a custom response or the ChatGPT API.
   const handleSend = async () => {
-    const message = textInput;
-    if (message.trim() === '') return;
+    const message = textInput.trim();
+    if (!message) return;
+
     setIsLoading(true);
     const lowerMessage = message.toLowerCase();
 
-    // If the user asks about Nexolink or the app, provide a custom response.
+    // Custom response for "Nexolink" queries.
     if (
       lowerMessage.includes('what is nexolink') ||
       (lowerMessage.includes('nexolink') && lowerMessage.includes('app')) ||
@@ -158,15 +129,14 @@ const ChatGPT = () => {
       setTextInput('');
       setIsLoading(false);
       setError('');
-      setTimeout(() => flatListRef.current.scrollToEnd({ animated: true }), 100);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       return;
     }
 
-    // Otherwise, send the user message to the ChatGPT API.
+    // Otherwise, send the user message to the API.
     setData((prevData) => [...prevData, { type: 'user', text: message }]);
     setTextInput('');
     try {
-      // ChatGPT API call integrated here.
       const response = await axios.post(
         apiUrl,
         {
@@ -182,18 +152,18 @@ const ChatGPT = () => {
           },
         }
       );
-      const text = response.data.choices[0].message.content;
-      setData((prevData) => [...prevData, { type: 'bot', text }]);
+      const botReply = response.data.choices[0].message.content;
+      setData((prevData) => [...prevData, { type: 'bot', text: botReply }]);
       setError('');
-      setTimeout(() => flatListRef.current.scrollToEnd({ animated: true }), 100);
-    } catch (error) {
-      console.error('Error:', error);
-      if (error.response && error.response.data) {
-        console.error('Error response data:', error.response.data);
-        setError(`An error occurred: ${error.response.data.error.message}`);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch (err) {
+      console.error('Error:', err);
+      if (err.response && err.response.data) {
+        setError(`An error occurred: ${err.response.data.error.message}`);
       } else {
         setError('An error occurred while fetching response. Please try again.');
       }
+
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 0,
@@ -211,125 +181,75 @@ const ChatGPT = () => {
     }
   };
 
-  const handleFocus = () => {
-    setIsFocused(true);
-    Animated.timing(inputWidth, {
-      toValue: 0.7,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const handleBlur = () => {
-    setIsFocused(false);
-    Animated.timing(inputWidth, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
+  // Render each chat item.
   const renderItem = ({ item }) => <AnimatedMessage item={item} />;
+  const isChatEmpty = data.length <= 1;
 
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-    fadeInButtons();
-  };
-
-  const scrollToEnd = () => {
-    flatListRef.current.scrollToEnd({ animated: true });
-  };
-
-  const scrollToTop = () => {
-    flatListRef.current.scrollToOffset({ animated: true, offset: 0 });
-  };
-
-  const fadeOutButtons = () => {
-    Animated.timing(buttonOpacity, {
-      toValue: 0,
-      duration: 1500,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowButtons(false);
-    });
-  };
-
-  const fadeInButtons = () => {
-    setShowButtons(true);
-    Animated.timing(buttonOpacity, {
-      toValue: 1,
-      duration: 1500,
-      useNativeDriver: true,
-    }).start();
-    clearTimeout(buttonTimeoutRef.current);
-    buttonTimeoutRef.current = setTimeout(() => {
-      fadeOutButtons();
-    }, 5000);
+  // When you tap on the logo, focus the input.
+  const handleLogoPress = () => {
+    if (textInputRef.current) {
+      textInputRef.current.focus();
+    }
   };
 
   return (
-    <TouchableWithoutFeedback onPress={dismissKeyboard}>
-      <View style={styles.container}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Ask about volunteering, Nexolink, or anything else!"
-              placeholderTextColor="#bbb"
-              keyboardAppearance="dark"
-              value={textInput}
-              onChangeText={setTextInput}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              onSubmitEditing={handleSend}
-            />
-            <TouchableOpacity onPress={handleSend} style={styles.searchButton}>
-              <Ionicons name="send-outline" size={24} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setIsBottomSheetVisible(true)} style={styles.infoButton}>
-              <Ionicons name="information-circle-outline" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.contentContainer}
+        >
+          {/* If chat is empty, show intro with logo wrapped in TouchableOpacity */}
+          {isChatEmpty ? (
+            <View style={styles.centerIntroContainer}>
+              <TouchableOpacity onPress={handleLogoPress}>
+                <Image
+                  source={require('../../assets/spaceship.png')}
+                  style={styles.logoStyle}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+              <Text style={styles.introTitle}>Hi, I'm Nexolink.</Text>
+              <Text style={styles.introSubtitle}>How can I help you today?</Text>
+            </View>
+          ) : (
+            <View style={styles.chatContainer}>
+              <FlatList
+                ref={flatListRef}
+                data={data}
+                renderItem={renderItem}
+                keyExtractor={(item, index) => index.toString()}
+                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                contentContainerStyle={styles.flatListContent}
+                keyboardShouldPersistTaps="handled"
+              />
+              {isLoading && <TypingIndicator />}
+            </View>
+          )}
           {error ? (
             <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
               <Text style={styles.errorText}>{error}</Text>
             </Animated.View>
           ) : null}
-          <View style={{ height: screenHeight * 0.65 }}>
-            <FlatList
-              ref={flatListRef}
-              data={data}
-              renderItem={renderItem}
-              keyExtractor={(item, index) => index.toString()}
-              onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
-              contentContainerStyle={{ paddingTop: 20, paddingHorizontal: 10 }}
+          {/* Bottom Input Bar */}
+          <View style={styles.inputBar}>
+            <TextInput
+              ref={textInputRef}
+              style={styles.textInput}
+              placeholder="Message Nexolink"
+              placeholderTextColor="#aaa"
+              value={textInput}
+              onChangeText={setTextInput}
+              onSubmitEditing={handleSend}
+              blurOnSubmit={false}
+              returnKeyType="send"
             />
-            {isLoading && <TypingIndicator />}
+            <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+              <Ionicons name="send-outline" size={22} color="#fff" />
+            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-        {showButtons && (
-          <Animated.View style={[styles.buttonContainer, { opacity: buttonOpacity }]}>
-            <TouchableOpacity onPress={scrollToTop} style={styles.scrollButton}>
-              <Ionicons name="arrow-up" size={24} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={scrollToEnd} style={styles.scrollButton}>
-              <Ionicons name="arrow-down" size={24} color="#fff" />
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-        <Modal visible={isBottomSheetVisible} transparent={true} animationType="slide">
-          <View style={styles.bottomSheet}>
-            <Text style={styles.bottomSheetTitle}>Nexolink</Text>
-            <Text style={styles.bottomSheetText}>
-              This chatbot is powered by GPT-3.5 and tailored to help you explore volunteering opportunities.
-              Nexolink connects volunteers with local opportunities, empowering communities and creating meaningful change.
-            </Text>
-            <TouchableOpacity onPress={() => setIsBottomSheetVisible(false)}>
-              <Text style={styles.closeButton}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </Modal>
-      </View>
+      </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 };
@@ -339,137 +259,105 @@ export default ChatGPT;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#fff6e7', // Cream color
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  centerIntroContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoStyle: {
+    width: 80,
+    height: 80,
+    marginBottom: 20,
+  },
+  introTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
+  },
+  introSubtitle: {
+    fontSize: 16,
+    color: '#555',
+  },
+  chatContainer: {
+    flex: 1,
+  },
+  flatListContent: {
+    paddingTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 80, // leave space for the input bar
   },
   userMessageContainer: {
     alignSelf: 'flex-end',
-    backgroundColor: '#1F1F1F',
+    backgroundColor: '#e0e0e0',
     borderRadius: 15,
     marginVertical: 5,
     padding: 10,
     maxWidth: '70%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
   },
   botMessageContainer: {
     alignSelf: 'flex-start',
-    backgroundColor: '#2C2C2C',
+    backgroundColor: '#f5f5f5',
     borderRadius: 15,
     marginVertical: 5,
     padding: 10,
     maxWidth: '70%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
   },
   messageText: {
     fontSize: 16,
-    color: '#fff',
+    color: '#333',
   },
-  searchContainer: {
+  typingIndicatorContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E1E1E',
     paddingHorizontal: 10,
-    paddingVertical: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    paddingBottom: 10,
   },
-  searchInput: {
-    flex: 1,
-    height: 50,
-    backgroundColor: '#1E1E1E',
-    color: '#fff',
-    borderColor: '#333',
-    borderWidth: 1,
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    fontSize: 16,
-  },
-  searchButton: {
-    marginLeft: 10,
-    backgroundColor: '#2C2C2C',
-    padding: 10,
-    borderRadius: 25,
-  },
-  infoButton: {
-    marginLeft: 10,
-  },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    height: 120,
-  },
-  scrollButton: {
-    backgroundColor: '#444',
-    padding: 12,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+  typingDot: {
+    fontSize: 24,
+    color: '#333',
+    marginHorizontal: 2,
   },
   errorContainer: {
     position: 'absolute',
-    bottom: '50%',
+    top: '25%',
     left: '10%',
     right: '10%',
     backgroundColor: '#ff3333',
-    borderRadius: 20,
-    padding: 10,
+    borderRadius: 10,
+    padding: 15,
     alignItems: 'center',
   },
   errorText: {
     color: '#fff',
     fontSize: 16,
   },
-  bottomSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#1E1E1E',
-    padding: 20,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-  },
-  bottomSheetTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-  },
-  bottomSheetText: {
-    fontSize: 16,
-    color: '#fff',
-    marginBottom: 20,
-  },
-  closeButton: {
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-  },
-  typingIndicatorContainer: {
+  inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
+    backgroundColor: '#fff6e7',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderTopColor: '#ccc',
+    borderTopWidth: 1,
   },
-  typingDot: {
-    fontSize: 24,
-    color: '#fff',
-    marginHorizontal: 2,
+  textInput: {
+    flex: 1,
+    backgroundColor: '#fff',
+    height: 40,
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    color: '#333',
+    marginRight: 8,
+  },
+  sendButton: {
+    backgroundColor: '#333',
+    borderRadius: 20,
+    padding: 10,
   },
 });

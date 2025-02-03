@@ -153,7 +153,7 @@ const AnimalTabNavigator = () => {
           <CurvedBottomBarExpo.Screen
             name="Search"
             position="LEFT"
-            component={TabStack}
+            component={CarouselStack}
             options={{ headerShown: false }}
           />
           <CurvedBottomBarExpo.Screen
