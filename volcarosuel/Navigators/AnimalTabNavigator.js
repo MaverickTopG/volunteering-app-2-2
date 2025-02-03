@@ -77,7 +77,7 @@ const VolunteerLogsStack = () => {
 const TabStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Searchscreen" component={SearchScreen} />
+      <Stack.Screen name="SearchScreen" component={SearchScreen} />
       <Stack.Screen name="CarouselStack" component={CarouselStack} />
     </Stack.Navigator>
   );
@@ -153,7 +153,7 @@ const AnimalTabNavigator = () => {
           <CurvedBottomBarExpo.Screen
             name="Search"
             position="LEFT"
-            component={CarouselStack}
+            component={TabStack}
             options={{ headerShown: false }}
           />
           <CurvedBottomBarExpo.Screen

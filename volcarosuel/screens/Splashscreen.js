@@ -66,7 +66,7 @@ const GoFundMeScreen = () => {
   const openModal = () => setModalVisible(true);
   const closeModal = () => setModalVisible(false);
 
-  const goFundMeUrl = 'https://www.gofundme.com/YOUR_CAMPAIGN_LINK'; // Replace with your actual GoFundMe link
+  const goFundMeUrl = 'https://www.gofundme.com/f/empower-volunteers-and-transform-communities-with-nexolink/cl/o?lang=en_US&utm_campaign=man_sharesheet_dash&utm_medium=customer&utm_source=copy_link&attribution_id=sl%3A48e2683e-cde6-4354-a729-ac076c7c4394'; // Replace with your actual GoFundMe link
 
   return (
     <SafeAreaView style={styles.container}>

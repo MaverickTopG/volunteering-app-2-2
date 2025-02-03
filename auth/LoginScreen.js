@@ -8,7 +8,6 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Image,
   Alert,
 } from 'react-native';
 import { AuthContext } from './AuthContext'; // Adjust the path to your AuthContext
@@ -23,7 +22,7 @@ const LoginScreen = () => {
   const handleLogin = async () => {
     try {
       await signIn(email, password);
-      // No need to navigate away if VolunteerLogs is the intended screen after login
+      // Stay on this screen or navigate as needed after login.
     } catch (error) {
       console.error(error);
       Alert.alert('Login Failed', 'Please check your credentials and try again.');
@@ -32,21 +31,14 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Logo at the top */}
-      <View style={styles.logoContainer}>
-        <Image
-          source={require('../assets/spaceship.png')} // Adjust the path to your logo
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        {/* Text added below the logo */}
-        <Text style={styles.titleText}>Volunteer Logs</Text>
-      </View>
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : null}
         style={styles.contentContainer}
       >
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerText}>Volunteer Logs</Text>
+        </View>
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -56,14 +48,13 @@ const LoginScreen = () => {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
-            keyboardAppearance="dark" // Add this line
-
+            keyboardAppearance="dark"
           />
           <TextInput
             style={styles.input}
             placeholder="Password"
             placeholderTextColor="#aaa"
-            keyboardAppearance="dark" // Add this line
+            keyboardAppearance="dark"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -74,7 +65,7 @@ const LoginScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-            <Text style={styles.signupText}>Don't have an account? Sign up</Text>
+            <Text style={styles.linkText}>Don't have an account? Sign up</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -87,37 +78,30 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7', // Matching the light cream color
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginTop: 100, // Adjust as needed
-  },
-  logo: {
-    width: 200, // Adjust the size of your logo
-    height: 200,
-  },
-  titleText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 20, // Add some spacing between the icon and the text
-    textAlign: 'center',
+    backgroundColor: '#fff6e7', // Light cream background
   },
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
-    marginTop: -110, // Adjust to position inputs closer to the logo
+  },
+  headerContainer: {
+    marginBottom: 30,
+    alignItems: 'center',
+  },
+  headerText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
   },
   inputContainer: {
-    // Additional styling if needed
+    marginTop: 20,
   },
   input: {
     height: 50,
     borderColor: '#333',
     borderWidth: 1,
-    borderRadius: 25, // Rounded corners
+    borderRadius: 25, // Rounded input fields
     paddingHorizontal: 20,
     fontSize: 16,
     backgroundColor: '#fff6e7',
@@ -125,9 +109,9 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   button: {
-    backgroundColor: '#000', // Black background for contrast
+    backgroundColor: '#000', // Black button for contrast
     padding: 15,
-    borderRadius: 25, // Rounded corners
+    borderRadius: 25, // Rounded button
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 20,
@@ -137,9 +121,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  signupText: {
-    color: '#000',
+  linkText: {
+    color: '#333',
     textAlign: 'center',
     fontSize: 16,
+    marginTop: 10,
+    textDecorationLine: 'underline', // Optional underline to indicate a link
   },
 });

@@ -5,9 +5,12 @@
     <key>MGLMapboxAccessToken</key>
     <string>sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>We need your location to show it on the map</string>
-    <key>NSLocationAlwaysUsageDescription</key>
-    <string>We need your location to show it on the map</string>
+<string>We need to access your location for location services, we don't store or share your location.</string>
+<key>NSLocationAlwaysUsageDescription</key>
+<string>We need to access your location for location services, we don't store or share your location.</string>
+<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>We need to access your location for location services, we don't store or share your location.</string>
+
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
     <key>CFBundleDevelopmentRegion</key>
@@ -56,12 +59,6 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
-    <key>NSLocationAlwaysUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>UILaunchStoryboardName</key>
