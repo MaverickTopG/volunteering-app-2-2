@@ -8,6 +8,7 @@ import {
   Alert,
   SafeAreaView,
   Animated,
+  Modal,
 } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -18,11 +19,22 @@ MapboxGL.setAccessToken(
   'sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA'
 );
 
-// Example volunteer sites without coordinates initially.
 const VOLUNTEER_SITES = [
-  { id: '1', name: 'Community Kitchen', address: '123 Market Street, San Francisco, CA' },
-  { id: '2', name: 'Food Bank', address: '501 Mission Street, San Francisco, CA' },
-  { id: '3', name: 'Shelter Home', address: '9th St & Mission St, San Francisco, CA' },
+  {
+    id: '1',
+    name: 'Community Kitchen',
+    address: '123 Market Street, San Francisco, CA',
+  },
+  {
+    id: '2',
+    name: 'Food Bank',
+    address: '501 Mission Street, San Francisco, CA',
+  },
+  {
+    id: '3',
+    name: 'Shelter Home',
+    address: '9th St & Mission St, San Francisco, CA',
+  },
 ];
 
 const MapScreen = () => {
@@ -30,32 +42,28 @@ const MapScreen = () => {
   const [address, setAddress] = useState('');
   const [userLocation, setUserLocation] = useState(null);
   const [geoLocationFailed, setGeoLocationFailed] = useState(false);
-  const [alertShown, setAlertShown] = useState(false);
+  const [isHomeModalVisible, setIsHomeModalVisible] = useState(false);
+  const [homeAddress, setHomeAddress] = useState('');
+  const [homeLocation, setHomeLocation] = useState(null);
 
-  // Destination & route
   const [destination, setDestination] = useState(null);
   const [route, setRoute] = useState(null);
   const [tripDetails, setTripDetails] = useState(null);
-
-  // Navigation steps and mode
   const [steps, setSteps] = useState([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [navigationMode, setNavigationMode] = useState(false);
 
-  // Volunteer sites stored in state.
-  const [volunteerSites, setVolunteerSites] = useState(VOLUNTEER_SITES);
+  // Volunteer sites with coordinates (geocoded from address)
+  const [volunteerSitesWithCoords, setVolunteerSitesWithCoords] = useState([]);
 
-  // Animations
+  // Animations & Refs
   const instructionAnim = useRef(new Animated.Value(0)).current;
-  const searchBarAnim = useRef(new Animated.Value(0)).current;
-
-  // Refs
   const cameraRef = useRef(null);
   const watchId = useRef(null);
 
   // ====== Effects ======
+  // Request geolocation and fetch initial user location
   useEffect(() => {
-    // Request live location permission on mount.
     Geolocation.requestAuthorization('whenInUse').then((status) => {
       if (status === 'granted') {
         getCurrentLocation();
@@ -65,39 +73,21 @@ const MapScreen = () => {
     });
   }, []);
 
-  // Show an alert once if live location is not yet obtained.
+  // Geocode volunteer sites from their addresses
   useEffect(() => {
-    if (!userLocation && !geoLocationFailed && !alertShown) {
-      Alert.alert(
-        'Location Permission',
-        "We need to access your live location for location services. We don't store or share your location.",
-        [{ text: 'OK', onPress: () => setAlertShown(true) }]
-      );
-    }
-  }, [userLocation, geoLocationFailed, alertShown]);
-
-  // Geocode volunteer sites on startup and update state with coordinates.
-  useEffect(() => {
-    const fetchVolunteerCoordinates = async () => {
-      const updated = await Promise.all(
+    async function geocodeVolunteerSites() {
+      const sitesWithCoords = await Promise.all(
         VOLUNTEER_SITES.map(async (site) => {
           const coords = await fetchCoordsForAddress(site.address);
           return { ...site, coords };
         })
       );
-      setVolunteerSites(updated.filter((site) => site.coords));
-    };
-    fetchVolunteerCoordinates();
+      setVolunteerSitesWithCoords(sitesWithCoords);
+    }
+    geocodeVolunteerSites();
   }, []);
 
-  // Animate search bar and instruction bar when navigation mode changes.
   useEffect(() => {
-    Animated.timing(searchBarAnim, {
-      toValue: navigationMode ? 50 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
     Animated.timing(instructionAnim, {
       toValue: navigationMode ? 1 : 0,
       duration: 300,
@@ -119,7 +109,9 @@ const MapScreen = () => {
         const { longitude, latitude } = pos.coords;
         const coords = [longitude, latitude];
         setUserLocation(coords);
+        setHomeLocation(coords);
         setGeoLocationFailed(false);
+
         cameraRef.current?.setCamera({
           centerCoordinate: coords,
           zoomLevel: 14,
@@ -152,7 +144,38 @@ const MapScreen = () => {
     }
   };
 
-  // ====== Helper: Geocode an address ======
+  // ====== Fallback Home Location ======
+  const handleSubmitHomeAddress = async () => {
+    if (!homeAddress.trim()) {
+      Alert.alert('Error', 'Please enter your home address.');
+      return;
+    }
+    try {
+      stopLocationWatch();
+
+      const coords = await fetchCoordsForAddress(homeAddress);
+      if (coords) {
+        setHomeLocation(coords);
+        setUserLocation(coords);
+        setIsHomeModalVisible(false);
+        setGeoLocationFailed(false);
+
+        cameraRef.current?.setCamera({
+          centerCoordinate: coords,
+          zoomLevel: 14,
+          animationDuration: 1000,
+        });
+        Alert.alert('Success', 'Home location has been set/updated.');
+      } else {
+        Alert.alert('Error', 'Address not found.');
+      }
+    } catch (err) {
+      console.warn('Error setting home location:', err);
+      Alert.alert('Error', 'Failed to set location.');
+    }
+  };
+
+  // Helper: Geocode an address using Nominatim
   const fetchCoordsForAddress = async (addr) => {
     try {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
@@ -176,7 +199,7 @@ const MapScreen = () => {
     if (!steps.length || currentStepIndex >= steps.length) return;
 
     const step = steps[currentStepIndex];
-    const stepEnd = step.maneuver.location;
+    const stepEnd = step.maneuver.location; // [lon, lat]
     const dist = distanceBetweenCoords(coords, stepEnd);
 
     if (dist < 30) {
@@ -195,10 +218,11 @@ const MapScreen = () => {
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
-      Math.sin(dLat / 2) ** 2 +
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(toRad(lat1)) *
         Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) ** 2;
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
@@ -226,7 +250,7 @@ const MapScreen = () => {
 
   const calculateRoute = async (destCoords) => {
     if (!userLocation) {
-      Alert.alert('Location Missing', 'We do not have your live location yet.');
+      Alert.alert('Location Missing', 'We do not have your location yet.');
       return;
     }
     try {
@@ -255,7 +279,6 @@ const MapScreen = () => {
         });
         setTripDetails({ eta: etaStr, distance: (distance / 1609.34).toFixed(2) });
 
-        // Fit route to map bounds.
         cameraRef.current?.fitBounds(
           geometry.coordinates[0],
           geometry.coordinates[geometry.coordinates.length - 1],
@@ -289,8 +312,9 @@ const MapScreen = () => {
 
   // ====== Volunteer Markers ======
   const renderVolunteerMarkers = () =>
-    volunteerSites.map((site) =>
-      site.coords ? (
+    volunteerSitesWithCoords.map((site) => {
+      if (!site.coords) return null;
+      return (
         <MapboxGL.PointAnnotation
           key={site.id}
           id={`volunteer-${site.id}`}
@@ -303,10 +327,59 @@ const MapScreen = () => {
             <Ionicons name="location" size={26} color="black" />
           </View>
         </MapboxGL.PointAnnotation>
-      ) : null
-    );
+      );
+    });
 
-  // ====== Custom User Location Dot ======
+  // ====== Instructions Bar ======
+  const renderInstructionsBar = () => {
+    if (!steps.length || currentStepIndex >= steps.length) return null;
+
+    const step = steps[currentStepIndex];
+    const distanceM = step.distance;
+    const distanceLabel =
+      distanceM < 1000
+        ? `${Math.round(distanceM)} m`
+        : `${(distanceM / 1000).toFixed(1)} km`;
+
+    const instruction = step.maneuver.instruction || '';
+    const translateY = instructionAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-100, 0],
+    });
+
+    return (
+      <Animated.View style={[styles.instructionsBar, { transform: [{ translateY }] }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.instrDistance}>{distanceLabel}</Text>
+          <Text style={styles.instrText}>{instruction}</Text>
+        </View>
+        <TouchableOpacity style={styles.endNavButton} onPress={stopNavigation}>
+          <Ionicons name="close" size={24} color="#000" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  // ====== HOME BUTTON ======
+  const handleHomePress = () => {
+    if (homeLocation) {
+      Alert.alert('Home Location', 'Do you want to update your home location?', [
+        {
+          text: 'Yes',
+          onPress: () => setIsHomeModalVisible(true),
+        },
+        {
+          text: 'No',
+          onPress: () => cameraRef.current?.flyTo(homeLocation, 1200),
+          style: 'cancel',
+        },
+      ]);
+    } else {
+      setIsHomeModalVisible(true);
+    }
+  };
+
+  // ====== Custom Blue Dot ======
   const renderUserLocationDot = () => {
     if (!userLocation) return null;
     return (
@@ -316,19 +389,11 @@ const MapScreen = () => {
     );
   };
 
-  // ====== Conditional Render ======
-  // Until a live location is obtained (and if permission hasn't failed), render a loading view.
-  if (!userLocation && !geoLocationFailed) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Requesting live location access...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  // ====== Render ======
+  // ====== RENDER ======
   return (
     <SafeAreaView style={styles.container}>
+      {navigationMode && renderInstructionsBar()}
+
       {/* Top Search Bar */}
       <View style={styles.searchContainer}>
         <TextInput
@@ -343,13 +408,16 @@ const MapScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Map with 3D terrain and buildings */}
-      <MapboxGL.MapView style={styles.map} styleURL={MapboxGL.StyleURL.Street}>
+      {/* Map with 3D terrain + custom user dot */}
+      <MapboxGL.MapView style={styles.map}>
         <MapboxGL.Camera ref={cameraRef} />
-        <MapboxGL.UserLocation visible={true} />
 
         {/* 3D Terrain */}
-        <MapboxGL.RasterDemSource id="mapbox-dem" url="mapbox://mapbox.mapbox-terrain-dem-v1" tileSize={512}>
+        <MapboxGL.RasterDemSource
+          id="mapbox-dem"
+          url="mapbox://mapbox.mapbox-terrain-dem-v1"
+          tileSize={512}
+        >
           <MapboxGL.Terrain sourceID="mapbox-dem" style={{ exaggeration: 1.5 }} />
         </MapboxGL.RasterDemSource>
 
@@ -360,20 +428,17 @@ const MapScreen = () => {
           sourceLayerID="building"
           filter={['==', 'extrude', 'true']}
           style={{
-            fillExtrusionColor: '#f5f5f5',
+            fillExtrusionColor: '#aaa',
             fillExtrusionHeight: ['get', 'height'],
             fillExtrusionBase: ['get', 'min_height'],
-            fillExtrusionOpacity: 0.8,
+            fillExtrusionOpacity: 0.6,
           }}
         />
 
-        {/* Render Volunteer Markers */}
         {renderVolunteerMarkers()}
-
-        {/* Render Custom User Location Dot */}
         {renderUserLocationDot()}
 
-        {/* Destination marker (red) */}
+        {/* Destination marker */}
         {destination && (
           <MapboxGL.PointAnnotation id="destination" coordinate={destination}>
             <View style={styles.redMarker}>
@@ -382,7 +447,7 @@ const MapScreen = () => {
           </MapboxGL.PointAnnotation>
         )}
 
-        {/* Route Line */}
+        {/* Route line */}
         {route && (
           <MapboxGL.ShapeSource
             id="routeSource"
@@ -404,31 +469,78 @@ const MapScreen = () => {
         )}
       </MapboxGL.MapView>
 
-      {/* Bottom Route Details (if available and not in navigation mode) */}
+      {/* Bottom route details */}
       {tripDetails && !navigationMode && (
         <View style={styles.routeDetailsContainer}>
           <Text style={styles.routeHeader}>Route Details</Text>
           <Text style={styles.routeText}>ETA: {tripDetails.eta}</Text>
           <Text style={styles.routeText}>Distance: {tripDetails.distance} mi</Text>
+
           <TouchableOpacity style={styles.startNavBtn} onPress={startNavigation}>
             <Text style={styles.startNavBtnText}>Start Navigation</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Floating “Locate Me” Button */}
+      {/* Floating “Locate Me” button */}
       <TouchableOpacity
         style={styles.locateButton}
         onPress={() => {
-          if (!userLocation) {
+          const loc = homeLocation || userLocation;
+          if (!loc) {
             Alert.alert('No Location', 'User location is not available yet.');
             return;
           }
-          cameraRef.current?.flyTo(userLocation, 1200);
+          cameraRef.current?.flyTo(loc, 1200);
         }}
       >
         <Ionicons name="locate" size={24} color="#fff" />
       </TouchableOpacity>
+
+      {/* Always-visible Home button */}
+      <TouchableOpacity style={styles.homeButton} onPress={handleHomePress}>
+        <Ionicons name="home" size={24} color="#fff" />
+      </TouchableOpacity>
+
+      {/* “Set Location” button if geolocation fails */}
+      {geoLocationFailed && (
+        <TouchableOpacity
+          style={styles.setLocationButton}
+          onPress={() => setIsHomeModalVisible(true)}
+        >
+          <Text style={styles.setLocationText}>Set Location</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* “Set Current Address” Modal */}
+      <Modal
+        transparent
+        visible={isHomeModalVisible}
+        animationType="slide"
+        onRequestClose={() => setIsHomeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <TouchableOpacity
+              onPress={() => setIsHomeModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="black" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Set Your Current Address</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Enter your home address"
+              placeholderTextColor="#777"
+              value={homeAddress}
+              onChangeText={setHomeAddress}
+            />
+            <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSubmitHomeAddress}>
+              <Text style={styles.modalSaveBtnText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -438,16 +550,6 @@ export default MapScreen;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#333',
-  },
-  // Search bar (at the top) with cream background and rounded bottom corners
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -477,7 +579,6 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     padding: 10,
   },
-  // Marker Styles
   blackMarker: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -494,7 +595,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'white',
   },
-  // Route details container
   routeDetailsContainer: {
     position: 'absolute',
     bottom: 120,
@@ -529,8 +629,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
-  // Floating “Locate Me” Button
   locateButton: {
+    position: 'absolute',
+    bottom: 640,
+    right: 10,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  homeButton: {
     position: 'absolute',
     bottom: 700,
     right: 10,
@@ -542,7 +653,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
-  // Instructions bar (if navigation mode active)
+  setLocationButton: {
+    position: 'absolute',
+    bottom: 440,
+    right: 0,
+    backgroundColor: 'black',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    zIndex: 1000,
+  },
+  setLocationText: {
+    color: '#fff6e7',
+    fontWeight: '600',
+    fontSize: 14,
+  },
   instructionsBar: {
     position: 'absolute',
     top: 670,
@@ -568,5 +693,55 @@ const styles = StyleSheet.create({
   },
   endNavButton: {
     marginLeft: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '85%',
+    backgroundColor: '#fff6e7',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'black',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  modalInput: {
+    width: '100%',
+    height: 45,
+    backgroundColor: '#fff6e7',
+    borderColor: '#333',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    marginBottom: 20,
+    fontSize: 16,
+    color: '#333',
+  },
+  modalSaveBtn: {
+    backgroundColor: 'black',
+    borderRadius: 8,
+    paddingVertical: 10,
+    bottom: 0,
+    alignItems: 'center',
+  },
+  modalSaveBtnText: {
+    color: '#fff6e7',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
