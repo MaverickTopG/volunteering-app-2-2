@@ -134,22 +134,16 @@ const MapScreen = () => {
     );
   };
 
-  // Update startLocationWatch to request location updates every 5 seconds:
-const startLocationWatch = () => {
-  watchId.current = Geolocation.watchPosition(
-    (pos) => {
-      const { longitude, latitude } = pos.coords;
-      handleUserProgress([longitude, latitude]);
-    },
-    (err) => console.warn('watchPosition error:', err),
-    {
-      enableHighAccuracy: true,
-      distanceFilter: 5,
-      interval: 5000,          // Update every 5 seconds
-      fastestInterval: 5000,   // Allow fastest updates every 5 seconds
-    }
-  );
-};
+  const startLocationWatch = () => {
+    watchId.current = Geolocation.watchPosition(
+      (pos) => {
+        const { longitude, latitude } = pos.coords;
+        handleUserProgress([longitude, latitude]);
+      },
+      (err) => console.warn('watchPosition error:', err),
+      { enableHighAccuracy: true, distanceFilter: 5 }
+    );
+  };
 
   const stopLocationWatch = () => {
     if (watchId.current) {
@@ -314,14 +308,13 @@ const startLocationWatch = () => {
 
   // ====== Custom User Location Dot ======
   const renderUserLocationDot = () => {
-    if (!userLocation) return null; // Don't render until live location is set
+    if (!userLocation) return null;
     return (
       <MapboxGL.PointAnnotation id="userLocationDot" coordinate={userLocation}>
         <View style={styles.blueDot} />
       </MapboxGL.PointAnnotation>
     );
   };
-  
 
   // ====== Conditional Render ======
   // Until a live location is obtained (and if permission hasn't failed), render a loading view.
