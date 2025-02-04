@@ -1,5 +1,5 @@
 // VolunteerScreen.js
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { 
   View, 
   StyleSheet, 
@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
-import SwipeButton from './SwipeButton'; // Ensure SwipeButton is correctly implemented
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,6 +21,22 @@ const VolunteerScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { item } = route.params; // Receive the selected item from navigation
+
+  // Use a ref to determine if the navigation is triggered manually (e.g., via back button)
+  const isManualNavigation = useRef(false);
+
+  // Reset navigation in the background when this screen loses focus (if not manual)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      if (!isManualNavigation.current) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Carousel' }],
+        });
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   // Function to handle opening the website with improved error handling
   const handleWebsitePress = () => {
@@ -41,11 +56,10 @@ const VolunteerScreen = () => {
     }
   };
 
-  // Function to handle swipe action
-  const handleSwipe = (isToggled) => {
-    if (isToggled) {
-      navigation.goBack();
-    }
+  // Modified back button handler to set the manual navigation flag
+  const handleBackPress = () => {
+    isManualNavigation.current = true;
+    navigation.goBack();
   };
 
   return (
@@ -76,7 +90,6 @@ const VolunteerScreen = () => {
           {/* Address Section */}
           <TouchableOpacity 
             onPress={() => {
-              // Assuming you have a 'Map' screen set up to handle address navigation
               navigation.navigate('Map', { address: item.address });
             }}
             accessibilityLabel={`Open map for address: ${item.address}`}
@@ -90,28 +103,25 @@ const VolunteerScreen = () => {
             <Text style={styles.emailText}>Contact: {item.email}</Text>
           )}
 
-          {/* Website Section */}
+          {/* Website Section styled like the carousel navigate button */}
           {item.website && (
             <TouchableOpacity 
               onPress={handleWebsitePress} 
-              style={styles.websiteButton}
+              style={styles.navigateButton}
               accessibilityLabel={`Visit website for ${item.title}`}
               accessibilityRole="button"
-              activeOpacity={0.7} // Adds feedback when pressed
+              activeOpacity={0.7} // Adds press feedback
             >
-              <Text style={styles.websiteText}>Visit Website</Text>
-              <MaterialIcons name="open-in-new" size={20} color="black" />
+              <Text style={styles.navigateButtonText}>Visit Website</Text>
+              <MaterialIcons name="open-in-new" size={20} color="#333333" />
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Swipe Button */}
-        <View style={styles.swipeButtonContainer}>
-          <SwipeButton onToggle={handleSwipe} />
-        </View>
-
-        {/* Extra Padding to allow scrolling up a bit */}
-        <View style={styles.scrollPadding} />
+        {/* Back Button at the Bottom */}
+        <TouchableOpacity style={styles.bottomBackButton} onPress={handleBackPress}>
+          <Text style={styles.bottomBackButtonText}>Back</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -127,7 +137,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flexGrow: 1,
     padding: 20,
-    paddingBottom: 20,  // Allow room for scrolling up
+    paddingBottom: 120, // Extra bottom space so content isn’t hidden by bottom tab
   },
   titleContainer: {
     backgroundColor: '#fff6e7',
@@ -142,6 +152,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
+    marginTop: 0, // Prevent overlap with any top content
   },
   titleText: {
     fontSize: 24,
@@ -167,10 +178,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   image: {
-    width: '100%',  // Make image take full width of container
-    height: 250,    // Keep a consistent height
+    width: '100%',
+    height: 250,
     borderRadius: 15,
-    resizeMode: 'contain',  // Ensure the image covers the area
+    resizeMode: 'contain',
   },
   descriptionContainer: {
     backgroundColor: '#fff6e7',
@@ -193,7 +204,7 @@ const styles = StyleSheet.create({
   },
   addressText: {
     fontSize: 16,
-    color: 'black',  // Accent color for address
+    color: 'black',
     marginBottom: 10,
     textDecorationLine: 'underline',
   },
@@ -202,29 +213,42 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 15,
   },
-  websiteButton: {
+  // Website button styled to match the carousel UI
+  navigateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff6e7',
-    paddingVertical: 10,
+    paddingVertical: 15,
     paddingHorizontal: 15,
     borderRadius: 10,
     width: '100%',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginTop: 10,
     borderWidth: 1,
-    borderColor: 'black', // Accent color border
+    borderColor: '#333',
   },
-  websiteText: {
-    color: 'black',
-    fontSize: 16,
+  navigateButtonText: {
+    color: '#333',
+    fontSize: 18,
     fontWeight: 'bold',
   },
-  swipeButtonContainer: {
+  // Back button now at the bottom with extra margin
+  bottomBackButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 20,
+    paddingVertical: 15,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#333',
+    backgroundColor: '#fff6e7',
+    marginBottom: 30, // extra bottom margin to avoid overlap with bottom tab
   },
-  scrollPadding: {
-    height: 100,  // Extra padding to avoid collision with bottom navigation
+  bottomBackButtonText: {
+    fontSize: 18,
+    color: '#333',
+    marginLeft: 0,
+    fontWeight: 'bold',
   },
 });

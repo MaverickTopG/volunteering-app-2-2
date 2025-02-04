@@ -13,9 +13,10 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { RFPercentage } from 'react-native-responsive-fontsize';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { MaterialIcons } from '@expo/vector-icons';
 import { TapGestureHandler } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 const { width } = Dimensions.get('window');
 
@@ -76,37 +77,16 @@ const groupByCounty = (data) => {
 
 const SECTIONS = groupByCounty(DATA);
 
-const ITEM_HEIGHT = 85;
-const MARGIN = 10;
-const INACTIVE_TIME = 10000; // 10 seconds
-
 const VolunteerScreen = ({ route }) => {
   const navigation = useNavigation();
-  const [activeSection, setActiveSection] = useState(null);
+  const insets = useSafeAreaInsets();
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const isExpanded = useSharedValue(false);
-  const timer = useRef(null);
   const listRef = useRef(null);
   const searchBarTimer = useRef(null);
 
   // Retrieve data passed from Search Screen (if any)
   const { searchScreenData } = route.params || {};
-
-  const handleCardPress = (item) => {
-    clearTimeout(timer.current);
-    if (activeSection === item.title) {
-      setActiveSection(null);
-      isExpanded.value = false;
-    } else {
-      setActiveSection(item.title);
-      isExpanded.value = true;
-      timer.current = setTimeout(() => {
-        setActiveSection(null);
-        isExpanded.value = false;
-      }, INACTIVE_TIME);
-    }
-  };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -123,15 +103,13 @@ const VolunteerScreen = ({ route }) => {
   };
 
   const handleBackPress = () => {
-    navigation.navigate('SearchScreen', { data: searchScreenData }); // Navigate explicitly to Search Screen
+    navigation.navigate('SearchScreen', { data: searchScreenData });
   };
 
-  const rMiniBarStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateY: withSpring(isExpanded.value ? -20 : 0) }],
-      backgroundColor: '#fff6e7',
-    };
-  });
+  // Static mini header style (no animation)
+  const headerStyle = {
+    backgroundColor: '#fff6e7',
+  };
 
   const renderSectionHeader = ({ section: { title } }) => (
     <View style={styles.sectionHeader}>
@@ -139,61 +117,36 @@ const VolunteerScreen = ({ route }) => {
     </View>
   );
 
-  const renderItem = ({ item }) => {
-    const rStyle = useAnimatedStyle(() => {
-      return {
-        height: withTiming(isExpanded.value && activeSection === item.title ? ITEM_HEIGHT + 250 : ITEM_HEIGHT, {
-          duration: 1000,
-        }),
-        marginTop: MARGIN,
-        marginBottom: MARGIN,
-      };
-    });
-
-    return (
-      <Animated.View key={item.title} style={[styles.card, rStyle]}>
-        <TouchableOpacity onPress={() => handleCardPress(item)}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <MaterialIcons
-              name={isExpanded.value && activeSection === item.title ? 'arrow-drop-up' : 'arrow-drop-down'}
-              size={25}
-              color={'#D4D4D4'}
-            />
-          </View>
-        </TouchableOpacity>
-        {activeSection === item.title && (
-          <View style={[styles.dropdownContent, { height: ITEM_HEIGHT + 150 }]}>
-            <Image source={item.poster} style={styles.cardImage} />
-            <TouchableOpacity
-              style={styles.navigateButton}
-              onPress={() => navigation.navigate('DisplayScreen', { item })}
-            >
-              <Text style={styles.navigateButtonText}>Navigate</Text>
-              <MaterialIcons name="arrow-forward" size={20} color="#000" />
-            </TouchableOpacity>
-          </View>
-        )}
-      </Animated.View>
-    );
-  };
+  // Each card is rendered as a simple button with the item title.
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => navigation.navigate('DisplayScreen', { item })}
+    >
+      <Text style={styles.cardTitle}>{item.title}</Text>
+    </TouchableOpacity>
+  );
 
   useEffect(() => {
     if (searchVisible) {
       searchBarTimer.current = setTimeout(() => {
         setSearchVisible(false);
         setSearchQuery('');
-      }, INACTIVE_TIME);
+      }, 10000);
     }
-    return () => clearTimeout(searchBarTimer.current); // Cleanup timer
+    return () => clearTimeout(searchBarTimer.current);
   }, [searchVisible]);
 
   return (
     <TapGestureHandler numberOfTaps={2} onActivated={() => setSearchVisible(!searchVisible)}>
       <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-  <MaterialIcons name="arrow-back" size={24} color="#333" />
-</TouchableOpacity>
+        {/* Back Button: using safe-area inset to ensure it’s not covered */}
+        <TouchableOpacity
+          style={[styles.backButton, { top: insets.top + 10 }]}
+          onPress={handleBackPress}
+        >
+          <MaterialIcons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
 
         {searchVisible && (
           <View style={styles.searchBar}>
@@ -207,9 +160,10 @@ const VolunteerScreen = ({ route }) => {
             />
           </View>
         )}
-        <Animated.View style={[styles.header, rMiniBarStyle]}>
+
+        <View style={[styles.header, headerStyle]}>
           <Text style={styles.headerText}>Environment</Text>
-        </Animated.View>
+        </View>
         <SectionList
           ref={listRef}
           sections={SECTIONS}
@@ -248,14 +202,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
+  // Back button now uses insets so it won’t be hidden.
   backButton: {
+    marginTop:-45,
     position: 'absolute',
-    top: -10,
-    left: 5, 
-    padding: 10, 
-    zIndex: 3, 
+    left: 10,
+    padding: 10,
+    zIndex: 100,
+    
   },
-  
   headerText: {
     fontSize: RFPercentage(3),
     fontWeight: 'bold',
@@ -279,52 +234,16 @@ const styles = StyleSheet.create({
     width: width * 0.9,
     backgroundColor: '#fff6e7',
     borderRadius: 15,
-    overflow: 'hidden',
     alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     borderWidth: 1,
     borderColor: '#333333',
     marginVertical: 15,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: 15,
   },
   cardTitle: {
-    fontSize: RFPercentage(2.5),
-    fontWeight: 'bold',
+    fontSize: RFPercentage(2),
     color: '#333333',
-  },
-  dropdownContent: {
-    alignItems: 'center',
-    paddingVertical: 15,
-  },
-  cardImage: {
-    width: '100%',
-    height: 150,
-    resizeMode: 'contain',
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  navigateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff6e7',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    width: '100%',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  navigateButtonText: {
-    color: '#333333',
-    fontSize: 18,
+    textAlign: 'center',
   },
   searchBar: {
     position: 'absolute',
@@ -341,7 +260,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
-    zIndex: 2,
+    zIndex: 200,
   },
   searchInput: {
     flex: 1,

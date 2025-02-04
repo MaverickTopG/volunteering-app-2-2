@@ -145,7 +145,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
     color: '#000',
   },
   notFoundContainer: {

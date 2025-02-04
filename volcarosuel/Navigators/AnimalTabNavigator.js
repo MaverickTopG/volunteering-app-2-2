@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useRef } from 'react';
 import { Animated, StyleSheet, TouchableOpacity, View, Image } from 'react-native';
 import { CurvedBottomBarExpo } from 'react-native-curved-bottom-bar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -18,7 +18,6 @@ import DisplayScreen from '../displayer/ShowScreen';
 import MapScreen from '../screens/MapScreen';
 import SplashScreen from '../screens/Splashscreen';
 import DeleteScreen from '../../auth/deleteScreen';
-
 
 const Stack = createStackNavigator();
 
@@ -83,109 +82,157 @@ const TabStack = () => {
   );
 };
 
-// Tab Navigator
-const AnimalTabNavigator = () => {
-  const _renderIcon = (routeName, selectedTab) => {
-    let icon = '';
+// New TabIcon component with spinning animation on press.
+// When pressed, navigation is triggered immediately, then the icon spins.
+const TabIcon = ({ routeName, selectedTab, onPress }) => {
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
-    switch (routeName) {
-      case 'Show':
-        icon = 'eye';
-        break;
-      case 'Vlogs':
-        icon = 'search';
-        break;
-      case 'Search':
-        icon = 'home';
-        break;
-      case 'Map':
-        icon = 'map';
-        break;
-      case 'Profile':
-        icon = 'person';
-        break;
-    }
-
-    return (
-      <Ionicons
-        name={icon}
-        size={25}
-        color={routeName === selectedTab ? '#fff6e7' : '#ffffff40'}
-      />
-    );
+  const handlePress = () => {
+    // Navigate immediately.
+    onPress();
+    // Then spin the icon.
+    Animated.timing(spinAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start(() => {
+      spinAnim.setValue(0);
+    });
   };
 
-  const renderTabBar = ({ routeName, selectedTab, navigate }) => {
-    return (
-      <TouchableOpacity
-        onPress={() => navigate(routeName)}
-        style={styles.tabButton}
-      >
-        {_renderIcon(routeName, selectedTab)}
-      </TouchableOpacity>
-    );
+  let iconName = '';
+  switch (routeName) {
+    case 'Show':
+      iconName = 'eye';
+      break;
+    case 'Vlogs':
+      iconName = 'search';
+      break;
+    case 'Search':
+      iconName = 'home';
+      break;
+    case 'Map':
+      iconName = 'map';
+      break;
+    case 'Profile':
+      iconName = 'person';
+      break;
+    default:
+      iconName = 'alert';
+      break;
+  }
+
+  return (
+    <TouchableOpacity onPress={handlePress} style={styles.tabButton}>
+      <Animated.View style={{ transform: [{ rotate: spin }] }}>
+        <Ionicons
+          name={iconName}
+          size={25}
+          color={routeName === selectedTab ? '#fff6e7' : '#ffffff40'}
+        />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
+// Create a similar component for the center (circle) icon.
+const CenterIcon = ({ onPress }) => {
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const handlePress = () => {
+    onPress();
+    Animated.timing(spinAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start(() => {
+      spinAnim.setValue(0);
+    });
   };
 
   return (
-      <View style={{ flex: 1 }}>
-        <CurvedBottomBarExpo.Navigator
-          style={styles.bottomBar}
-          height={65}
-          circleWidth={75}
-          bgColor="black"
-          initialRouteName="Search"
-          borderTopLeftRight
-          renderCircle={({ selectedTab, navigate }) => (
-            <Animated.View style={styles.circleContainer}>
-              <TouchableOpacity
-                style={styles.btnCircle}
-                onPress={() => navigate('Show')}
-              >
-                <Image
-                  source={require('../../assets/spaceship.png')}
-                  style={styles.spaceshipIcon}
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          )}
-          tabBar={renderTabBar}
-        >
-          <CurvedBottomBarExpo.Screen
-            name="Search"
-            position="LEFT"
-            component={TabStack}
-            options={{ headerShown: false }}
-          />
-          <CurvedBottomBarExpo.Screen
-            name="Vlogs"
-            position="LEFT"
-            component={AIScreen}
-            options={{ headerShown: false }}
-          />
-          <CurvedBottomBarExpo.Screen
-            name="Map"
-            position="RIGHT"
-            component={MapScreen}
-            options={{ headerShown: false }}
-          />
-          <CurvedBottomBarExpo.Screen
-            name="Profile"
-            position="RIGHT"
-            component={SplashScreen}
-            options={{ headerShown: false }}
-          />
-          <CurvedBottomBarExpo.Screen
-            name="Show"
-            position="CIRCLE"
-            component={VolunteerLogsStack}
-            options={{ headerShown: false }}
-          />
-        </CurvedBottomBarExpo.Navigator>
-      </View>
+    <TouchableOpacity onPress={handlePress} style={styles.btnCircle}>
+      <Animated.Image
+        source={require('../../assets/spaceship.png')}
+        style={[styles.spaceshipIcon, { transform: [{ rotate: spin }] }]}
+      />
+    </TouchableOpacity>
+  );
+};
+
+const renderTabBar = ({ routeName, selectedTab, navigate }) => {
+  return (
+    <TabIcon
+      routeName={routeName}
+      selectedTab={selectedTab}
+      onPress={() => navigate(routeName)}
+    />
+  );
+};
+
+// Tab Navigator
+const AnimalTabNavigator = () => {
+  return (
+    <View style={{ flex: 1 }}>
+      <CurvedBottomBarExpo.Navigator
+        style={styles.bottomBar}
+        height={65}
+        circleWidth={75}
+        bgColor="black"
+        initialRouteName="Search"
+        borderTopLeftRight
+        renderCircle={({ selectedTab, navigate }) => (
+          <View style={styles.circleContainer}>
+            <CenterIcon onPress={() => navigate('Show')} />
+          </View>
+        )}
+        tabBar={renderTabBar}
+      >
+        <CurvedBottomBarExpo.Screen
+          name="Search"
+          position="LEFT"
+          component={TabStack}
+          options={{ headerShown: false }}
+        />
+        <CurvedBottomBarExpo.Screen
+          name="Vlogs"
+          position="LEFT"
+          component={AIScreen}
+          options={{ headerShown: false }}
+        />
+        <CurvedBottomBarExpo.Screen
+          name="Map"
+          position="RIGHT"
+          component={MapScreen}
+          options={{ headerShown: false }}
+        />
+        <CurvedBottomBarExpo.Screen
+          name="Profile"
+          position="RIGHT"
+          component={SplashScreen}
+          options={{ headerShown: false }}
+        />
+        <CurvedBottomBarExpo.Screen
+          name="Show"
+          position="CIRCLE"
+          component={VolunteerLogsStack}
+          options={{ headerShown: false }}
+        />
+      </CurvedBottomBarExpo.Navigator>
+    </View>
   );
 };
 
 export default AnimalTabNavigator;
+
 
 const styles = StyleSheet.create({
   bottomBar: {
@@ -230,8 +277,6 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    borderColor: 'black',
-    position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
   },

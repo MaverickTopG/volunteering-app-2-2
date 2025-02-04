@@ -1,10 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   Animated, 
-  Easing, 
   Dimensions, 
   TouchableOpacity, 
   Modal, 
@@ -13,7 +12,6 @@ import {
   ScrollView, 
   Linking 
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
@@ -28,26 +26,28 @@ const GoFundMeScreen = () => {
 
   const fullText = "Empowering volunteers!";
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const startAnimations = () => {
-        logoScale.setValue(0);
-        textOpacity.setValue(0);
+  useEffect(() => {
+    // Start animations only once on mount.
+    logoScale.setValue(0);
+    textOpacity.setValue(0);
 
-        Animated.spring(logoScale, {
-          toValue: 1,
-          friction: 5,
-          useNativeDriver: true,
-        }).start();
+    Animated.spring(logoScale, {
+      toValue: 1,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
 
-        Animated.timing(textOpacity, {
-          toValue: 1,
-          duration: 800,
-          delay: 500,
-          useNativeDriver: true,
-        }).start();
-      };
+    Animated.timing(textOpacity, {
+      toValue: 1,
+      duration: 800,
+      delay: 500,
+      useNativeDriver: true,
+    }).start();
 
+    setTypedText('');
+    indexRef.current = 0;
+    // Delay typing until the logo animation is underway.
+    const typeTimeout = setTimeout(() => {
       const typeText = () => {
         if (indexRef.current < fullText.length) {
           setTypedText((prev) => prev + fullText[indexRef.current]);
@@ -55,18 +55,17 @@ const GoFundMeScreen = () => {
           setTimeout(typeText, 100);
         }
       };
+      typeText();
+    }, 1000);
 
-      startAnimations();
-      setTypedText('');
-      indexRef.current = 0;
-      setTimeout(typeText, 1000);
-    }, [logoScale, textOpacity])
-  );
+    // Cleanup timeout if the component unmounts.
+    return () => clearTimeout(typeTimeout);
+  }, [logoScale, textOpacity, fullText]);
 
   const openModal = () => setModalVisible(true);
   const closeModal = () => setModalVisible(false);
 
-  const goFundMeUrl = 'https://www.gofundme.com/f/empower-volunteers-and-transform-communities-with-nexolink/cl/o?lang=en_US&utm_campaign=man_sharesheet_dash&utm_medium=customer&utm_source=copy_link&attribution_id=sl%3A48e2683e-cde6-4354-a729-ac076c7c4394'; // Replace with your actual GoFundMe link
+  const goFundMeUrl = 'https://www.gofundme.com/f/empower-volunteers-and-transform-communities-with-nexolink/cl/o?lang=en_US&utm_campaign=man_sharesheet_dash&utm_medium=customer&utm_source=copy_link&attribution_id=sl%3A48e2683e-cde6-4354-a729-ac076c7c4394';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -87,7 +86,7 @@ const GoFundMeScreen = () => {
         {/* Logo */}
         <Animated.View style={[styles.logoContainer, { transform: [{ scale: logoScale }] }]}>
           <Image 
-            source={require('../../assets/spaceship.png')} // Ensure the path is correct
+            source={require('../../assets/spaceship.png')}
             style={styles.logo} 
             resizeMode="contain" 
           />
@@ -136,7 +135,6 @@ const GoFundMeScreen = () => {
   );
 };
 
-// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -187,7 +185,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 3, // For Android shadow
+    elevation: 3,
   },
   donateButtonText: {
     color: '#fff',

@@ -22,18 +22,53 @@ MapboxGL.setAccessToken(
 const VOLUNTEER_SITES = [
   {
     id: '1',
-    name: 'Community Kitchen',
-    address: '123 Market Street, San Francisco, CA',
+    name: ' WILDCARE',
+    address: '220 S Garrard Blvd, Point Richmond, CA 94801',
   },
   {
     id: '2',
-    name: 'Food Bank',
-    address: '501 Mission Street, San Francisco, CA',
+    name: 'Hooves for Harmony',
+    address: 'Morning Star Farm, Novato, CA 94948',
   },
   {
     id: '3',
-    name: 'Shelter Home',
-    address: '9th St & Mission St, San Francisco, CA',
+    name: 'The Little Red Dog',
+    address: 'Laguna Hills, CA',
+  },
+  {
+    id: '4',
+    name: 'Marin County Parks & Landscape',
+    address: '3501 Civic Center Drive, Suite 260, San Rafael, CA 94903',
+  },
+  {
+    id: '5',
+    name: 'Mill Valley Public Works',
+    address: '26 Corte Madera Avenue, Mill Valley, CA 94941',
+  },
+  {
+    id: '6',
+    name: 'Slide Ranch',
+    address: '2025 Shoreline Highway, Muir Beach, CA 94965',
+  },
+  {
+    id: '7',
+    name: 'Mission Hospital',
+    address: '27700 Medical Center Rd, Mission Viejo, CA 92691',
+  },
+  {
+    id: '8',
+    name: 'Larkspur Library',
+    address: '400 Magnolia Ave, Larkspur, CA 94939',
+  },
+  {
+    id: '9',
+    name: 'Grateful Gatherings Marin',
+    address: '1940 Broadway, Suite 101, Oakland, CA 94612',
+  },
+  {
+    id: '10',
+    name: 'RAD Camp',
+    address: '199 Technology Dr, Suite 100, Irvine, CA 92618',
   },
 ];
 
@@ -428,7 +463,7 @@ const MapScreen = () => {
           sourceLayerID="building"
           filter={['==', 'extrude', 'true']}
           style={{
-            fillExtrusionColor: '#aaa',
+            fillExtrusionColor: '#f5f5f5',
             fillExtrusionHeight: ['get', 'height'],
             fillExtrusionBase: ['get', 'min_height'],
             fillExtrusionOpacity: 0.6,

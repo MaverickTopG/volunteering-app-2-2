@@ -1,8 +1,7 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { createStackNavigator } from '@react-navigation/stack';
-import CustomSideBarMenu from './CustomSideBarMenu';
 import AnimalTabNavigator from '../volcarosuel/Navigators/AnimalTabNavigator';
+import CustomSideBarMenu from './CustomSideBarMenu';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, StyleSheet, StatusBar } from 'react-native';
 
@@ -25,6 +24,8 @@ const DrawerNavigator = () => {
           headerStyle: {
             backgroundColor: 'transparent',
           },
+          // Disable swipe gestures for the drawer
+          swipeEnabled: false,
         }}
       >
         <Drawer.Screen
@@ -35,6 +36,8 @@ const DrawerNavigator = () => {
             headerTitle: 'NexoLink',
             headerTitleStyle: { color: '#333333' },
             headerStyle: { backgroundColor: 'black' },
+            // Hide the hamburger icon by rendering nothing for headerLeft
+            headerLeft: () => null,
           }}
         />
       </Drawer.Navigator>
