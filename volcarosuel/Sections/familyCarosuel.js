@@ -35,6 +35,128 @@ const DATA = [
     county:'Marin County',
   },
   {
+    "title": "Bridge the Gap College Prep",
+    "location": "Marin City, CA",
+    "date": "1995",
+   // "poster": "require('../../assets/bridge_the_gap.png')",
+    "description": "Bridge the Gap College Prep provides comprehensive educational support for underserved students in Marin City, aiming to prepare them for college success. Volunteers can engage in tutoring, mentoring, and enrichment programs to help students achieve their academic goals.",
+    "address": "2330 Marinship Way, Suite 302, Sausalito, CA 949655",
+    "email": "info@btgcollegeprep.org",
+    "website": "https://www.btgcollegeprep.org/",
+    "county": "Marin County"
+  },
+  {
+    "title": "Canal Alliance",
+    "location": "San Rafael, CA",
+    "date": "1982",
+    //"poster": "require('../../assets/canal_alliance.png')",
+    "description": "Canal Alliance is a nonprofit champion of immigrants who are challenged by a lack of resources and an unfamiliar environment. They offer services including education, career programs, legal advocacy, and social services to help immigrants and their families overcome barriers to success.",
+    "address": "91 Larkspur Street, San Rafael, CA 94901",
+    "email": "info@canalalliance.org",
+    "website": "https://www.canalalliance.org/",
+    "county": "Marin County"
+  },
+  {
+    "title": "Community Action Marin",
+    "location": "San Rafael, CA",
+    "date": "1966",
+    //"poster": "require('../../assets/community_action_marin.png')",
+    "description": "Community Action Marin partners with people to support well-being, dignity, and hope. They provide services that help individuals and families meet their basic needs and empower them to create lasting change, including early childhood education, economic justice programs, and housing assistance.",
+    "address": " 555 Northgate Drive, Suite 201, San Rafael, CA 94903",
+    "email": "cam@camarin.org",
+    "website": "https://camarin.org/",
+    "county": "Marin County"
+  },
+  {
+    "title": "Habitat for Humanity Greater San Francisco",
+    "location": "San Francisco, CA",
+    "date": "1989",
+    //"poster": "require('../../assets/habitat_for_humanity_gsf.png')",
+    "description": "Habitat for Humanity Greater San Francisco brings people together to build homes, communities, and hope. They provide affordable homeownership opportunities for families in San Francisco, San Mateo, and Marin counties. Volunteers can participate in construction, home repairs, and community beautification projects.",
+    "address": "300 Montgomery Street, Suite 450, San Francisco, CA 94104",
+    "email": "info@habitatgsf.org",
+    "website": "https://habitatgsf.org/",
+    "county": "San Francisco County"
+  },
+  {
+    "title": "Jewish Family and Children's Services",
+    "location": "San Rafael, CA",
+    "date": "1850",
+   // "poster": "require('../../assets/jfcs.png')",
+    "description": "Jewish Family and Children's Services provides a wide array of services to people of all ages, faiths, and backgrounds. Their programs include counseling, senior services, disability services, and emergency assistance. Volunteers can engage in various roles to support individuals and families in need.",
+    "address": "600 Fifth Avenue, San Rafael, CA 94901",
+    "email": "info@jfcs.org",
+    "website": "https://www.jfcs.org/",
+    "county": "Marin County"
+  },
+  {
+    "title": "Mill Valley Gate",
+    "location": "Mill Valley, CA",
+    "date": "Information not available",
+    //"poster": "require('../../assets/mill_valley_gate.png')",
+    "description": "Mill Valley Gate is an organization dedicated to community development and support in the Mill Valley area. Specific programs and volunteer opportunities vary; interested individuals are encouraged to contact them directly for more information.",
+    "address": "Address not available",
+    "email": "info@millvalleygate.org",
+    "website": "http://www.millvalleygate.org/",
+    "county": "Marin County"
+  },
+  {
+    "title": "Marin YMCA",
+    "location": "San Rafael, CA",
+    "date": "1954",
+    //"poster": "require('../../assets/marin_ymca.png')",
+    "description": "The Marin YMCA offers programs that build a healthy spirit, mind, and body for all. Services include fitness classes, youth sports, childcare, and community events. Volunteers can participate in coaching, mentoring, event support, and administrative tasks.",
+    "address": "1500 Los Gamos Drive, San Rafael, CA 94903",
+    "email": "info@ymcasf.org",
+    "website": "https://www.ymcasf.org/locations/marin-ymca",
+    "county": "Marin County"
+  },  
+  {
+    "title": "Aegis Living Corte Madera",
+    "location": "Corte Madera, CA",
+    "date": "2000",
+   // "poster": "require('../../assets/aegis_living_corte_madera.png')",
+    "description": "Aegis Living Corte Madera offers assisted living and memory care services in a community setting. They provide personalized care plans, engaging activities, and amenities designed to support the well-being of their residents.",
+    "address": "5555 Paradise Drive, Corte Madera, CA 94925",
+    "email": "415-483-1399",
+    "website": "https://www.aegisliving.com/locations/aegis-living-corte-madera-ca/",
+    "county": "Marin County"
+  },
+  {
+    "title": "Alzheimer's Association of Marin",
+    "location": "San Rafael, CA",
+    "date": "1980",
+  //   "poster": "require('../../assets/alzheimers_association.png')",
+    "description": "The Alzheimer's Association provides support and resources for individuals affected by Alzheimer's disease and other dementias. Services include support groups, educational programs, and a 24/7 helpline.",
+    "address": "4340 Redwood Highway, Suite D314, San Rafael, CA 94903",
+    "email": "415-472-4340",
+    "website": "https://www.alz.org/norcal",
+    "county": "Marin County"
+  },
+  {
+    "title": "LITA (Love is the Answer) of Marin",
+    "location": "San Rafael, CA",
+    "date": "1975",
+   // "poster": "require('../../assets/lita_of_marin.png')",
+    "description": "LITA of Marin is a nonprofit organization dedicated to improving the quality of life for socially isolated elderly residents in Marin County's long-term care facilities by providing volunteer visitors for regular companionship.",
+    "address": "4340 Redwood Highway, Suite E-352, San Rafael, CA 94903",
+    "email": "415-472-5482",
+    "website": "https://litamarin.org/",
+    "county": "Marin County"
+  },
+  {
+    "title": "The Redwoods, A Community of Seniors",
+    "location": "Mill Valley, CA",
+    "date": "1972",
+  //  "poster": "require('../../assets/the_redwoods.png')",
+    "description": "The Redwoods is a nonprofit senior residential community offering independent living, assisted living, and skilled nursing services. They focus on promoting independence, dignity, and quality of life for their residents.",
+    "address": "40 Camino Alto, Mill Valley, CA 94941",
+    "email": "415-383-2741",
+    "website": "https://www.theredwoods.org/",
+    "county": "Marin County"
+  }
+,  
+  {
     title: 'RAD Camp',
     location: 'Irvine, CA',
     date: '2014',
@@ -206,7 +328,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingTop: 120,
-    paddingBottom: 20,
+    paddingBottom: 90,
   },
   sectionHeader: {
     backgroundColor: '#fff6e7',

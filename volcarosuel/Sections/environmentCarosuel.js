@@ -58,6 +58,95 @@ const DATA = [
     county: 'Marin County',
 
   },
+  {
+    title: 'Audubon Center',
+    location: 'Mill Valley, CA',
+    date: 'N/A',
+    // Omit poster if you do not have an image; otherwise add a poster field
+    description:
+      'The Audubon Center offers environmental education programs and volunteer opportunities focused on conservation, habitat restoration, and community engagement. Volunteers support initiatives that protect local wildlife and natural resources.',
+    address: '376 Greenwood Beach Road, Tiburon, CA 94920',
+    email: '415-388-2524', // Contact phone number
+    website: 'https://www.audubonmarin.org/volunteer',
+    county: 'Marin County',
+  },
+  {
+    title: 'Golden Gate National Parks Conservancy',
+    location: 'San Francisco, CA',
+    date: 'N/A',
+    description:
+      'The Golden Gate National Parks Conservancy mobilizes volunteers for environmental stewardship projects around the Golden Gate National Parks, including habitat restoration and community events.',
+    address: 'Building 201, Fort Mason, San Francisco, CA 94123',
+    email: '415-561-3044',
+    website: 'https://www.ggnpconservancy.org/volunteer',
+    county: 'Marin County',
+  },
+  {
+    title: 'Habitat for Humanity - Park/Community Beautification',
+    location: 'San Rafael, CA',
+    date: 'N/A',
+    description:
+      'This Habitat for Humanity initiative focuses on park and community beautification projects, engaging volunteers in landscaping, maintenance, and restoration to improve public spaces.',
+    address: '300 Montgomery Street, Suite 450, San Francisco, CA 94104',
+    email: '415-625-1000',
+    website: 'https://www.habitat.org/volunteer',
+    county: 'Marin County',
+  },
+  {
+    title: 'Marin County Open Space',
+    location: 'San Rafael, CA',
+    date: 'N/A',
+    description:
+      'Marin County Open Space promotes the conservation of natural landscapes through volunteer-driven initiatives including trail maintenance, invasive species removal, and public education on sustainable practices.',
+    address: '3501 Civic Center Drive, Suite 260, San Rafael, CA 94903',
+    email: '415-473-3778',
+    website: 'https://parks.marincounty.gov/discoverlearn/volunteer',
+    county: 'Marin County',
+  },
+  {
+    title: 'Marin Agricultural Land Trust',
+    location: 'San Rafael, CA',
+    date: 'N/A',
+    description:
+      'Marin Agricultural Land Trust works to protect and preserve agricultural land in Marin County. Volunteers help with outreach, land stewardship, and community engagement to support local farming and sustainable agriculture.',
+    address: 'P.O. Box 850, Point Reyes Station, CA 94956',
+    email: '415-663-1158',
+    website: 'https://malt.org/volunteer/',
+    county: 'Marin County',
+  },
+  {
+    title: 'Marin Headlands Native Plants Nursery',
+    location: 'Sausalito, CA',
+    date: 'N/A',
+    description:
+      'The Marin Headlands Native Plants Nursery offers opportunities for volunteers to support the cultivation and distribution of native plant species, contributing to habitat restoration and environmental education.',
+    address: '1301 Kirkpatrick Street, Fort Cronkite, Sausalito, CA 94965',
+    email: '415-332-5193',
+    website: 'https://www.nps.gov/places/000/marin-headlands-native-plant-nursery.htm',
+    county: 'Marin County',
+  },
+  {
+    title: 'Muir Woods',
+    location: 'Mill Valley, CA',
+    date: 'N/A',
+    description:
+      'Muir Woods National Monument offers volunteer opportunities to help maintain trails, support conservation efforts, and enhance visitor experiences in this iconic redwood forest.',
+    address: '1 Muir Woods Road, Mill Valley, CA 94941',
+    email: '415-561-4755',
+    website: 'https://www.nps.gov/muwo/getinvolved/volunteer.htm',
+    county: 'Marin County',
+  },
+  {
+    title: 'Mt. Tam Watershed',
+    location: 'Mill Valley, CA',
+    date: 'N/A',
+    description:
+      'Mt. Tam Watershed invites volunteers to participate in conservation and restoration projects focused on preserving water quality and natural resources in the Mt. Tam area.',
+    address: '220 Nellen Avenue, Corte Madera, CA 94925',
+    email: '415-945-1128',
+    website: 'https://www.marinwater.org/volunteer',
+    county: 'Marin County',
+  },
 ];
 
 // Group data by county
@@ -218,7 +307,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingTop: 120,
-    paddingBottom: 20,
+    paddingBottom: 90,
   },
   sectionHeader: {
     backgroundColor: '#fff6e7',

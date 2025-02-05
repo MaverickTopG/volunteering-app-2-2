@@ -78,10 +78,12 @@ const VolunteerScreen = () => {
           </View>
         </View>
 
-        {/* Image Container */}
-        <View style={styles.imageContainer}>
-          <Image source={item.poster} style={styles.image} />
-        </View>
+        {/* Conditionally render Image Container if poster is provided */}
+        {item.poster && (
+          <View style={styles.imageContainer}>
+            <Image source={item.poster} style={styles.image} />
+          </View>
+        )}
 
         {/* Description Section */}
         <View style={styles.descriptionContainer}>

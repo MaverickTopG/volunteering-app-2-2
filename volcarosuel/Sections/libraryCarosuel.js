@@ -45,6 +45,52 @@ const DATA = [
     website: 'https://bookexchangemarin.org/volunteer/',
     county: 'Marin County',
   },
+  {
+    title: 'Belvedere Tiburon Library',
+    location: 'Belvedere Tiburon, CA',
+    date: 'N/A',
+    // If you have an image, include a poster field. For example:
+    // poster: require('../../assets/belvedere-tiburon.png'),
+    description: 'Belvedere Tiburon Library welcomes teen volunteers to assist with a range of activities including event planning, organizing books, and helping with children\'s programs. Volunteers play a vital role in supporting the library’s mission to serve the community.',
+    address: '780 Tiburon Blvd, Tiburon, CA 94920',
+    email: '415-789-2665',
+    website: 'https://www.beltiblibrary.org/support-services/get-involved-volunteer',
+    county: 'Marin County',
+  },
+  {
+    title: 'Corte Madera Library',
+    location: 'Corte Madera, CA',
+    date: 'N/A',
+    // poster: require('../../assets/corte-madera.png'), // if available
+    description: 'Corte Madera Library welcomes teen volunteers to assist with a range of activities including event planning, organizing books, and helping with children\'s programs. Volunteers play a vital role in supporting the library’s mission to serve the community.',
+    address: '20 Corte Madera Blvd, Corte Madera, CA 94920',
+    email: '415-924-3515',
+    website: 'https://www.marinlibraryfriends.org/friends-of-the-corte-madera-library',
+    county: 'Marin County',
+  },
+  {
+    title: 'Marin City/Sausalito Library',
+    location: 'Sausalito, CA',
+    date: 'N/A',
+    // poster: require('../../assets/sausalito.png'), // if available
+    description: 'Marin City/Sausalito Library welcomes teen volunteers to assist with a range of activities including event planning, organizing books, and helping with children\'s programs. Volunteers play a vital role in supporting the library’s mission to serve the community.',
+    address: '200 Sausalito Blvd, Sausalito, CA 94965',
+    email: '415-332-6158',
+    website: 'https://www.sausalitolibrary.org/about-us/friends-bookstore',
+    county: 'Marin County',
+  },
+  {
+    title: 'Marin County Public Library',
+    location: 'San Rafael, CA',
+    date: 'N/A',
+    // poster: require('../../assets/marin-county-public.png'), // if available
+    description: 'Marin County Public Library welcomes teen volunteers to assist with a range of activities including event planning, organizing books, and helping with children\'s programs. Volunteers play a vital role in supporting the library’s mission to serve the community.',
+    address: '250 Civic Center Dr, San Rafael, CA 94901',
+    email: '415-473-3220',
+    website: 'https://marinlibrary.org/teen-volunteer-leadership-opportunities/',
+    county: 'Marin County',
+  },
+  
 
 ];
 
@@ -206,7 +252,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingTop: 120,
-    paddingBottom: 20,
+    paddingBottom: 90,
   },
   sectionHeader: {
     backgroundColor: '#fff6e7',

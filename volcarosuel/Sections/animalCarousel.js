@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingTop: 120,
-    paddingBottom: 20,
+    paddingBottom: 90,
   },
   sectionHeader: {
     backgroundColor: '#fff6e7',

@@ -22,12 +22,33 @@ const { width } = Dimensions.get('window');
 
 // Data with counties added
 const DATA = [
-
+  {
+    "title": "By the Bay Health",
+    "location": "Larkspur, CA",
+    "date": "1975",
+   // "poster": "require('../../assets/by_the_bay_health.png')",
+    "description": "By the Bay Health provides compassionate hospice, palliative, and home health care services to patients and families, emphasizing quality of life and comfort. They also offer grief support and counseling services.",
+    "address": "17 East Sir Francis Drake Boulevard, Larkspur, CA 94939",
+    "email": "hospiceinfo@hbtb.org or 415-927-2273",
+    "website": "https://bythebayhealth.org/",
+    "county": "Marin County"
+  },
+  {
+    "title": "MarinHealth Medical Center",
+    "location": "Greenbrae, CA",
+    "date": "1952",
+  //  "poster": "require('../../assets/marinhealth_medical_center.png')",
+    "description": "MarinHealth Medical Center is a 327-bed independent hospital offering comprehensive care across all major service lines, including emergency services, surgery, and specialized medical treatments.",
+    "address": "250 Bon Air Road, Greenbrae, CA 94904",
+    "email": '415-925-7258',
+    "website": "https://www.mymarinhealth.org/locations/medical-center/",
+    "county": "Marin County"
+  },
   {
     title: 'Mission Hospital',
     location: 'Mission Viejo, CA',
     date: '1971',
-    poster: require('../../assets/unnamed.png'),
+  //  poster: require('../../assets/unnamed.png'),
     description:
       'Volunteers at Mission Hospital play a crucial role in enhancing patient care and supporting hospital operations. Opportunities are available in various departments, such as assisting with patient services, providing administrative support, and participating in community outreach programs. Volunteering at Mission Hospital offers personal fulfillment and the chance to make a positive impact on the health and well-being of the community.',
     address: '27700 Medical Center Rd, Mission Viejo, CA 92691',
@@ -35,6 +56,19 @@ const DATA = [
     website: 'https://www.missionhealth.org/locations/mission-hospital/about-us/volunteers',
     county: 'Orange County',
   },
+  {
+    "title": "American Cancer Society",
+    "location": "Santa Rosa, CA",
+    "date": "1913",
+   // "poster": "require('../../assets/american_cancer_society.png')",
+    "description": "The American Cancer Society offers programs and services for cancer patients, as well as information and referrals to various support services for patients, their families, and caregivers. Services include a 24/7 helpline, support programs, and educational resources.",
+    "address": "1451 Guerneville Rd, Suite 220, Santa Rosa, CA 95403",
+    "email": '800-227-2345',
+    "website": "https://www.cancer.org",
+    "county": "Sonoma County"
+  },
+ 
+  
 
 ];
 
@@ -196,7 +230,7 @@ const styles = StyleSheet.create({
   },
   scrollViewContent: {
     paddingTop: 120,
-    paddingBottom: 20,
+    paddingBottom: 90,
   },
   sectionHeader: {
     backgroundColor: '#fff6e7',
