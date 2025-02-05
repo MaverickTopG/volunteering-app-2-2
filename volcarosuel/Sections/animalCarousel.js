@@ -44,6 +44,51 @@ const DATA = [
     county: 'Marin County',
   },
   {
+    title: 'Giants Steps Therapeutic Equestrian Center',
+    location: 'Petaluma, CA',
+    address: '7600 Lakeville Highway, Sonoma Horse Park, Petaluma, CA 94954',
+    county: 'Sonoma County',
+    website: 'http://www.giantstepsriding.org/volunteer',
+    email: '707-781-9455',
+    description: 'Volunteers at Giant Steps do more than give their time and energy.hey make lifelong friends and join a larger community of fun-loving, energetic, individuals intent on making a difference. Volunteers assist riders during their weekly lessons, groom horses, help maintain the facility, assist with administrative tasks, and much, much more.'
+  },
+  {
+    title: 'Halleck Creek Ranch',
+    location: 'Nicasio, CA',
+    address: '1740 Old Rancheria Road, Nicasio, CA 94946',
+    county: 'Marin County',
+    website: 'https://halleckcreekranch.org/volunteer/',
+    email: '415-662-2488',
+    description: 'Halleck Creek Ranch provides adaptive riding and equine-assisted programs in a nurturing setting, helping individuals with disabilities build confidence and skills.'
+  },
+  {
+    title: 'Marine Mammal Center',
+    location: 'Sausalito, CA',
+    address: '2000 Bunker Road, Fort Cronkhite, Sausalito, CA 94965-2619',
+    county: 'Marin County',
+    website: 'http://www.marinemammalcenter.org/get-involved/volunteer/',
+    email: '415-289-0216',
+    description: 'The Marine Mammal Center rescues, rehabilitates, and releases marine mammals while advancing ocean health through research and public education.'
+  },
+  {
+    title: 'Milo Foundation',
+    location: 'Point Richmond, CA',
+    address: '220 S Garrard Blvd, Point Richmond, CA 94801',
+    county: 'Contra Costa County',
+    website: 'https://www.milofoundation.org/volunteer-program/',
+    email: '510-900-2275',
+    description: 'The Milo Foundation is a no-kill organization dedicated to rescuing homeless pets, offering sanctuary care and volunteer opportunities to help find these animals forever homes.'
+  },
+  {
+    title: 'Save A Bunny',
+    location: 'Mill Valley, CA',
+    address: 'Not Specified',  
+    county: 'Marin County',
+    website: 'https://saveabunny.org/adopt-help/volunteer-with-saveabunny/',
+    email: '415-388-2790',
+    description: 'Save A Bunny is a volunteer-driven nonprofit that rescues and rehomes domestic rabbits, while educating the community on proper rabbit care.'
+  },
+  {
     title: 'The Little Red Dog',
     location: 'Laguna Hills, CA',
     date: '2011',
@@ -213,12 +258,12 @@ const styles = StyleSheet.create({
   },
   // Back button now uses insets so it won’t be hidden.
   backButton: {
-    marginTop:-45,
+    marginTop: -45,
     position: 'absolute',
     left: 10,
     padding: 10,
     zIndex: 100,
-    
+
   },
   headerText: {
     fontSize: RFPercentage(3),
