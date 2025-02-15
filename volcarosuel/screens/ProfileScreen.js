@@ -49,7 +49,6 @@ const AnimatedMessage = memo(({ item }) => {
 
 // Memoized chat section component.
 const ChatSection = memo(({ data, isLoading, flatListRef }) => {
-  // Memoized renderItem function.
   const renderItem = useCallback(
     ({ item }) => <AnimatedMessage key={item.id} item={item} />,
     []
@@ -61,17 +60,18 @@ const ChatSection = memo(({ data, isLoading, flatListRef }) => {
         data={data}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
+        style={{ flex: 1 }}
         contentContainerStyle={styles.flatListContent}
         keyboardShouldPersistTaps="handled"
-        scrollEnabled={true}
         showsVerticalScrollIndicator={true}
+        scrollEnabled={true}
       />
       {isLoading && <TypingIndicator />}
     </View>
   );
 });
 
-// Intro section remains as before.
+// Intro section remains unchanged.
 const IntroSection = memo(() => {
   const introPhrases = [
     "How can I help you today?",
@@ -175,29 +175,8 @@ const ChatGPT = () => {
   const [fadeAnim] = useState(new Animated.Value(1));
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // NEW: Animated value for shifting the chat UI when the keyboard is active.
-  const keyboardOffset = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
-      Animated.timing(keyboardOffset, {
-        toValue: -e.endCoordinates.height,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    });
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      Animated.timing(keyboardOffset, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    });
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, [keyboardOffset]);
+  // We are not shifting the chat when the keyboard appears.
+  // Input bar still shifts as before.
 
   const initialMessage = {
     id: 'init',
@@ -304,7 +283,7 @@ const ChatGPT = () => {
     try {
       // Include a system instruction to restrict answers to volunteering topics.
       const systemInstruction =
-        "You are a helpful AI volunteer assistant. Only answer questions related to volunteering. If the user asks anything unrelated to volunteering, respond with: 'I'm sorry, I only answer questions about volunteering.'";
+        "You are a helpful AI volunteer assistant.";
       const response = await axios.post(
         apiUrl,
         {
@@ -370,14 +349,11 @@ const ChatGPT = () => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.contentContainer}
         >
-          {/* Wrap the chat UI (or intro section) in an Animated.View for keyboard offset */}
-          <Animated.View style={{ flex: 1, transform: [{ translateY: keyboardOffset }] }}>
-            {isChatEmpty ? (
-              <IntroSection />
-            ) : (
-              <ChatSection data={data} isLoading={isLoading} flatListRef={flatListRef} />
-            )}
-          </Animated.View>
+          {isChatEmpty ? (
+            <IntroSection />
+          ) : (
+            <ChatSection data={data} isLoading={isLoading} flatListRef={flatListRef} />
+          )}
           {error ? (
             <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
               <Text style={styles.errorText}>{error}</Text>
@@ -419,7 +395,7 @@ const styles = StyleSheet.create({
   introSubtitle: { fontSize: 16, color: '#555' },
   tapToStartText: { fontSize: 14, color: '#333', marginTop: 10 },
   chatContainer: { flex: 1 },
-  flatListContent: { paddingTop: 10, paddingHorizontal: 10, paddingBottom: 80 },
+  flatListContent: { paddingTop: 10, paddingHorizontal: 10, paddingBottom: 80, flexGrow: 1, minHeight: '100%' },
   userMessageContainer: {
     alignSelf: 'flex-end',
     backgroundColor: '#fff6e7',
