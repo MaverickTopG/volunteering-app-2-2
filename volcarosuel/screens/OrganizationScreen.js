@@ -169,7 +169,7 @@ export default function SuggestOrganizationScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Reference *"
+              placeholder="Which Category *"
               placeholderTextColor="#555"
               value={form.reference}
               onChangeText={(text) => setForm({ ...form, reference: text })}

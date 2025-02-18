@@ -222,9 +222,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   backButton: {
-    marginTop: -45,
+    marginTop: -85,
     position: 'absolute',
-    left: 10,
+    left: 5,
     padding: 10,
     zIndex: 100,
   },

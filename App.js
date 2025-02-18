@@ -18,7 +18,6 @@ const StackNav = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={DrawerNavigator} />
-    
       <Stack.Screen name="AnimalTabNavigator" component={AnimalTabNavigator} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />

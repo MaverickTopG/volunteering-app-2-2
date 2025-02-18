@@ -14,10 +14,8 @@ import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const RegisterScreen = () => {
-  const [firstName, setFirstName]       = useState('');
-  const [lastName, setLastName]         = useState('');
-  const [email, setEmail]               = useState('');
-  const [password, setPassword]         = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const { signUp } = useContext(AuthContext); // Use signUp from AuthContext
@@ -54,27 +52,6 @@ const RegisterScreen = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          {/* First Name */}
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder="First Name"
-              placeholderTextColor="#aaa"
-              value={firstName}
-              onChangeText={setFirstName}
-            />
-          </View>
-
-          {/* Last Name */}
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder="Last Name"
-              placeholderTextColor="#aaa"
-              value={lastName}
-              onChangeText={setLastName}
-            />
-          </View>
 
           {/* Email */}
           <View style={styles.inputWrapper}>
