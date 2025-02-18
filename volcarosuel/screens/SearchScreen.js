@@ -1,104 +1,45 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  Animated,
-} from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons'; // For Expo (or use react-native-vector-icons/Ionicons)
 import { useNavigation } from '@react-navigation/native';
 
-const DATA = [
-  { id: '1', title: 'Animal', name: 'AnimalCarousel' },
-  { id: '2', title: 'Environment', name: 'TechCarousel' },
-  { id: '3', title: 'Family', name: 'FamilyCarousel' },
-  { id: '4', title: 'Hospital', name: 'HospitalCarousel' },
-  { id: '5', title: 'Library', name: 'SeniorCarousel' },
+const categories = [
+  { id: '1', title: 'Animal', icon: 'paw-outline', reference: 'Animal' },
+  { id: '2', title: 'Environment', icon: 'leaf-outline', reference: 'Environment' },
+  { id: '3', title: 'Family', icon: 'people-outline', reference: 'Family' },
+  { id: '4', title: 'Library', icon: 'book-outline', reference: 'Library' },
+  { id: '5', title: 'Hospital', icon: 'medkit-outline', reference: 'Hospital' },
 ];
 
-export default function SearchScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [displayedText, setDisplayedText] = useState('');
+export default function CausesScreen() {
   const navigation = useNavigation();
-  const typingAnimation = useRef(new Animated.Value(0)).current;
 
-  const quote =
-    "Volunteering is the ultimate exercise in democracy. You vote in elections once a year, but when you volunteer, you vote every day about the kind of community you want to live in... Category not found";
-
-  useEffect(() => {
-    let timeoutId;
-    
-    if (searchQuery.trim() !== '' && !DATA.some(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()))) {
-      setDisplayedText('');
-      
-      timeoutId = setTimeout(() => {
-        typingAnimation.setValue(0);
-        const listenerId = typingAnimation.addListener(({ value }) => {
-          const typedText = quote.substring(0, Math.floor(value));
-          setDisplayedText(typedText);
-        });
-
-        Animated.timing(typingAnimation, {
-          toValue: quote.length,
-          duration: 10000,
-          useNativeDriver: false,
-        }).start(() => {
-          typingAnimation.removeListener(listenerId);
-          setDisplayedText((prev) => prev + "");
-        });
-      }, 0);
-    } else {
-      clearTimeout(timeoutId);
-      typingAnimation.stopAnimation();
-      setDisplayedText('');
-    }
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, quote]);
-
-  const handleCarouselSelect = (carouselName) => {
-    navigation.navigate('CarouselStack', { carouselName });
+  // When a category is pressed, navigate to CarouselStack
+  // Passing both the carouselName and reference
+  const handleCategoryPress = (cat) => {
+    navigation.navigate('CarouselStack', { 
+      carouselName: cat.title, 
+      reference: cat.reference 
+    });
   };
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.item}
-      onPress={() => handleCarouselSelect(item.name)}
-    >
-      <Text style={styles.title}>{item.title}</Text>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
-      <View style={styles.header}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search..."
-          placeholderTextColor="#333"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          keyboardAppearance="dark"
-        />
+      <Text style={styles.header}>Volunteer Causes</Text>
+      <View style={styles.grid}>
+        {categories.map((cat) => (
+          <TouchableOpacity
+            key={cat.id}
+            style={styles.item}
+            onPress={() => handleCategoryPress(cat)}
+          >
+            <View style={styles.iconContainer}>
+              <Ionicons name={cat.icon} size={28} color="#333" />
+            </View>
+            <Text style={styles.itemText}>{cat.title}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
-
-      {DATA.some(item => item.title.toLowerCase().includes(searchQuery.toLowerCase())) ? (
-        <FlatList
-          data={DATA.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()))}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-        />
-      ) : (
-        searchQuery.trim() !== '' && (
-          <View style={styles.notFoundContainer}>
-            <Text style={styles.notFoundText}>{displayedText}</Text>
-          </View>
-        )
-      )}
     </View>
   );
 }
@@ -106,57 +47,45 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7', // Cream background
+    backgroundColor: '#fff6e7',
+    paddingTop: 50,
+    alignItems: 'center',
   },
   header: {
-    paddingHorizontal: 10,
-    paddingVertical: 20,
-    backgroundColor: '#fff6e7',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    shadowColor: '#333',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    zIndex: 10,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
   },
-  searchInput: {
-    height: 50,
-    backgroundColor: '#fff6e7',
-    color: '#000',
-    borderColor: '#000',
-    borderWidth: 1,
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    fontSize: 16,
-  },
-  listContent: {
-    paddingHorizontal: 10,
-    paddingBottom: 20,
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   item: {
-    padding: 20,
-    marginVertical: 8,
-    borderRadius: 15,
+    width: '40%',       // Two-column layout
+    margin: '5%',       // Spacing around each item
+    alignItems: 'center',
     backgroundColor: '#fff6e7',
+    borderRadius: 12,
+    paddingVertical: 20,
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: '#ccc',
+  },
+  iconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#fff6e7',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
-  title: {
-    fontSize: 18,
-    color: '#000',
-  },
-  notFoundContainer: {
-    flex: 1,
-    marginTop:260,
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  notFoundText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
+  itemText: {
+    fontSize: 16,
+    color: '#333',
     textAlign: 'center',
   },
 });

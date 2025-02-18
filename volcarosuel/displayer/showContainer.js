@@ -5,11 +5,10 @@ import {
   Dimensions,
   Text,
   TouchableOpacity,
-  Image,
   SafeAreaView,
   SectionList,
   TextInput,
-  Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { RFPercentage } from 'react-native-responsive-fontsize';
@@ -17,62 +16,23 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { TapGestureHandler } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// ---- Import Firebase modules (v9+ Modular syntax) ----
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
-const { width } = Dimensions.get('window');
+// ---- Firebase Config & Initialization ----
+const firebaseConfig = {
+  apiKey: "AIzaSyC1kY4dlbg9v38ZkuYVPJGnSulMEouvw58",
+  authDomain: "nexolink-b8eb5.firebaseapp.com",
+  projectId: "nexolink-b8eb5",
+  storageBucket: "nexolink-b8eb5.appspot.com",
+  messagingSenderId: "247675121621",
+  appId: "1:247675121621:web:98772b2e0cfbe8a381175c"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// Data with counties added
-const DATA = [
-  {
-    "title": "By the Bay Health",
-    "location": "Larkspur, CA",
-    "date": "1975",
-   // "poster": "require('../../assets/by_the_bay_health.png')",
-    "description": "By the Bay Health provides compassionate hospice, palliative, and home health care services to patients and families, emphasizing quality of life and comfort. They also offer grief support and counseling services.",
-    "address": "17 East Sir Francis Drake Boulevard, Larkspur, CA 94939",
-    "email": "hospiceinfo@hbtb.org or 415-927-2273",
-    "website": "https://bythebayhealth.org/",
-    "county": "Marin County"
-  },
-  {
-    "title": "MarinHealth Medical Center",
-    "location": "Greenbrae, CA",
-    "date": "1952",
-  //  "poster": "require('../../assets/marinhealth_medical_center.png')",
-    "description": "MarinHealth Medical Center is a 327-bed independent hospital offering comprehensive care across all major service lines, including emergency services, surgery, and specialized medical treatments.",
-    "address": "250 Bon Air Road, Greenbrae, CA 94904",
-    "email": '415-925-7258',
-    "website": "https://www.mymarinhealth.org/locations/medical-center/",
-    "county": "Marin County"
-  },
-  {
-    title: 'Mission Hospital',
-    location: 'Mission Viejo, CA',
-    date: '1971',
-  //  poster: require('../../assets/unnamed.png'),
-    description:
-      'Volunteers at Mission Hospital play a crucial role in enhancing patient care and supporting hospital operations. Opportunities are available in various departments, such as assisting with patient services, providing administrative support, and participating in community outreach programs. Volunteering at Mission Hospital offers personal fulfillment and the chance to make a positive impact on the health and well-being of the community.',
-    address: '27700 Medical Center Rd, Mission Viejo, CA 92691',
-    email: '828-213-1058',
-    website: 'https://www.missionhealth.org/locations/mission-hospital/about-us/volunteers',
-    county: 'Orange County',
-  },
-  {
-    "title": "American Cancer Society",
-    "location": "Santa Rosa, CA",
-    "date": "1913",
-   // "poster": "require('../../assets/american_cancer_society.png')",
-    "description": "The American Cancer Society offers programs and services for cancer patients, as well as information and referrals to various support services for patients, their families, and caregivers. Services include a 24/7 helpline, support programs, and educational resources.",
-    "address": "1451 Guerneville Rd, Suite 220, Santa Rosa, CA 95403",
-    "email": '800-227-2345',
-    "website": "https://www.cancer.org",
-    "county": "Sonoma County"
-  },
- 
-  
-
-];
-
-// Group data by county
+// Helper: Group data by county
 const groupByCounty = (data) => {
   const counties = {};
   data.forEach((item) => {
@@ -87,22 +47,64 @@ const groupByCounty = (data) => {
   }));
 };
 
-const SECTIONS = groupByCounty(DATA);
+const { width } = Dimensions.get('window');
 
-const VolunteerScreen = ({ route }) => {
+const VolunteerCarousel = ({ route }) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
+  // Get the reference from route.params (default to "Animal" if not passed)
+  const referenceParam = route.params?.reference || 'Animal';
+
+  // States for Firestore data & loading
+  const [loading, setLoading] = useState(true);
+  const [sections, setSections] = useState([]);
+
+  // Search states/refs (optional; you can remove if not needed)
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const listRef = useRef(null);
   const searchBarTimer = useRef(null);
 
-  // Retrieve data passed from Search Screen (if any)
-  const { searchScreenData } = route.params || {};
+  // Fetch data from Firestore filtering by the passed reference id
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const q = query(
+          collection(db, 'volunteer_organizations'),
+          where('reference', '==', referenceParam)
+        );
+        const querySnapshot = await getDocs(q);
+        const results = [];
+        querySnapshot.forEach((docSnap) => {
+          results.push(docSnap.data());
+        });
+        const grouped = groupByCounty(results);
+        setSections(grouped);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [referenceParam]);
+
+  // Optional: Toggle search bar (if you want to re-enable search later)
+  useEffect(() => {
+    if (searchVisible) {
+      searchBarTimer.current = setTimeout(() => {
+        setSearchVisible(false);
+        setSearchQuery('');
+      }, 10000);
+    }
+    return () => clearTimeout(searchBarTimer.current);
+  }, [searchVisible]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    const sectionIndex = SECTIONS.findIndex((section) =>
+    const sectionIndex = sections.findIndex((section) =>
       section.title.toLowerCase().includes(query.toLowerCase())
     );
     if (sectionIndex >= 0 && listRef.current) {
@@ -115,13 +117,17 @@ const VolunteerScreen = ({ route }) => {
   };
 
   const handleBackPress = () => {
-    navigation.navigate('SearchScreen', { data: searchScreenData });
+    navigation.goBack();
   };
 
-  // Static mini header style (no animation)
-  const headerStyle = {
-    backgroundColor: '#fff6e7',
-  };
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#333" />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   const renderSectionHeader = ({ section: { title } }) => (
     <View style={styles.sectionHeader}>
@@ -129,7 +135,6 @@ const VolunteerScreen = ({ route }) => {
     </View>
   );
 
-  // Each card is rendered as a simple button with the item title.
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
@@ -139,20 +144,13 @@ const VolunteerScreen = ({ route }) => {
     </TouchableOpacity>
   );
 
-  useEffect(() => {
-    if (searchVisible) {
-      searchBarTimer.current = setTimeout(() => {
-        setSearchVisible(false);
-        setSearchQuery('');
-      }, 10000);
-    }
-    return () => clearTimeout(searchBarTimer.current);
-  }, [searchVisible]);
-
   return (
-    <TapGestureHandler numberOfTaps={2} onActivated={() => setSearchVisible(!searchVisible)}>
+    <TapGestureHandler
+      numberOfTaps={2}
+      onActivated={() => setSearchVisible(!searchVisible)}
+    >
       <SafeAreaView style={styles.container}>
-        {/* Back Button: using safe-area inset to ensure it’s not covered */}
+        {/* Back Button */}
         <TouchableOpacity
           style={[styles.backButton, { top: insets.top + 10 }]}
           onPress={handleBackPress}
@@ -160,6 +158,7 @@ const VolunteerScreen = ({ route }) => {
           <MaterialIcons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
 
+        {/* Optional Search Bar */}
         {searchVisible && (
           <View style={styles.searchBar}>
             <MaterialIcons name="search" size={20} color="#888" style={styles.searchIcon} />
@@ -173,12 +172,15 @@ const VolunteerScreen = ({ route }) => {
           </View>
         )}
 
-        <View style={[styles.header, headerStyle]}>
-          <Text style={styles.headerText}>Hospital</Text>
+        {/* Header displays the passed reference (e.g., Library, Animal, etc.) */}
+        <View style={[styles.header, { backgroundColor: '#fff6e7' }]}>
+          <Text style={styles.headerText}>{referenceParam}</Text>
         </View>
+
+        {/* SectionList displays organizations grouped by county */}
         <SectionList
           ref={listRef}
-          sections={SECTIONS}
+          sections={sections}
           keyExtractor={(item, index) => item.title + index}
           renderSectionHeader={renderSectionHeader}
           renderItem={renderItem}
@@ -190,16 +192,21 @@ const VolunteerScreen = ({ route }) => {
   );
 };
 
-export default VolunteerScreen;
+export default VolunteerCarousel;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff6e7',
   },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#fff6e7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     height: 100,
-    backgroundColor: '#fff6e7',
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomLeftRadius: 30,
@@ -214,14 +221,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
   },
-  // Back button now uses insets so it won’t be hidden.
   backButton: {
-    marginTop:-45,
+    marginTop: -45,
     position: 'absolute',
     left: 10,
     padding: 10,
     zIndex: 100,
-    
   },
   headerText: {
     fontSize: RFPercentage(3),

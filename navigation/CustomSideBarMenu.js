@@ -104,8 +104,28 @@ const CustomSideBarMenu = (props) => {
           />   
         </View>
 
+        <View style={styles.navSection}>
+          <DrawerItem
+            label="Add an Org"
+            labelStyle={styles.drawerItemLabel}
+            icon={() => null} // No icon
+            onPress={() => props.navigation.navigate('Organizations')}
+            style={styles.drawerItem}
+            accessibilityLabel="Navigate to Home"
+            accessibilityRole="button"
+          />   
+           <DrawerItem
+            label="Account"
+            labelStyle={styles.drawerItemLabel}
+            icon={() => null} // No icon
+            onPress={() => props.navigation.navigate('Account')}
+            style={styles.drawerItem}
+            accessibilityLabel="Navigate to Home"
+            accessibilityRole="button"
+          />   
+        </View>
         
-        
+    
       </DrawerContentScrollView>
 
       {/* Rotating Spaceship */}
@@ -166,6 +186,11 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     // No tintColor since it's a custom image
+  },
+  menuItem: {
+    fontSize: 18,
+    marginVertical: 10,
+    color: '#333',
   },
 });
 

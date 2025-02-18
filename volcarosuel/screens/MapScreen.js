@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
   },
   locateButton: {
     position: 'absolute',
-    bottom: 640,
+    bottom: 80,
     right: 10,
     width: 50,
     height: 50,
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   },
   homeButton: {
     position: 'absolute',
-    bottom: 700,
+    bottom: 140,
     right: 10,
     width: 50,
     height: 50,

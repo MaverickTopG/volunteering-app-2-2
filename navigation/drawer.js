@@ -4,6 +4,8 @@ import AnimalTabNavigator from '../volcarosuel/Navigators/AnimalTabNavigator';
 import CustomSideBarMenu from './CustomSideBarMenu';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, StyleSheet, StatusBar } from 'react-native';
+import OrganizationScreen from '../volcarosuel/screens/OrganizationScreen';
+import AccountScreen from '../volcarosuel/screens/AccountScreen'
 
 const Drawer = createDrawerNavigator();
 
@@ -19,25 +21,33 @@ const DrawerNavigator = () => {
           ),
           headerTintColor: '#333333',
           headerTitleStyle: {
-            color: '#fff6e7',
+            color: '#333333',
           },
           headerStyle: {
             backgroundColor: 'transparent',
           },
-          // Disable swipe gestures for the drawer
-          swipeEnabled: false,
+          swipeEnabled: true,
         }}
       >
         <Drawer.Screen
           name="NexoLink"
           component={AnimalTabNavigator}
           options={{
-            drawerLabel: 'NexoLink',
+            drawerLabel: 'Home',
             headerTitle: 'NexoLink',
-            headerTitleStyle: { color: '#333333' },
-            headerStyle: { backgroundColor: 'black' },
-            // Hide the hamburger icon by rendering nothing for headerLeft
-            headerLeft: () => null,
+          }}
+        />
+    
+        <Drawer.Screen
+          name="Organizations"
+          component={OrganizationScreen}
+          options={{
+          }}
+        />
+        <Drawer.Screen
+          name="Account"
+          component={AccountScreen}
+          options={{
           }}
         />
       </Drawer.Navigator>

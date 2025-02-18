@@ -4,11 +4,7 @@ import { CurvedBottomBarExpo } from 'react-native-curved-bottom-bar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthContext } from '../../auth/AuthContext'; // AuthContext for authentication state
-import AnimalCarousel from '../Sections/animalCarousel';
-import TechCarousel from '../Sections/environmentCarosuel';
-import FamilyCarousel from '../Sections/familyCarosuel';
-import HospitalCarousel from '../Sections/hospitalCarousel';
-import SeniorCarousel from '../Sections/libraryCarosuel';
+import AnimalCarousel from '../displayer/showContainer';
 import SearchScreen from '../screens/SearchScreen';
 import AIScreen from '../screens/ProfileScreen';
 import VolunteerLogs from '../screens/volunteer_log';
@@ -23,30 +19,15 @@ const Stack = createStackNavigator();
 
 // Carousel Stack for Dynamic Navigation
 const CarouselStack = ({ route }) => {
-  const { carouselName } = route.params || {};
-  let CarouselComponent;
-
-  switch (carouselName) {
-    case 'TechCarousel':
-      CarouselComponent = TechCarousel;
-      break;
-    case 'FamilyCarousel':
-      CarouselComponent = FamilyCarousel;
-      break;
-    case 'HospitalCarousel':
-      CarouselComponent = HospitalCarousel;
-      break;
-    case 'SeniorCarousel':
-      CarouselComponent = SeniorCarousel;
-      break;
-    default:
-      CarouselComponent = AnimalCarousel;
-      break;
-  }
+  const { reference } = route.params || {};
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Carousel" component={CarouselComponent} />
+      <Stack.Screen 
+        name="Carousel" 
+        component={AnimalCarousel} 
+        initialParams={{ reference: reference }} 
+      />
       <Stack.Screen name="DisplayScreen" component={DisplayScreen} />
     </Stack.Navigator>
   );

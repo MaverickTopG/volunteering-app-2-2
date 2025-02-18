@@ -10,22 +10,34 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { AuthContext } from './AuthContext'; // Adjust the path to your AuthContext
+import { AuthContext } from './AuthContext'; // Adjust path to your AuthContext
 import { useNavigation } from '@react-navigation/native';
-
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const DeleteScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { deleteAccount } = useContext(AuthContext); // Use the deleteAccount method from AuthContext
-  const navigation = useNavigation(); // For navigating back to login
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+  const { deleteAccount } = useContext(AuthContext); // Use deleteAccount from AuthContext
+  const navigation = useNavigation();
 
   const handleDeleteAccount = async () => {
-    const success = await deleteAccount(email, password);
+    try {
+      const success = await deleteAccount(email, password);
+      // You can add further logic (like navigation) based on success/failure if desired
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Delete Failed', 'Could not delete the account. Check credentials and try again.');
+    }
   };
 
   const handleNavigateToLogin = () => {
     navigation.navigate('Login'); // Navigate to the Login screen
+  };
+
+  const togglePasswordVisibility = () => {
+    setIsPasswordVisible(!isPasswordVisible);
   };
 
   return (
@@ -39,30 +51,42 @@ const DeleteScreen = () => {
         </View>
 
         <View style={styles.inputContainer}>
+          {/* Email Field */}
           <TextInput
             style={styles.input}
             placeholder="Email"
             placeholderTextColor="#aaa"
             value={email}
-            keyboardAppearance="dark" 
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#aaa"
-            keyboardAppearance="dark" 
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
 
+          {/* Password with toggle icon */}
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="Password"
+              placeholderTextColor="#aaa"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!isPasswordVisible}
+            />
+            <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
+              <Ionicons
+                name={isPasswordVisible ? 'eye' : 'eye-off'}
+                size={20}
+                color="#aaa"
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Delete Button */}
           <TouchableOpacity style={styles.button} onPress={handleDeleteAccount}>
             <Text style={styles.buttonText}>Delete Account</Text>
           </TouchableOpacity>
 
+          {/* Cancel / Go back to Login */}
           <TouchableOpacity onPress={handleNavigateToLogin}>
             <Text style={styles.loginText}>Cancel and go back to Login</Text>
           </TouchableOpacity>
@@ -96,16 +120,37 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginTop: 20,
   },
+  /* Single-field styling for email */
   input: {
     height: 50,
     borderColor: '#333',
     borderWidth: 1,
-    borderRadius: 25, // Rounded input fields
+    borderRadius: 25,
     paddingHorizontal: 20,
     fontSize: 16,
     backgroundColor: '#fff6e7',
     color: 'black',
     marginBottom: 15,
+  },
+  /* Container for password + icon */
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: '#333',
+    borderWidth: 1,
+    borderRadius: 25,
+    backgroundColor: '#fff6e7',
+    marginBottom: 15,
+    height: 50,
+    paddingHorizontal: 20,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: 'black',
+  },
+  eyeIcon: {
+    padding: 5,
   },
   button: {
     backgroundColor: 'red', // Red button to signify danger
