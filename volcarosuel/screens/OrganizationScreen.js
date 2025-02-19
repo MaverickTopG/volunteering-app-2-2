@@ -4,13 +4,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
-  Alert,
+  SafeAreaView,
   ScrollView,
+  Alert,
   KeyboardAvoidingView,
+  TextInput,
   Platform,
 } from 'react-native';
-import { AuthContext } from '../../auth/AuthContext';  // or wherever your AuthContext is located
+import { AuthContext } from '../../auth/AuthContext';  // Adjust the path as needed
 import { db } from '../../auth/firebase';             // your firebase config/export
 import { collection, addDoc } from 'firebase/firestore';
 
@@ -29,17 +30,19 @@ export default function SuggestOrganizationScreen() {
     reference: '',
   });
 
-  // Success message to show after submission
+  // Success message state
   const [submissionMessage, setSubmissionMessage] = useState('');
 
   // If user is not logged in, display a prompt to log in
   if (!user) {
     return (
-      <View style={styles.notLoggedInContainer}>
-        <Text style={styles.notLoggedInText}>
-          You must be logged in to suggest an organization.
-        </Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.notLoggedInContainer}>
+          <Text style={styles.notLoggedInText}>
+            You must be logged in to suggest an organization.
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -92,8 +95,13 @@ export default function SuggestOrganizationScreen() {
       setSubmissionMessage(
         'Thank you! Your suggestion has been submitted. Once added to the main database, it will appear in the app.'
       );
+
+      // Remove the message after 3 seconds
+      setTimeout(() => {
+        setSubmissionMessage('');
+      }, 5000);
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit the organization.');
+      Alert.alert('Error', error.message || 'Failed to submit the organization.');
     }
   };
 
