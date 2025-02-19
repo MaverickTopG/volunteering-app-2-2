@@ -60,6 +60,7 @@ const DeleteScreen = () => {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            keyboardAppearance="dark"
           />
 
           {/* Password with toggle icon */}
@@ -71,6 +72,7 @@ const DeleteScreen = () => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!isPasswordVisible}
+              keyboardAppearance="dark"
             />
             <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
               <Ionicons

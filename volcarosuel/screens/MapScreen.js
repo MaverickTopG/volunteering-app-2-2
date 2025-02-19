@@ -625,6 +625,7 @@ const MapScreen = () => {
           placeholderTextColor="black"
           value={address}
           onChangeText={setAddress}
+          keyboardAppearance="dark"
         />
         <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
           <Ionicons name="search" size={24} color="black" />
@@ -769,6 +770,7 @@ const MapScreen = () => {
               placeholderTextColor="#777"
               value={homeAddress}
               onChangeText={setHomeAddress}
+              keyboardAppearance="dark"
             />
             <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSubmitHomeAddress}>
               <Text style={styles.modalSaveBtnText}>Save</Text>

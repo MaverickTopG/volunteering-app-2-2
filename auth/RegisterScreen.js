@@ -63,6 +63,7 @@ const RegisterScreen = () => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              keyboardAppearance="dark"
             />
           </View>
 
@@ -75,6 +76,7 @@ const RegisterScreen = () => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!isPasswordVisible}
+              keyboardAppearance="dark"
             />
             <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
               <Ionicons

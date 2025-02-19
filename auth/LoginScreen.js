@@ -57,6 +57,7 @@ const LoginScreen = () => {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            keyboardAppearance="dark"
           />
 
           {/* Password with toggle icon */}
@@ -68,6 +69,7 @@ const LoginScreen = () => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!isPasswordVisible}
+              keyboardAppearance="dark"
             />
             <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
               <Ionicons

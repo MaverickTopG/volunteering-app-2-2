@@ -124,6 +124,7 @@ export default function SuggestOrganizationScreen() {
               placeholderTextColor="#555"
               value={form.name}
               onChangeText={(text) => setForm({ ...form, name: text })}
+              keyboardAppearance="dark"
             />
 
             <TextInput
@@ -133,6 +134,7 @@ export default function SuggestOrganizationScreen() {
               multiline
               value={form.description}
               onChangeText={(text) => setForm({ ...form, description: text })}
+              keyboardAppearance="dark"
             />
 
             <TextInput
@@ -141,6 +143,7 @@ export default function SuggestOrganizationScreen() {
               placeholderTextColor="#555"
               value={form.location}
               onChangeText={(text) => setForm({ ...form, location: text })}
+              keyboardAppearance="dark"
             />
 
             <TextInput
@@ -149,6 +152,7 @@ export default function SuggestOrganizationScreen() {
               placeholderTextColor="#555"
               value={form.requirements}
               onChangeText={(text) => setForm({ ...form, requirements: text })}
+              keyboardAppearance="dark"
             />
 
             <TextInput
@@ -157,6 +161,7 @@ export default function SuggestOrganizationScreen() {
               placeholderTextColor="#555"
               value={form.contact}
               onChangeText={(text) => setForm({ ...form, contact: text })}
+              keyboardAppearance="dark"
             />
 
             <TextInput
@@ -165,6 +170,7 @@ export default function SuggestOrganizationScreen() {
               placeholderTextColor="#555"
               value={form.website}
               onChangeText={(text) => setForm({ ...form, website: text })}
+              keyboardAppearance="dark"
             />
 
             <TextInput
@@ -173,6 +179,7 @@ export default function SuggestOrganizationScreen() {
               placeholderTextColor="#555"
               value={form.county}
               onChangeText={(text) => setForm({ ...form, county: text })}
+              keyboardAppearance="dark"
             />
 
             <TextInput
@@ -181,6 +188,7 @@ export default function SuggestOrganizationScreen() {
               placeholderTextColor="#555"
               value={form.reference}
               onChangeText={(text) => setForm({ ...form, reference: text })}
+              keyboardAppearance="dark"
             />
 
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
