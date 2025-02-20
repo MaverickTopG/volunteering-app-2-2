@@ -834,16 +834,17 @@ const styles = StyleSheet.create({
   },
   routeDetailsContainer: {
     position: 'absolute',
-    bottom: 120,
-    left: 20,
-    right: 20,
+    bottom: 120, // Move it slightly up
+    left: 20, // Reduce width
+    right: 80, // Reduce width
     backgroundColor: '#fff6e7',
-    borderRadius: 10,
-    padding: 16,
+    borderRadius: 8, // Slightly smaller radius
+    padding: 16, // Reduce padding
     borderWidth: 1,
     borderColor: 'black',
     zIndex: 10,
   },
+
   routeHeader: {
     fontSize: 18,
     fontWeight: '700',
@@ -908,8 +909,8 @@ const styles = StyleSheet.create({
   instructionsBar: {
     position: 'absolute',
     top: 670,
-    left: 0,
-    right: 0,
+    left: 10,
+    right: 70,
     backgroundColor: '#fff6e7',
     borderBottomWidth: 1,
     borderColor: '#ccc',

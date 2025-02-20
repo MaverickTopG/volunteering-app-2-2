@@ -5,11 +5,11 @@
     <key>MGLMapboxAccessToken</key>
     <string>sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-<string>We need to access your location for location services, we don't store or share your location.</string>
+<string>We need to access your location for finding volunteer organizations nearby your location, we don't store or share your location.</string>
 <key>NSLocationAlwaysUsageDescription</key>
-<string>We need to access your location for location services, we don't store or share your location.</string>
+<string>We need to access your location for finding volunteer organizations nearby your location, we don't store or share your location.</string>
 <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>We need to access your location for location services, we don't store or share your location.</string>
+<string>We need to access your location for finding volunteer organizations nearby your location, we don't store or share your location.</string>
 
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
