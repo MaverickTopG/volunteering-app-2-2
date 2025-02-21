@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Animated,
   Modal,
+  Dimensions,
 } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -18,6 +19,14 @@ import Geolocation from 'react-native-geolocation-service';
 MapboxGL.setAccessToken(
   'sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA'
 );
+
+// Define baseline dimensions (iPhone 16 Pro Max as an example)
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const { width, height } = Dimensions.get('window');
+
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 // In-memory cache for geocoding results
 const geocodeCache = {};
@@ -364,7 +373,7 @@ const MapScreen = () => {
         handleUserProgress([longitude, latitude]);
       },
       (err) => console.warn('watchPosition error:', err),
-      { enableHighAccuracy: true, distanceFilter: 5 }
+      { enableHighAccuracy: true, distanceFilter: scale(5) }
     );
   };
 
@@ -458,53 +467,50 @@ const MapScreen = () => {
   };
 
   const calculateRoute = async (destCoords) => {
-  if (!userLocation) {
-    Alert.alert('Location Missing', 'We do not have your location yet.');
-    return;
-  }
-  try {
-    const [userLon, userLat] = userLocation;
-    const [destLon, destLat] = destCoords;
-    const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${userLon},${userLat};${destLon},${destLat}?geometries=geojson&steps=true&access_token=sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA`;
-    const resp = await axios.get(directionsUrl);
-    if (resp.data.routes?.length) {
-      const routeObj = resp.data.routes[0];
-      const { geometry, distance, duration, legs } = routeObj;
-      setSteps(legs?.[0]?.steps || []);
-      setCurrentStepIndex(0);
-      const totalMin = Math.ceil(duration / 60);
-      const hours = Math.floor(totalMin / 60);
-      const minutes = totalMin % 60;
-      const etaStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}min`;
-      setRoute({
-        coordinates: geometry.coordinates,
-        distance: (distance / 1609.34).toFixed(2),
-        duration: totalMin,
-      });
-      setTripDetails({
-        eta: etaStr,
-        distance: (distance / 1609.34).toFixed(2),
-      });
-      cameraRef.current?.fitBounds(
-        geometry.coordinates[0],
-        geometry.coordinates[geometry.coordinates.length - 1],
-        50
-      );
-    } else {
-      console.warn('No driving route found.');
-      // Suppressing alert for no route found.
+    if (!userLocation) {
+      Alert.alert('Location Missing', 'We do not have your location yet.');
       return;
     }
-  } catch (err) {
-    console.warn('calculateRoute error:', err);
-    Alert.alert('Error', 'Could not calculate route.');
-  }
-};
-
+    try {
+      const [userLon, userLat] = userLocation;
+      const [destLon, destLat] = destCoords;
+      const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${userLon},${userLat};${destLon},${destLat}?geometries=geojson&steps=true&access_token=sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA`;
+      const resp = await axios.get(directionsUrl);
+      if (resp.data.routes?.length) {
+        const routeObj = resp.data.routes[0];
+        const { geometry, distance, duration, legs } = routeObj;
+        setSteps(legs?.[0]?.steps || []);
+        setCurrentStepIndex(0);
+        const totalMin = Math.ceil(duration / 60);
+        const hours = Math.floor(totalMin / 60);
+        const minutes = totalMin % 60;
+        const etaStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}min`;
+        setRoute({
+          coordinates: geometry.coordinates,
+          distance: (distance / 1609.34).toFixed(2),
+          duration: totalMin,
+        });
+        setTripDetails({
+          eta: etaStr,
+          distance: (distance / 1609.34).toFixed(2),
+        });
+        cameraRef.current?.fitBounds(
+          geometry.coordinates[0],
+          geometry.coordinates[geometry.coordinates.length - 1],
+          scale(50)
+        );
+      } else {
+        console.warn('No driving route found.');
+        return;
+      }
+    } catch (err) {
+      console.warn('calculateRoute error:', err);
+      Alert.alert('Error', 'Could not calculate route.');
+    }
+  };
 
   const startNavigation = () => {
     if (!route || !steps.length) {
-      // Alert.alert('No Route', 'Please search for a route first!');
       return;
     }
     setNavigationMode(true);
@@ -551,7 +557,7 @@ const MapScreen = () => {
           }}
         >
           <View style={styles.blackMarker}>
-            <Ionicons name="location" size={26} color="black" />
+            <Ionicons name="location" size={scale(26)} color="black" />
           </View>
         </MapboxGL.PointAnnotation>
       );
@@ -569,7 +575,7 @@ const MapScreen = () => {
     const instruction = step.maneuver.instruction || '';
     const translateY = instructionAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [-100, 0],
+      outputRange: [verticalScale(-100), 0],
     });
     return (
       <Animated.View
@@ -580,7 +586,7 @@ const MapScreen = () => {
           <Text style={styles.instrText}>{instruction}</Text>
         </View>
         <TouchableOpacity style={styles.endNavButton} onPress={stopNavigation}>
-          <Ionicons name="close" size={24} color="#000" />
+          <Ionicons name="close" size={scale(24)} color="#000" />
         </TouchableOpacity>
       </Animated.View>
     );
@@ -628,7 +634,7 @@ const MapScreen = () => {
           keyboardAppearance="dark"
         />
         <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-          <Ionicons name="search" size={24} color="black" />
+          <Ionicons name="search" size={scale(24)} color="black" />
         </TouchableOpacity>
       </View>
 
@@ -653,7 +659,7 @@ const MapScreen = () => {
         <MapboxGL.RasterDemSource
           id="mapbox-dem"
           url="mapbox://mapbox.mapbox-terrain-dem-v1"
-          tileSize={512}
+          tileSize={scale(512)}
         >
           <MapboxGL.Terrain sourceID="mapbox-dem" style={{ exaggeration: 1.5 }} />
         </MapboxGL.RasterDemSource>
@@ -679,7 +685,7 @@ const MapScreen = () => {
         {destination && (
           <MapboxGL.PointAnnotation id="destination" coordinate={destination}>
             <View style={styles.redMarker}>
-              <Ionicons name="pin" size={30} color="#FF0000" />
+              <Ionicons name="pin" size={scale(30)} color="#FF0000" />
             </View>
           </MapboxGL.PointAnnotation>
         )}
@@ -697,7 +703,7 @@ const MapScreen = () => {
               id="routeLayer"
               style={{
                 lineColor: '#4285F4',
-                lineWidth: 6,
+                lineWidth: scale(6),
                 lineCap: 'round',
                 lineJoin: 'round',
               }}
@@ -730,12 +736,12 @@ const MapScreen = () => {
           cameraRef.current?.flyTo(loc, 1200);
         }}
       >
-        <Ionicons name="locate" size={24} color="#fff" />
+        <Ionicons name="locate" size={scale(24)} color="#fff" />
       </TouchableOpacity>
 
       {/* Always-visible Home button */}
       <TouchableOpacity style={styles.homeButton} onPress={handleHomePress}>
-        <Ionicons name="home" size={24} color="#fff" />
+        <Ionicons name="home" size={scale(24)} color="#fff" />
       </TouchableOpacity>
 
       {/* “Set Location” button if geolocation fails */}
@@ -761,7 +767,7 @@ const MapScreen = () => {
               onPress={() => setIsHomeModalVisible(false)}
               style={styles.closeButton}
             >
-              <Ionicons name="close" size={24} color="black" />
+              <Ionicons name="close" size={scale(24)} color="black" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Set Your Current Address</Text>
             <TextInput
@@ -786,15 +792,16 @@ export default MapScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  map: { flex: 1 },
+  map: { flex: 1,
+    bottom:verticalScale(-16) },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff6e7',
-    paddingHorizontal: 10,
-    paddingVertical: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(20),
+    borderBottomLeftRadius: scale(30),
+    borderBottomRightRadius: scale(30),
     position: 'absolute',
     top: 0,
     left: 0,
@@ -803,18 +810,18 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    height: 50,
+    height: verticalScale(50),
     backgroundColor: '#fff6e7',
     color: '#333',
     borderColor: '#333',
     borderWidth: 1,
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    fontSize: 16,
+    borderRadius: scale(25),
+    paddingHorizontal: scale(20),
+    fontSize: scale(16),
   },
   searchButton: {
-    marginLeft: 10,
-    padding: 10,
+    marginLeft: scale(10),
+    padding: scale(10),
   },
   blackMarker: {
     alignItems: 'center',
@@ -825,55 +832,54 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   blueDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: scale(18),
+    height: scale(18),
+    borderRadius: scale(9),
     backgroundColor: '#007AFF',
-    borderWidth: 2,
+    borderWidth: scale(2),
     borderColor: 'white',
   },
   routeDetailsContainer: {
     position: 'absolute',
-    bottom: 120, // Move it slightly up
-    left: 20, // Reduce width
-    right: 80, // Reduce width
+    bottom: verticalScale(120),
+    left: scale(20),
+    right: scale(80),
     backgroundColor: '#fff6e7',
-    borderRadius: 8, // Slightly smaller radius
-    padding: 16, // Reduce padding
+    borderRadius: scale(8),
+    padding: scale(16),
     borderWidth: 1,
     borderColor: 'black',
     zIndex: 10,
   },
-
   routeHeader: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: '700',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
   },
   routeText: {
-    fontSize: 16,
+    fontSize: scale(16),
     color: '#333',
   },
   startNavBtn: {
-    marginTop: 12,
+    marginTop: verticalScale(12),
     backgroundColor: '#333',
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderRadius: scale(8),
+    paddingVertical: verticalScale(10),
     alignItems: 'center',
   },
   startNavBtnText: {
     color: '#fff6e7',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: scale(16),
   },
   locateButton: {
     position: 'absolute',
-    bottom: 80,
-    right: 10,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    bottom: verticalScale(80),
+    right: scale(10),
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
     backgroundColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
@@ -881,11 +887,11 @@ const styles = StyleSheet.create({
   },
   homeButton: {
     position: 'absolute',
-    bottom: 140,
-    right: 10,
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    bottom: verticalScale(140),
+    right: scale(10),
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
     backgroundColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
@@ -893,44 +899,44 @@ const styles = StyleSheet.create({
   },
   setLocationButton: {
     position: 'absolute',
-    bottom: 440,
+    bottom: verticalScale(440),
     right: 0,
     backgroundColor: 'black',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderRadius: scale(8),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(10),
     zIndex: 1000,
   },
   setLocationText: {
     color: '#fff6e7',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: scale(14),
   },
   instructionsBar: {
     position: 'absolute',
-    top: 670,
-    left: 10,
-    right: 70,
+    top: verticalScale(640),
+    left: scale(10),
+    right: scale(70),
     backgroundColor: '#fff6e7',
     borderBottomWidth: 1,
     borderColor: '#ccc',
     flexDirection: 'row',
-    padding: 12,
+    padding: scale(12),
     zIndex: 20,
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: scale(20),
   },
   instrDistance: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: '600',
     color: '#000',
   },
   instrText: {
-    fontSize: 16,
+    fontSize: scale(16),
     color: '#000',
   },
   endNavButton: {
-    marginLeft: 10,
+    marginLeft: scale(10),
   },
   modalOverlay: {
     flex: 1,
@@ -941,45 +947,45 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '85%',
     backgroundColor: '#fff6e7',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: scale(12),
+    padding: scale(20),
     borderWidth: 1,
     borderColor: 'black',
   },
   closeButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: scale(10),
+    right: scale(10),
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: '700',
     color: '#333',
-    marginBottom: 15,
+    marginBottom: verticalScale(15),
     textAlign: 'center',
   },
   modalInput: {
     width: '100%',
-    height: 45,
+    height: verticalScale(45),
     backgroundColor: '#fff6e7',
     borderColor: '#333',
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    fontSize: 16,
+    borderRadius: scale(10),
+    paddingHorizontal: scale(15),
+    marginBottom: verticalScale(20),
+    fontSize: scale(16),
     color: '#333',
   },
   modalSaveBtn: {
     backgroundColor: 'black',
-    borderRadius: 8,
-    paddingVertical: 10,
+    borderRadius: scale(8),
+    paddingVertical: verticalScale(10),
     bottom: 0,
     alignItems: 'center',
   },
   modalSaveBtnText: {
     color: '#fff6e7',
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: '600',
   },
 });

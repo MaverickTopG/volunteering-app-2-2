@@ -1,5 +1,5 @@
 import React, { useContext, useRef } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View, Image } from 'react-native';
+import { Animated, StyleSheet, TouchableOpacity, View, Image, Dimensions } from 'react-native';
 import { CurvedBottomBarExpo } from 'react-native-curved-bottom-bar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -16,6 +16,13 @@ import SplashScreen from '../screens/Splashscreen';
 import DeleteScreen from '../../auth/deleteScreen';
 
 const Stack = createStackNavigator();
+
+// Define baseline dimensions (iPhone 16 Pro Max as an example)
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const { width, height } = Dimensions.get('window');
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 // Carousel Stack for Dynamic Navigation
 const CarouselStack = ({ route }) => {
@@ -112,7 +119,7 @@ const TabIcon = ({ routeName, selectedTab, onPress }) => {
       <Animated.View style={{ transform: [{ rotate: spin }] }}>
         <Ionicons
           name={iconName}
-          size={25}
+          size={scale(25)}
           color={routeName === selectedTab ? '#fff6e7' : '#ffffff40'}
         />
       </Animated.View>
@@ -165,8 +172,8 @@ const AnimalTabNavigator = () => {
     <View style={{ flex: 1 }}>
       <CurvedBottomBarExpo.Navigator
         style={styles.bottomBar}
-        height={65}
-        circleWidth={75}
+        height={verticalScale(65)}
+        circleWidth={scale(75)}
         bgColor="black"
         initialRouteName="Search"
         borderTopLeftRight
@@ -214,43 +221,42 @@ const AnimalTabNavigator = () => {
 
 export default AnimalTabNavigator;
 
-
 const styles = StyleSheet.create({
   bottomBar: {
     position: 'absolute',
-    borderRadius: 20,
+    borderRadius: scale(20),
     elevation: 1000,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 0.5,
+      height: verticalScale(0.5),
     },
     shadowOpacity: 0.2,
-    shadowRadius: 1.41,
+    shadowRadius: scale(1.41),
   },
   btnCircle: {
-    width: 75,
-    height: 75,
-    borderRadius: 37.5,
+    width: scale(75),
+    height: scale(75),
+    borderRadius: scale(37.5),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'black',
     shadowColor: '#1A1A23',
     shadowOffset: {
       width: 0,
-      height: 0.5,
+      height: verticalScale(0.5),
     },
     shadowOpacity: 0.2,
-    shadowRadius: 0.41,
+    shadowRadius: scale(0.41),
     elevation: 1,
   },
   circleContainer: {
     position: 'relative',
-    top: -45,
+    top: verticalScale(-45),
     alignSelf: 'center',
-    width: 75,
-    height: 75,
-    borderRadius: 37.5,
+    width: scale(75),
+    height: scale(75),
+    borderRadius: scale(37.5),
     backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
@@ -262,8 +268,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   spaceshipIcon: {
-    width: 30,
-    height: 30,
+    width: scale(30),
+    height: scale(30),
     tintColor: '#fff6e7',
   },
 });

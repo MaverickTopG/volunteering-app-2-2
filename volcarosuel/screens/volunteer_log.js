@@ -10,23 +10,31 @@ import {
   Alert,
   ActivityIndicator,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import { AuthContext } from '../../auth/AuthContext'; // Adjust the path to your AuthContext
 import { db } from '../../auth/firebase'; // Import Firestore db
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import Ionicons from 'react-native-vector-icons/Ionicons'; // Importing Ionicons for icons
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 
+// Define baseline dimensions (iPhone 16 Pro Max as an example)
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const { width, height } = Dimensions.get('window');
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+
 const VolunteerLogs = () => {
-  const { user, signOut } = useContext(AuthContext); // Get current authenticated user and signOut function
+  const { user, signOut } = useContext(AuthContext);
   const [logs, setLogs] = useState([]);
-  const [totalHours, setTotalHours] = useState(0); // State to store cumulative hours
+  const [totalHours, setTotalHours] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newHours, setNewHours] = useState('');
   const [selectedSite, setSelectedSite] = useState('');
-  const [customSite, setCustomSite] = useState(''); // For custom site input
-  const [isCustomSite, setIsCustomSite] = useState(false); // Track if using custom site
+  const [customSite, setCustomSite] = useState('');
+  const [isCustomSite, setIsCustomSite] = useState(false);
   const navigation = useNavigation();
 
   const sites = [
@@ -46,7 +54,6 @@ const VolunteerLogs = () => {
 
   useEffect(() => {
     if (!user) {
-      // If user is not authenticated, redirect to Login screen
       navigation.navigate('Login');
     } else {
       fetchVolunteerLogs();
@@ -58,20 +65,19 @@ const VolunteerLogs = () => {
     try {
       const q = query(
         collection(db, 'volunteer_logs'),
-        where('user_id', '==', user.uid) // Query logs for the current user
+        where('user_id', '==', user.uid)
       );
       const querySnapshot = await getDocs(q);
       const logsData = [];
-      let total = 0; // Initialize cumulative total
-
+      let total = 0;
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         logsData.push({ id: doc.id, ...data });
-        total += data.hours_contributed; // Accumulate hours
+        total += data.hours_contributed;
       });
 
       setLogs(logsData);
-      setTotalHours(total); // Update the total hours state
+      setTotalHours(total);
     } catch (error) {
       Alert.alert('Error', error.message);
     } finally {
@@ -86,7 +92,6 @@ const VolunteerLogs = () => {
     }
 
     const siteName = isCustomSite ? customSite : selectedSite;
-
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString();
     const formattedTime = currentDate.toLocaleTimeString();
@@ -100,7 +105,7 @@ const VolunteerLogs = () => {
         time: formattedTime,
         timestamp: currentDate.toISOString(),
       });
-      fetchVolunteerLogs(); // Refresh logs after adding a new entry
+      fetchVolunteerLogs();
       setShowModal(false);
       setNewHours('');
       setSelectedSite('');
@@ -113,7 +118,7 @@ const VolunteerLogs = () => {
 
   const handleSignOut = () => {
     signOut();
-    navigation.navigate('NexoLink'); // Redirect to NexoLink (AnimalTabNavigator) after signing out
+    navigation.navigate('NexoLink'); // Redirect after sign out
   };
 
   const renderLogItem = ({ item }) => (
@@ -133,15 +138,17 @@ const VolunteerLogs = () => {
           Total Hours: {totalHours} hrs
         </Text>
         <TouchableOpacity onPress={handleSignOut}>
-          <Ionicons name="log-out-outline" size={24} color="black" />
+          <Ionicons name="log-out-outline" size={scale(24)} color="black" />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#000" style={{ flex: 1 }} />
       ) : logs.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={styles.noLogsText}>Time to start racking those points up!</Text>
+        <View style={styles.noLogsContainer}>
+          <Text style={styles.noLogsText}>
+            Time to start racking those points up!
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -155,7 +162,7 @@ const VolunteerLogs = () => {
       )}
 
       <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
-        <Ionicons name="add" size={30} color="#fff6e7" />
+        <Ionicons name="add" size={scale(30)} color="#fff6e7" />
       </TouchableOpacity>
 
       {/* Modal for adding a new log */}
@@ -163,17 +170,15 @@ const VolunteerLogs = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add New Volunteer Log</Text>
-
             <TextInput
               style={styles.input}
               placeholder="Enter hours"
               keyboardType="numeric"
-              keyboardAppearance="dark" 
+              keyboardAppearance="dark"
               value={newHours}
               onChangeText={(text) => setNewHours(text)}
               placeholderTextColor="#aaa"
             />
-
             {!isCustomSite && (
               <TouchableOpacity
                 style={styles.siteButton}
@@ -184,12 +189,11 @@ const VolunteerLogs = () => {
                 </Text>
               </TouchableOpacity>
             )}
-
             {isCustomSite ? (
               <TextInput
                 style={styles.input}
                 placeholder="Enter custom site name"
-                keyboardAppearance="dark" 
+                keyboardAppearance="dark"
                 value={customSite}
                 onChangeText={(text) => setCustomSite(text)}
                 placeholderTextColor="#aaa"
@@ -212,7 +216,6 @@ const VolunteerLogs = () => {
                 style={styles.sitesList}
               />
             )}
-
             <TouchableOpacity style={styles.modalButton} onPress={handleAddLog}>
               <Text style={styles.modalButtonText}>Add Log</Text>
             </TouchableOpacity>
@@ -244,71 +247,72 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#fff6e7',
-    paddingTop: 20,
-    paddingBottom: 10,
-    paddingHorizontal: 20,
+    paddingTop: verticalScale(20),
+    paddingBottom: verticalScale(10),
+    paddingHorizontal: scale(20),
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    // Shadow for iOS
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     shadowOpacity: 0.2,
-    shadowRadius: 2,
-    // Elevation for Android
+    shadowRadius: scale(2),
     elevation: 3,
     zIndex: 1,
   },
   totalHoursText: {
-    fontSize: 22,
+    fontSize: scale(22),
     fontWeight: 'bold',
     color: 'black',
   },
   logsList: {
     flex: 1,
-    marginTop: 10, // To provide space below the header
+    marginTop: verticalScale(10),
   },
   logsContainer: {
-    paddingBottom: 80,
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingBottom: verticalScale(80),
+    paddingHorizontal: scale(20),
+    paddingTop: verticalScale(10),
+  },
+  noLogsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   noLogsText: {
-    fontSize: 18,
+    fontSize: scale(18),
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: verticalScale(20),
     color: '#aaa',
   },
   logItem: {
     backgroundColor: '#fff6e7',
-    borderRadius: 20,
-    marginVertical: 5,
-    padding: 15,
+    borderRadius: scale(20),
+    marginVertical: verticalScale(5),
+    padding: scale(15),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
   },
   logText: {
-    fontSize: 16,
+    fontSize: scale(16),
     color: 'black',
   },
   addButton: {
     position: 'absolute',
-    bottom: 85,
-    right: 20,
+    bottom: verticalScale(85),
+    right: scale(20),
     backgroundColor: '#000',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: scale(60),
+    height: scale(60),
+    borderRadius: scale(30),
     justifyContent: 'center',
     alignItems: 'center',
-    // Shadow for iOS
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: { width: 0, height: verticalScale(5) },
     shadowOpacity: 0.3,
-    shadowRadius: 10,
-    // Elevation for Android
+    shadowRadius: scale(10),
     elevation: 5,
   },
   modalContainer: {
@@ -317,73 +321,73 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalContent: {
-    marginHorizontal: 20,
+    marginHorizontal: scale(20),
     backgroundColor: '#fff6e7',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: scale(20),
+    padding: scale(20),
     alignItems: 'stretch',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
     color: 'black',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     textAlign: 'center',
   },
   input: {
-    height: 50,
+    height: verticalScale(50),
     borderColor: '#333',
-    borderWidth: 1,
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    fontSize: 16,
+    borderWidth: scale(1),
+    borderRadius: scale(25),
+    paddingHorizontal: scale(20),
+    fontSize: scale(16),
     backgroundColor: '#fff6e7',
     color: 'black',
-    marginBottom: 15,
+    marginBottom: verticalScale(15),
   },
   siteButton: {
-    height: 50,
+    height: verticalScale(50),
     justifyContent: 'center',
     backgroundColor: '#fff6e7',
     borderColor: '#333',
-    borderWidth: 1,
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    marginBottom: 15,
+    borderWidth: scale(1),
+    borderRadius: scale(25),
+    paddingHorizontal: scale(20),
+    marginBottom: verticalScale(15),
   },
   siteButtonText: {
-    fontSize: 16,
+    fontSize: scale(16),
     color: 'black',
   },
   sitesList: {
-    maxHeight: 150,
-    marginBottom: 15,
+    maxHeight: verticalScale(150),
+    marginBottom: verticalScale(15),
   },
   siteItem: {
-    padding: 10,
+    padding: scale(10),
     backgroundColor: '#fff6e7',
     borderColor: '#333',
-    borderWidth: 1,
-    borderRadius: 20,
-    marginVertical: 5,
+    borderWidth: scale(1),
+    borderRadius: scale(20),
+    marginVertical: verticalScale(5),
   },
   selectedSiteItem: {
     backgroundColor: '#d1e7dd',
   },
   siteText: {
-    fontSize: 16,
+    fontSize: scale(16),
     color: 'black',
   },
   modalButton: {
     backgroundColor: '#000',
-    padding: 15,
-    borderRadius: 25,
+    padding: scale(15),
+    borderRadius: scale(25),
     alignItems: 'center',
-    marginVertical: 5,
+    marginVertical: verticalScale(5),
   },
   modalButtonText: {
     color: '#fff6e7',
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   cancelButton: {

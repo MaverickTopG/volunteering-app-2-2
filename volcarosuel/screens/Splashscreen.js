@@ -13,7 +13,14 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
+// Use the iPhone 16 Pro Max as the design baseline.
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+
 const { width, height } = Dimensions.get('window');
+
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 const GoFundMeScreen = () => {
   const logoScale = useRef(new Animated.Value(0)).current;
@@ -113,69 +120,69 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    padding: 20,
+    padding: scale(20),
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoContainer: {
-    marginBottom: height * 0.05,
+    marginBottom: verticalScale(20),
   },
   logo: {
-    width: width * 0.3,
-    height: width * 0.3,
+    width: scale(128),  // originally width * 0.3 on iPhone 16 Pro Max (~128px if guideline is 428)
+    height: scale(128),
   },
   textContainer: {
     alignItems: 'center',
-    marginBottom: height * 0.02,
+    marginBottom: verticalScale(15),
   },
   title: {
-    fontSize: width * 0.07,
+    fontSize: scale(30),  // adjust from width * 0.07
     fontWeight: 'bold',
     color: '#333',
   },
   typingText: {
-    fontSize: width * 0.05,
+    fontSize: scale(22),  // adjust from width * 0.05
     color: '#333',
-    marginTop: 5,
+    marginTop: verticalScale(5),
   },
   donateButton: {
-    marginTop: 20,
+    marginTop: verticalScale(20),
     backgroundColor: 'black',
-    paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 8,
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(25),
+    borderRadius: scale(8),
     shadowColor: '#000',
     shadowOpacity: 0.2,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: scale(5),
+    shadowOffset: { width: 0, height: scale(3) },
     elevation: 3,
   },
   donateButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: scale(18),
     fontWeight: 'bold',
   },
   infoSection: {
-    marginTop: 30,
-    paddingHorizontal: 10,
-    paddingVertical: 15,
+    marginTop: verticalScale(30),
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(15),
     backgroundColor: '#fff6e7',
-    borderRadius: 12,
+    borderRadius: scale(12),
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: scale(4),
+    shadowOffset: { width: 0, height: verticalScale(2) },
     elevation: 2,
     alignItems: 'center',
   },
   infoTitle: {
-    fontSize: 20,
+    fontSize: scale(20),
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   infoText: {
-    fontSize: 16,
+    fontSize: scale(16),
     color: '#333',
     textAlign: 'center',
   },

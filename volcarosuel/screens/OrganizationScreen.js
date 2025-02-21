@@ -10,10 +10,18 @@ import {
   KeyboardAvoidingView,
   TextInput,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { AuthContext } from '../../auth/AuthContext';  // Adjust the path as needed
 import { db } from '../../auth/firebase';             // your firebase config/export
 import { collection, addDoc } from 'firebase/firestore';
+
+// Define baseline dimensions (iPhone 16 Pro Max as an example)
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const { width, height } = Dimensions.get('window');
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 export default function SuggestOrganizationScreen() {
   const { user } = useContext(AuthContext);
@@ -96,7 +104,7 @@ export default function SuggestOrganizationScreen() {
         'Thank you! Your suggestion has been submitted. Once added to the main database, it will appear in the app.'
       );
 
-      // Remove the message after 3 seconds
+      // Remove the message after 5 seconds
       setTimeout(() => {
         setSubmissionMessage('');
       }, 5000);
@@ -213,7 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff6e7',
   },
   scrollContainer: {
-    padding: 20,
+    padding: scale(20),
     alignItems: 'center',
   },
   notLoggedInContainer: {
@@ -221,79 +229,79 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff6e7',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: scale(20),
   },
   notLoggedInText: {
-    fontSize: 18,
+    fontSize: scale(18),
     color: '#333',
     textAlign: 'center',
   },
   title: {
-    fontSize: 26,
+    fontSize: scale(26),
     fontWeight: 'bold',
     color: '#333',
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: verticalScale(20),
+    marginBottom: verticalScale(10),
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: scale(16),
     color: '#444',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     textAlign: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
   },
   formCard: {
     width: '100%',
     backgroundColor: '#fff6e7',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: scale(12),
+    padding: scale(20),
     // Shadow for iOS
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: verticalScale(2) },
     shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowRadius: scale(4),
     // Shadow for Android
-    elevation: 4,
+    elevation: scale(4),
   },
   input: {
     backgroundColor: '#fff6e7',
-    borderWidth: 1,
+    borderWidth: scale(1),
     borderColor: '#ccc',
-    borderRadius: 8,
+    borderRadius: scale(8),
     color: '#333',
-    fontSize: 15,
-    padding: 12,
-    marginBottom: 12,
+    fontSize: scale(15),
+    padding: scale(12),
+    marginBottom: verticalScale(12),
     width: '100%',
   },
   multiline: {
-    height: 80,
+    height: verticalScale(80),
     textAlignVertical: 'top',
   },
   submitButton: {
     backgroundColor: '#333',
-    borderRadius: 8,
-    paddingVertical: 14,
+    borderRadius: scale(8),
+    paddingVertical: verticalScale(14),
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: verticalScale(8),
   },
   submitButtonText: {
     color: '#fff6e7',
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   messageBox: {
-    marginTop: 16,
-    padding: 12,
+    marginTop: verticalScale(16),
+    padding: scale(12),
     backgroundColor: '#fff6e7',
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: scale(8),
+    borderWidth: scale(1),
     borderColor: '#333',
   },
   messageText: {
     color: '#333',
-    fontSize: 15,
+    fontSize: scale(15),
     textAlign: 'center',
   },
 });

@@ -13,10 +13,18 @@ import {
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import Geolocation from 'react-native-geolocation-service';
+
+// Define baseline dimensions (iPhone 16 Pro Max as an example)
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const { width, height } = Dimensions.get('window');
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 // Helper function to generate a unique id.
 const generateUniqueId = () =>
@@ -175,27 +183,7 @@ const ChatGPT = () => {
   const [fadeAnim] = useState(new Animated.Value(1));
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // We are not shifting the chat when the keyboard appears.
-  // Input bar still shifts as before.
-
-  const initialMessage = {
-    id: 'init',
-    type: 'bot',
-    text:
-      "Welcome to Nexolink – your volunteering companion. How can I help you find meaningful volunteer opportunities today?",
-  };
-
-  // Chat data state.
-  const [data, setData] = useState([initialMessage]);
-  const [textInput, setTextInput] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const apiKey = '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';
-  const apiUrl = 'https://api.openai.com/v1/chat/completions';
-  const modelId = 'gpt-3.5-turbo';
-
-  // ********* INPUT BAR POSITION ANIMATION *********
+  // Input bar position animation.
   const INITIAL_INPUT_OFFSET = 80;
   const FOCUSED_INPUT_OFFSET = -312;
   const [inputYOffset] = useState(new Animated.Value(INITIAL_INPUT_OFFSET));
@@ -215,6 +203,26 @@ const ChatGPT = () => {
       useNativeDriver: true,
     }).start();
   };
+
+  const initialMessage = {
+    id: 'init',
+    type: 'bot',
+    text:
+      "Welcome to Nexolink – your volunteering companion. How can I help you find meaningful volunteer opportunities today?",
+  };
+
+  // Chat data state.
+  const [data, setData] = useState([initialMessage]);
+  const [textInput, setTextInput] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const apiKey = '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';
+  const apiUrl = 'https://api.openai.com/v1/chat/completions';
+  const modelId = 'gpt-3.5-turbo';
+
+  // ********* INPUT BAR POSITION ANIMATION *********
+  // (The animation values remain the same; only the styles of the input bar will be scaled.)
   // ***********************************************
 
   const isChatEmpty = data.length === 1;
@@ -281,9 +289,7 @@ const ChatGPT = () => {
     setTextInput('');
 
     try {
-      // Include a system instruction to restrict answers to volunteering topics.
-      const systemInstruction =
-        "You are a helpful AI volunteer assistant.";
+      const systemInstruction = "You are a helpful AI volunteer assistant.";
       const response = await axios.post(
         apiUrl,
         {
@@ -377,7 +383,7 @@ const ChatGPT = () => {
           returnKeyType="send"
         />
         <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-          <Ionicons name="send-outline" size={22} color="black" />
+          <Ionicons name="send-outline" size={scale(22)} color="black" />
         </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>
@@ -390,36 +396,80 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff6e7' },
   contentContainer: { flex: 1 },
   centerIntroContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  logoStyle: { width: 80, height: 80, marginBottom: 20 },
-  introTitle: { fontSize: 22, fontWeight: '600', color: '#333', marginBottom: 6 },
-  introSubtitle: { fontSize: 16, color: '#555' },
-  tapToStartText: { fontSize: 14, color: '#333', marginTop: 10 },
+  logoStyle: { width: scale(80), height: scale(80), marginBottom: verticalScale(20) },
+  introTitle: { fontSize: scale(22), fontWeight: '600', color: '#333', marginBottom: verticalScale(6) },
+  introSubtitle: { fontSize: scale(16), color: '#555' },
+  tapToStartText: { fontSize: scale(14), color: '#333', marginTop: verticalScale(10) },
   chatContainer: { flex: 1 },
-  flatListContent: { paddingTop: 10, paddingHorizontal: 10, paddingBottom: 80, flexGrow: 1, minHeight: '100%' },
+  flatListContent: { 
+    paddingTop: verticalScale(10), 
+    paddingHorizontal: scale(10), 
+    paddingBottom: verticalScale(80), 
+    flexGrow: 1, 
+    minHeight: '100%' 
+  },
   userMessageContainer: {
     alignSelf: 'flex-end',
     backgroundColor: '#fff6e7',
-    borderRadius: 15,
-    marginVertical: 5,
-    padding: 10,
+    borderRadius: scale(15),
+    marginVertical: verticalScale(5),
+    padding: scale(10),
     maxWidth: '70%',
     borderBottomColor: 'black',
-    borderWidth: 1,
+    borderWidth: scale(1),
   },
   botMessageContainer: {
     alignSelf: 'flex-start',
     backgroundColor: '#fff6e7',
-    borderRadius: 15,
-    marginVertical: 5,
-    padding: 10,
+    borderRadius: scale(15),
+    marginVertical: verticalScale(5),
+    padding: scale(10),
     maxWidth: '70%',
   },
-  messageText: { fontSize: 16, color: '#333' },
-  typingIndicatorContainer: { flexDirection: 'row', paddingHorizontal: 10, paddingBottom: 10 },
-  typingDot: { fontSize: 24, color: '#333', marginHorizontal: 2 },
-  errorContainer: { position: 'absolute', top: '25%', left: '10%', right: '10%', backgroundColor: '#ff3333', borderRadius: 10, padding: 15, alignItems: 'center' },
-  errorText: { color: '#fff', fontSize: 16 },
-  inputBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff6e7', paddingHorizontal: 10, paddingVertical: 8, borderTopColor: '#fff6e7', borderTopWidth: 1 },
-  textInput: { flex: 1, backgroundColor: '#fff6e7', height: 40, borderRadius: 20, paddingHorizontal: 15, fontSize: 16, color: '#333', marginRight: 8, borderColor: 'black', borderWidth: 1 },
-  sendButton: { backgroundColor: '#fff6e7', borderRadius: 20, padding: 10, borderColor: 'black', borderWidth: 1 },
+  messageText: { fontSize: scale(16), color: '#333' },
+  typingIndicatorContainer: { 
+    flexDirection: 'row', 
+    paddingHorizontal: scale(10), 
+    paddingBottom: verticalScale(10) 
+  },
+  typingDot: { fontSize: scale(24), color: '#333', marginHorizontal: scale(2) },
+  errorContainer: { 
+    position: 'absolute', 
+    top: '25%', 
+    left: '10%', 
+    right: '10%', 
+    backgroundColor: '#ff3333', 
+    borderRadius: scale(10), 
+    padding: scale(15), 
+    alignItems: 'center' 
+  },
+  errorText: { color: '#fff', fontSize: scale(16) },
+  inputBar: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#fff6e7', 
+    paddingHorizontal: scale(10), 
+    paddingVertical: verticalScale(8), 
+    borderTopColor: '#fff6e7', 
+    borderTopWidth: scale(1) 
+  },
+  textInput: { 
+    flex: 1, 
+    backgroundColor: '#fff6e7', 
+    height: verticalScale(40), 
+    borderRadius: scale(20), 
+    paddingHorizontal: scale(15), 
+    fontSize: scale(16), 
+    color: '#333', 
+    marginRight: scale(8), 
+    borderColor: 'black', 
+    borderWidth: scale(1) 
+  },
+  sendButton: { 
+    backgroundColor: '#fff6e7', 
+    borderRadius: scale(20), 
+    padding: scale(10), 
+    borderColor: 'black', 
+    borderWidth: scale(1) 
+  },
 });

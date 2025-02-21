@@ -9,10 +9,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { AuthContext } from './AuthContext'; // Adjust path to your AuthContext
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+
+// Define baseline dimensions (iPhone 16 Pro Max as an example)
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const { width, height } = Dimensions.get('window');
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -74,7 +82,7 @@ const LoginScreen = () => {
             <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
               <Ionicons
                 name={isPasswordVisible ? 'eye' : 'eye-off'}
-                size={20}
+                size={scale(20)}
                 color="#aaa"
               />
             </TouchableOpacity>
@@ -103,70 +111,69 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
   },
   headerContainer: {
-    marginBottom: 30,
+    marginBottom: verticalScale(30),
     alignItems: 'center',
   },
   headerText: {
-    fontSize: 28,
+    fontSize: scale(28),
     fontWeight: 'bold',
     color: '#333',
   },
   inputContainer: {
-    marginTop: 20,
+    marginTop: verticalScale(20),
   },
   /* Single-field styling */
   input: {
-    height: 50,
+    height: verticalScale(50),
     borderColor: '#333',
-    borderWidth: 1,
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    fontSize: 16,
+    borderWidth: scale(1),
+    borderRadius: scale(25),
+    paddingHorizontal: scale(20),
+    fontSize: scale(16),
     backgroundColor: '#fff6e7',
     color: 'black',
-    marginBottom: 15,
+    marginBottom: verticalScale(15),
   },
   /* Container for password + icon */
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderColor: '#333',
-    borderWidth: 1,
-    borderRadius: 25,
+    borderWidth: scale(1),
+    borderRadius: scale(25),
     backgroundColor: '#fff6e7',
-    marginBottom: 15,
-    height: 50,
-    paddingHorizontal: 20,
+    marginBottom: verticalScale(15),
+    height: verticalScale(50),
+    paddingHorizontal: scale(20),
   },
   passwordInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: scale(16),
     color: 'black',
   },
   eyeIcon: {
-    padding: 5,
+    padding: scale(5),
   },
   button: {
     backgroundColor: '#000', // Black button for contrast
-    padding: 15,
-    borderRadius: 25,
+    padding: scale(15),
+    borderRadius: scale(25),
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: verticalScale(10),
+    marginBottom: verticalScale(20),
   },
   buttonText: {
     color: '#fff6e7', // Cream-colored text
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   linkText: {
     color: '#333',
     textAlign: 'center',
-    fontSize: 16,
-    marginTop: 10,
-    textDecorationLine: 'underline', // Optional underline
+    fontSize: scale(16),
+    marginTop: verticalScale(10),
   },
 });

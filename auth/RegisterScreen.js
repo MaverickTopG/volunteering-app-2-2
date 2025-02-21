@@ -8,22 +8,34 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
+  Alert,
 } from 'react-native';
 import { AuthContext } from './AuthContext'; // Adjust the path as needed
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
+// Define baseline dimensions (iPhone 16 Pro Max as an example)
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const { width, height } = Dimensions.get('window');
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+
 const RegisterScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // If firstName and lastName are required, add state for them.
+  // const [firstName, setFirstName] = useState('');
+  // const [lastName, setLastName] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const { signUp } = useContext(AuthContext); // Use signUp from AuthContext
   const navigation = useNavigation();
 
   const handleSignUp = async () => {
-    // Adjust signUp to handle first/last name if needed
-    const success = await signUp(email, password, firstName, lastName);
+    // Adjust signUp to handle first/last name if needed.
+    const success = await signUp(email, password /*, firstName, lastName*/);
     if (success) {
       navigation.navigate('Login');
     }
@@ -52,7 +64,6 @@ const RegisterScreen = () => {
         </View>
 
         <View style={styles.inputContainer}>
-
           {/* Email */}
           <View style={styles.inputWrapper}>
             <TextInput
@@ -81,7 +92,7 @@ const RegisterScreen = () => {
             <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
               <Ionicons
                 name={isPasswordVisible ? 'eye' : 'eye-off'}
-                size={20}
+                size={scale(20)}
                 color="#aaa"
               />
             </TouchableOpacity>
@@ -116,78 +127,71 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
   },
   headerContainer: {
-    marginBottom: 30,
+    marginBottom: verticalScale(30),
     alignItems: 'center',
   },
   headerText: {
-    fontSize: 28,
+    fontSize: scale(28),
     fontWeight: 'bold',
     color: '#333',
   },
   inputContainer: {
-    marginTop: 20,
+    marginTop: verticalScale(20),
   },
-  /* 
-    Wrapper for each text input so we can have 
-    consistent styling & spacing.
-  */
+  /* Wrapper for each text input to maintain consistent styling & spacing */
   inputWrapper: {
     borderColor: '#333',
-    borderWidth: 1,
-    borderRadius: 25,
+    borderWidth: scale(1),
+    borderRadius: scale(25),
     backgroundColor: '#fff6e7',
-    marginBottom: 15,
+    marginBottom: verticalScale(15),
   },
   input: {
-    height: 50,
-    paddingHorizontal: 20,
-    fontSize: 16,
+    height: verticalScale(50),
+    paddingHorizontal: scale(20),
+    fontSize: scale(16),
     color: 'black',
   },
-  /* 
-    Password container with the same styling 
-    but includes an icon on the right side.
-  */
+  /* Password container with icon on the right */
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderColor: '#333',
-    borderWidth: 1,
-    borderRadius: 25,
+    borderWidth: scale(1),
+    borderRadius: scale(25),
     backgroundColor: '#fff6e7',
-    marginBottom: 15,
-    height: 50,
-    paddingHorizontal: 20,
+    marginBottom: verticalScale(15),
+    height: verticalScale(50),
+    paddingHorizontal: scale(20),
   },
   passwordInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: scale(16),
     color: 'black',
   },
   eyeIcon: {
-    padding: 5,
+    padding: scale(5),
   },
   button: {
     backgroundColor: '#000', // Black button
-    padding: 15,
-    borderRadius: 25,
+    padding: scale(15),
+    borderRadius: scale(25),
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: verticalScale(10),
+    marginBottom: verticalScale(20),
   },
   buttonText: {
     color: '#fff6e7', // Cream-colored text
-    fontSize: 16,
+    fontSize: scale(16),
     fontWeight: 'bold',
   },
   linkText: {
     color: '#333',
     textAlign: 'center',
-    fontSize: 16,
-    marginTop: 10,
-    textDecorationLine: 'underline',
+    fontSize: scale(16),
+    marginTop: verticalScale(10),
   },
 });

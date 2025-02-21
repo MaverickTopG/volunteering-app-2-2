@@ -1,7 +1,14 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // For Expo (or use react-native-vector-icons/Ionicons)
 import { useNavigation } from '@react-navigation/native';
+
+// Define baseline dimensions (iPhone 16 Pro Max as an example)
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const { width, height } = Dimensions.get('window');
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 const categories = [
   { id: '1', title: 'Animal', icon: 'paw-outline', reference: 'Animal' },
@@ -14,8 +21,6 @@ const categories = [
 export default function CausesScreen() {
   const navigation = useNavigation();
 
-  // When a category is pressed, navigate to CarouselStack
-  // Passing both the carouselName and reference
   const handleCategoryPress = (cat) => {
     navigation.navigate('CarouselStack', { 
       carouselName: cat.title, 
@@ -34,7 +39,7 @@ export default function CausesScreen() {
             onPress={() => handleCategoryPress(cat)}
           >
             <View style={styles.iconContainer}>
-              <Ionicons name={cat.icon} size={28} color="#333" />
+              <Ionicons name={cat.icon} size={scale(28)} color="#333" />
             </View>
             <Text style={styles.itemText}>{cat.title}</Text>
           </TouchableOpacity>
@@ -48,14 +53,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff6e7',
-    paddingTop: 50,
+    paddingTop: verticalScale(50),
     alignItems: 'center',
   },
   header: {
-    fontSize: 24,
+    fontSize: scale(24),
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   grid: {
     flexDirection: 'row',
@@ -67,24 +72,24 @@ const styles = StyleSheet.create({
     margin: '5%',       // Spacing around each item
     alignItems: 'center',
     backgroundColor: '#fff6e7',
-    borderRadius: 12,
-    paddingVertical: 20,
-    borderWidth: 1,
+    borderRadius: scale(12),
+    paddingVertical: verticalScale(20),
+    borderWidth: scale(1),
     borderColor: '#ccc',
   },
   iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
     backgroundColor: '#fff6e7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
-    borderWidth: 1,
+    marginBottom: verticalScale(10),
+    borderWidth: scale(1),
     borderColor: '#ddd',
   },
   itemText: {
-    fontSize: 16,
+    fontSize: scale(16),
     color: '#333',
     textAlign: 'center',
   },

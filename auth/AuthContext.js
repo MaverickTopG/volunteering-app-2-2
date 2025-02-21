@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { Alert, ActivityIndicator, View, StyleSheet, Text, Image } from 'react-native';
+import { Alert, ActivityIndicator, View, StyleSheet, Text, Image, Dimensions } from 'react-native';
 import { auth } from './firebase'; // Import the initialized auth object
 import {
   signInWithEmailAndPassword,
@@ -8,11 +8,17 @@ import {
   onAuthStateChanged,
   deleteUser,
   EmailAuthProvider, 
-  reauthenticateWithCredential,y
+  reauthenticateWithCredential
 } from 'firebase/auth';
-;
 
 export const AuthContext = createContext();
+
+// Define baseline dimensions (iPhone 16 Pro Max as an example)
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const { width, height } = Dimensions.get('window');
+const scale = (size) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -38,11 +44,12 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
   const signUp = async (email, password) => {
     try {
       setLoading(true);
       await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert('Success', 'Account created successfully!'); // Show success message
+      Alert.alert('Success', 'Account created successfully!');
       return true;
     } catch (error) {
       Alert.alert('Sign Up Error', error.message);
@@ -51,7 +58,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
-  
 
   const signOutUser = async () => {
     try {
@@ -70,20 +76,18 @@ export const AuthProvider = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
   
       // If authentication succeeds, delete the account
-      const currentUser = userCredential.user; // Get the authenticated user
+      const currentUser = userCredential.user;
       await deleteUser(currentUser);
   
       Alert.alert('Success', 'Your account and its content have been deleted.');
       return true;
     } catch (error) {
-      Alert.alert('Error', error.message); // Show error message if authentication or deletion fails
+      Alert.alert('Error', error.message);
       return false;
     } finally {
       setLoading(false);
     }
   };
-  
-  
 
   if (loading) {
     return (
@@ -114,13 +118,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff6e7',
   },
   logo: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
+    width: scale(150),
+    height: scale(150),
+    marginBottom: verticalScale(20),
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: scale(18),
     color: '#333',
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
 });
