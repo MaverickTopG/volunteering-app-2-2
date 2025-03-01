@@ -6,9 +6,8 @@ import {
   Text,
   TouchableOpacity,
   SafeAreaView,
+  ScrollView,
   ActivityIndicator,
-  FlatList,
-  SectionList,
   Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -16,11 +15,11 @@ import { RFPercentage } from 'react-native-responsive-fontsize';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// ---- Import Firebase modules (v9+ Modular syntax) ----
+// ---- Firebase modules ----
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
-// ---- Firebase Config & Initialization ----
+// ---- Firebase Config ----
 const firebaseConfig = {
   apiKey: "AIzaSyC1kY4dlbg9v38ZkuYVPJGnSulMEouvw58",
   authDomain: "nexolink-b8eb5.firebaseapp.com",
@@ -48,7 +47,6 @@ const groupByCounty = (data) => {
 };
 
 const { width } = Dimensions.get('window');
-// Define fixed heights (adjust as needed)
 const HEADER_HEIGHT = 40;
 const ITEM_HEIGHT = 90;
 
@@ -59,15 +57,15 @@ const VolunteerCarousel = ({ route }) => {
 
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState([]);
+  const [expandedCounties, setExpandedCounties] = useState([]);
+  const [countyAnims, setCountyAnims] = useState({});
+  const [fadeInProgress, setFadeInProgress] = useState({});
 
-  // Quick Search bubble state and animation
   const [isSearchBubbleVisible, setSearchBubbleVisible] = useState(false);
   const bubbleScale = useRef(new Animated.Value(0)).current;
 
-  // FlatList ref for scrolling (if using flatten approach) or SectionList ref
-  const listRef = useRef(null);
+  const scrollViewRef = useRef(null);
 
-  // Fetch data from Firestore
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -92,67 +90,116 @@ const VolunteerCarousel = ({ route }) => {
     fetchData();
   }, [referenceParam]);
 
-  // Compute flattened data from sections for scrolling via scrollToIndex
   const flatData = useMemo(() => {
-    const flat = [];
+    const newFlat = [];
     sections.forEach((section, sectionIndex) => {
-      flat.push({ type: 'header', title: section.title, sectionIndex });
+      newFlat.push({
+        type: 'header',
+        title: section.title,
+        sectionIndex,
+      });
       section.data.forEach((item, itemIndex) => {
-        flat.push({ type: 'item', item, sectionIndex, itemIndex });
+        newFlat.push({
+          type: 'item',
+          sectionIndex,
+          itemIndex,
+          title: item.title,
+        });
       });
     });
-    return flat;
+    return newFlat;
   }, [sections]);
 
-  // Toggle Quick Search bubble with animation
   const toggleSearchBubble = () => {
     if (isSearchBubbleVisible) {
       Animated.timing(bubbleScale, {
         toValue: 0,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }).start(() => setSearchBubbleVisible(false));
     } else {
       setSearchBubbleVisible(true);
       Animated.timing(bubbleScale, {
         toValue: 1,
-        duration: 300,
+        duration: 200,
         useNativeDriver: true,
       }).start();
     }
   };
 
-  // When a county is tapped, find its header index in flatData and scroll there.
-  const handleCountySelect = (county) => {
-    const targetIndex = flatData.findIndex(
-      (item) => item.type === 'header' && item.title.toLowerCase() === county.toLowerCase()
-    );
-    console.log('Selected county:', county, 'FlatList index:', targetIndex);
-    if (targetIndex >= 0 && listRef.current) {
-      listRef.current.scrollToIndex({
-        index: targetIndex,
-        animated: true,
-        viewPosition: 0,
+  const toggleCounty = (countyTitle) => {
+    const section = sections.find((s) => s.title === countyTitle);
+    if (!section || section.data.length <= 1) return;
+    const isCurrentlyExpanded = expandedCounties.includes(countyTitle);
+    if (!isCurrentlyExpanded) {
+      const animValues = section.data.slice(1).map(() => new Animated.Value(0));
+      setCountyAnims((prev) => ({ ...prev, [countyTitle]: animValues }));
+      setFadeInProgress((prev) => ({ ...prev, [countyTitle]: 0 }));
+      setExpandedCounties((prev) => [...prev, countyTitle]);
+      section.data.slice(1).forEach((_, i) => {
+        Animated.timing(animValues[i], {
+          toValue: 1,
+          duration: 1000,
+          delay: i * 1000,
+          useNativeDriver: true,
+        }).start(() => {
+          setFadeInProgress((prev) => ({
+            ...prev,
+            [countyTitle]: i + 1,
+          }));
+        });
       });
     } else {
-      console.warn('Header not found for county:', county);
+      const animValues = countyAnims[countyTitle];
+      const progress = fadeInProgress[countyTitle] || 0;
+      if (animValues && progress > 0) {
+        for (let i = progress; i < animValues.length; i++) {
+          animValues[i].stopAnimation(() => {
+            animValues[i].setValue(0);
+          });
+        }
+        for (let i = progress - 1; i >= 0; i--) {
+          Animated.timing(animValues[i], {
+            toValue: 0,
+            duration: 1000,
+            delay: (progress - 1 - i) * 1000,
+            useNativeDriver: true,
+          }).start(() => {
+            if (i === 0) {
+              setExpandedCounties((prev) => prev.filter((c) => c !== countyTitle));
+              setFadeInProgress((prev) => ({ ...prev, [countyTitle]: 0 }));
+            }
+          });
+        }
+      } else {
+        setExpandedCounties((prev) => prev.filter((c) => c !== countyTitle));
+      }
+    }
+  };
+
+  const handleCountySelect = (county) => {
+    let offsetY = 0;
+    for (let s = 0; s < sections.length; s++) {
+      const currentCounty = sections[s].title;
+      offsetY += HEADER_HEIGHT;
+      if (currentCounty.toLowerCase() === county.toLowerCase()) break;
+      const section = sections[s];
+      if (section.data.length > 0) {
+        if (expandedCounties.includes(currentCounty)) {
+          offsetY += section.data.length * ITEM_HEIGHT;
+        } else {
+          offsetY += ITEM_HEIGHT;
+        }
+      }
+    }
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: offsetY, animated: true });
     }
     toggleSearchBubble();
   };
 
   const handleBackPress = () => {
     navigation.goBack();
-  };
-
-  // getItemLayout for FlatList based on fixed heights
-  const getItemLayout = (data, index) => {
-    const item = data[index];
-    const length = item.type === 'header' ? HEADER_HEIGHT : ITEM_HEIGHT;
-    let offset = 0;
-    for (let i = 0; i < index; i++) {
-      offset += data[i].type === 'header' ? HEADER_HEIGHT : ITEM_HEIGHT;
-    }
-    return { length, offset, index };
   };
 
   if (loading) {
@@ -164,32 +211,10 @@ const VolunteerCarousel = ({ route }) => {
     );
   }
 
-  // Render function for FlatList items (flattened approach)
-  const renderFlatItem = ({ item }) => {
-    if (item.type === 'header') {
-      return (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionHeaderText}>{item.title}</Text>
-        </View>
-      );
-    } else {
-      return (
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => navigation.navigate('DisplayScreen', { item: item.item })}
-        >
-          <Text style={styles.cardTitle}>{item.item.title}</Text>
-        </TouchableOpacity>
-      );
-    }
-  };
-
-  // For Quick Search bubble, list available counties
   const availableCounties = sections.map((section) => section.title);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Back Button */}
       <TouchableOpacity
         style={[styles.backButton, { top: insets.top + 10 }]}
         onPress={handleBackPress}
@@ -197,7 +222,6 @@ const VolunteerCarousel = ({ route }) => {
         <MaterialIcons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
 
-      {/* Render Search Icon only when bubble is not active */}
       {!isSearchBubbleVisible && (
         <TouchableOpacity
           style={styles.searchIconContainer}
@@ -207,18 +231,23 @@ const VolunteerCarousel = ({ route }) => {
         </TouchableOpacity>
       )}
 
-      {/* Quick Search Bubble at Top Center */}
       {isSearchBubbleVisible && (
         <Animated.View
           style={[
             styles.searchBubble,
-            { transform: [{ scale: bubbleScale }] },
+            {
+              transform: [{ scale: bubbleScale }],
+              opacity: bubbleScale.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 1],
+              }),
+            },
           ]}
         >
           <View style={styles.bubbleHeader}>
             <Text style={styles.searchBubbleTitle}>Quick Search</Text>
             <TouchableOpacity onPress={toggleSearchBubble} style={styles.closeButton}>
-              <MaterialIcons name="close" size={24} color='black' />
+              <MaterialIcons name="close" size={24} color="black" />
             </TouchableOpacity>
           </View>
           <View style={styles.countyButtonsContainer}>
@@ -235,21 +264,65 @@ const VolunteerCarousel = ({ route }) => {
         </Animated.View>
       )}
 
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: '#fff6e7' }]}>
         <Text style={styles.headerText}>{referenceParam}</Text>
       </View>
 
-      {/* FlatList displays flattened data */}
-      <FlatList
-        ref={listRef}
-        data={flatData}
-        keyExtractor={(_, index) => String(index)}
-        renderItem={renderFlatItem}
-        getItemLayout={getItemLayout}
-        initialNumToRender={20}
-        contentContainerStyle={styles.scrollViewContent}
-      />
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollViewContent}>
+        {sections.map((section, sIndex) => {
+          const isExpandable = section.data.length > 1;
+          const isExpanded = expandedCounties.includes(section.title);
+          return (
+            <View key={sIndex}>
+              <TouchableOpacity
+                style={styles.countyHeader}
+                onPress={() => {
+                  if (isExpandable) toggleCounty(section.title);
+                }}
+              >
+                <Text style={styles.countyHeaderText}>{section.title}</Text>
+                {isExpandable && (
+                  <MaterialIcons
+                    name={isExpanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                    size={24}
+                    color="#333"
+                  />
+                )}
+              </TouchableOpacity>
+              {section.data.slice(0, 1).map((orgItem, iIndex) => (
+                <TouchableOpacity
+                  key={iIndex}
+                  style={styles.card}
+                  onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
+                >
+                  <Text style={styles.cardTitle}>{orgItem.title}</Text>
+                </TouchableOpacity>
+              ))}
+              {isExpandable && isExpanded && (
+                <>
+                  {section.data.slice(1).map((orgItem, iIndex) => (
+                    <Animated.View
+                      key={iIndex}
+                      style={{
+                        opacity: countyAnims[section.title]
+                          ? countyAnims[section.title][iIndex]
+                          : 1,
+                      }}
+                    >
+                      <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
+                      >
+                        <Text style={styles.cardTitle}>{orgItem.title}</Text>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  ))}
+                </>
+              )}
+            </View>
+          );
+        })}
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -298,17 +371,20 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingTop: 120,
     paddingBottom: 90,
-  },
-  sectionHeader: {
-    height: HEADER_HEIGHT,
-    backgroundColor: '#fff6e7',
-    justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  sectionHeaderText: {
+  countyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'transparent',
+    marginVertical: 10,
+    paddingVertical: 5,
+  },
+  countyHeaderText: {
     fontSize: RFPercentage(2.5),
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#333',
   },
   card: {
     width: width * 0.9,
@@ -317,7 +393,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderWidth: 1,
     borderColor: '#333333',
-    marginVertical: 15,
+    marginVertical: 10,
     padding: 15,
     justifyContent: 'center',
   },
@@ -326,7 +402,6 @@ const styles = StyleSheet.create({
     color: '#333333',
     textAlign: 'center',
   },
-  // --- Search Icon Style ---
   searchIconContainer: {
     position: 'absolute',
     top: 30,
@@ -336,19 +411,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
   },
-  // --- Quick Search Bubble Styles ---
   searchBubble: {
     position: 'absolute',
     top: 70,
     alignSelf: 'center',
-    width: width * 0.85, // Dynamic bubble width
+    width: width * 0.85,
     backgroundColor: '#fff6e7',
     borderRadius: 20,
     paddingVertical: 16,
     paddingHorizontal: 12,
     alignItems: 'center',
     zIndex: 200,
-    // Prominent shadow:
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.5,
