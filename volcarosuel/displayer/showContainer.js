@@ -57,13 +57,18 @@ const VolunteerCarousel = ({ route }) => {
 
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState([]);
+  // Track which counties are expanded (only if more than one organization)
   const [expandedCounties, setExpandedCounties] = useState([]);
+  // For each expandable county, store an array of Animated.Values for extra org items (index 1 onward)
   const [countyAnims, setCountyAnims] = useState({});
+  // Track, per county, how many extra items have fully faded in
   const [fadeInProgress, setFadeInProgress] = useState({});
 
+  // Quick Search bubble state & animation
   const [isSearchBubbleVisible, setSearchBubbleVisible] = useState(false);
   const bubbleScale = useRef(new Animated.Value(0)).current;
 
+  // We'll use a ScrollView for the main collapsible list
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
@@ -90,6 +95,7 @@ const VolunteerCarousel = ({ route }) => {
     fetchData();
   }, [referenceParam]);
 
+  // Build flattened data for Quick Search scrolling
   const flatData = useMemo(() => {
     const newFlat = [];
     sections.forEach((section, sectionIndex) => {
@@ -127,20 +133,23 @@ const VolunteerCarousel = ({ route }) => {
     }
   };
 
+  // Toggle county expansion/collapse with sequential fade animations.
   const toggleCounty = (countyTitle) => {
     const section = sections.find((s) => s.title === countyTitle);
-    if (!section || section.data.length <= 1) return;
+    if (!section || section.data.length <= 1) return; // Not expandable if only one org.
     const isCurrentlyExpanded = expandedCounties.includes(countyTitle);
     if (!isCurrentlyExpanded) {
+      // Expanding: create new Animated.Values for extra org items (indexes 1..n-1)
       const animValues = section.data.slice(1).map(() => new Animated.Value(0));
       setCountyAnims((prev) => ({ ...prev, [countyTitle]: animValues }));
       setFadeInProgress((prev) => ({ ...prev, [countyTitle]: 0 }));
       setExpandedCounties((prev) => [...prev, countyTitle]);
+      // Sequential fade in: each extra org fades in over 1 sec, delay = index * 250ms.
       section.data.slice(1).forEach((_, i) => {
         Animated.timing(animValues[i], {
           toValue: 1,
           duration: 1000,
-          delay: i * 1000,
+          delay: i * 250,
           useNativeDriver: true,
         }).start(() => {
           setFadeInProgress((prev) => ({
@@ -150,19 +159,22 @@ const VolunteerCarousel = ({ route }) => {
         });
       });
     } else {
+      // Collapsing: fade out sequentially starting from the last visible extra org
       const animValues = countyAnims[countyTitle];
       const progress = fadeInProgress[countyTitle] || 0;
       if (animValues && progress > 0) {
+        // Stop any pending fade-ins for items beyond current progress.
         for (let i = progress; i < animValues.length; i++) {
           animValues[i].stopAnimation(() => {
             animValues[i].setValue(0);
           });
         }
+        // Fade out sequentially from the last visible extra item (index progress-1) downward.
         for (let i = progress - 1; i >= 0; i--) {
           Animated.timing(animValues[i], {
             toValue: 0,
             duration: 1000,
-            delay: (progress - 1 - i) * 1000,
+            delay: (progress - 1 - i) * 250,
             useNativeDriver: true,
           }).start(() => {
             if (i === 0) {
@@ -177,11 +189,12 @@ const VolunteerCarousel = ({ route }) => {
     }
   };
 
+  // Quick Search: compute Y offset to scroll to county's header.
   const handleCountySelect = (county) => {
     let offsetY = 0;
     for (let s = 0; s < sections.length; s++) {
       const currentCounty = sections[s].title;
-      offsetY += HEADER_HEIGHT;
+      offsetY += HEADER_HEIGHT; // add header height for each county
       if (currentCounty.toLowerCase() === county.toLowerCase()) break;
       const section = sections[s];
       if (section.data.length > 0) {
@@ -215,6 +228,7 @@ const VolunteerCarousel = ({ route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Back Button */}
       <TouchableOpacity
         style={[styles.backButton, { top: insets.top + 10 }]}
         onPress={handleBackPress}
@@ -222,6 +236,7 @@ const VolunteerCarousel = ({ route }) => {
         <MaterialIcons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
 
+      {/* Search Icon (only when bubble is not active) */}
       {!isSearchBubbleVisible && (
         <TouchableOpacity
           style={styles.searchIconContainer}
@@ -231,6 +246,7 @@ const VolunteerCarousel = ({ route }) => {
         </TouchableOpacity>
       )}
 
+      {/* Quick Search Bubble with fade in/out */}
       {isSearchBubbleVisible && (
         <Animated.View
           style={[
@@ -264,10 +280,12 @@ const VolunteerCarousel = ({ route }) => {
         </Animated.View>
       )}
 
+      {/* Header */}
       <View style={[styles.header, { backgroundColor: '#fff6e7' }]}>
         <Text style={styles.headerText}>{referenceParam}</Text>
       </View>
 
+      {/* Main Collapsible List */}
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollViewContent}>
         {sections.map((section, sIndex) => {
           const isExpandable = section.data.length > 1;
