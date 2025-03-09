@@ -47,6 +47,8 @@ target 'NexoLink' do
     :hermes_enabled => podfile_properties['expo.jsEngine'].nil? || podfile_properties['expo.jsEngine'] == 'hermes',
     :app_path => "#{Pod::Config.instance.installation_root}/..",
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
+    :path => config[:reactNativePath],
+    :fabric_enabled => false
   )
 
   # Apply modular headers for Firebase dependencies

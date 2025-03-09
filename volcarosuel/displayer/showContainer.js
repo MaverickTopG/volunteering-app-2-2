@@ -57,19 +57,11 @@ const VolunteerCarousel = ({ route }) => {
 
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState([]);
-  // Track which counties are expanded (only if more than one organization)
-  const [expandedCounties, setExpandedCounties] = useState([]);
-  // For each expandable county, store an array of Animated.Values for extra org items (index 1 onward)
-  const [countyAnims, setCountyAnims] = useState({});
-  // Track, per county, how many extra items have fully faded in
-  const [fadeInProgress, setFadeInProgress] = useState({});
+  const scrollViewRef = useRef(null);
 
-  // Quick Search bubble state & animation
+  // Quick Search Bubble state & animation
   const [isSearchBubbleVisible, setSearchBubbleVisible] = useState(false);
   const bubbleScale = useRef(new Animated.Value(0)).current;
-
-  // We'll use a ScrollView for the main collapsible list
-  const scrollViewRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -133,63 +125,7 @@ const VolunteerCarousel = ({ route }) => {
     }
   };
 
-  // Toggle county expansion/collapse with sequential fade animations.
-  const toggleCounty = (countyTitle) => {
-    const section = sections.find((s) => s.title === countyTitle);
-    if (!section || section.data.length <= 1) return; // Not expandable if only one org.
-    const isCurrentlyExpanded = expandedCounties.includes(countyTitle);
-    if (!isCurrentlyExpanded) {
-      // Expanding: create new Animated.Values for extra org items (indexes 1..n-1)
-      const animValues = section.data.slice(1).map(() => new Animated.Value(0));
-      setCountyAnims((prev) => ({ ...prev, [countyTitle]: animValues }));
-      setFadeInProgress((prev) => ({ ...prev, [countyTitle]: 0 }));
-      setExpandedCounties((prev) => [...prev, countyTitle]);
-      // Sequential fade in: each extra org fades in over 1 sec, delay = index * 250ms.
-      section.data.slice(1).forEach((_, i) => {
-        Animated.timing(animValues[i], {
-          toValue: 1,
-          duration: 1000,
-          delay: i * 250,
-          useNativeDriver: true,
-        }).start(() => {
-          setFadeInProgress((prev) => ({
-            ...prev,
-            [countyTitle]: i + 1,
-          }));
-        });
-      });
-    } else {
-      // Collapsing: fade out sequentially starting from the last visible extra org
-      const animValues = countyAnims[countyTitle];
-      const progress = fadeInProgress[countyTitle] || 0;
-      if (animValues && progress > 0) {
-        // Stop any pending fade-ins for items beyond current progress.
-        for (let i = progress; i < animValues.length; i++) {
-          animValues[i].stopAnimation(() => {
-            animValues[i].setValue(0);
-          });
-        }
-        // Fade out sequentially from the last visible extra item (index progress-1) downward.
-        for (let i = progress - 1; i >= 0; i--) {
-          Animated.timing(animValues[i], {
-            toValue: 0,
-            duration: 1000,
-            delay: (progress - 1 - i) * 250,
-            useNativeDriver: true,
-          }).start(() => {
-            if (i === 0) {
-              setExpandedCounties((prev) => prev.filter((c) => c !== countyTitle));
-              setFadeInProgress((prev) => ({ ...prev, [countyTitle]: 0 }));
-            }
-          });
-        }
-      } else {
-        setExpandedCounties((prev) => prev.filter((c) => c !== countyTitle));
-      }
-    }
-  };
-
-  // Quick Search: compute Y offset to scroll to county's header.
+  // Quick Search: scroll to county header
   const handleCountySelect = (county) => {
     let offsetY = 0;
     for (let s = 0; s < sections.length; s++) {
@@ -197,13 +133,7 @@ const VolunteerCarousel = ({ route }) => {
       offsetY += HEADER_HEIGHT; // add header height for each county
       if (currentCounty.toLowerCase() === county.toLowerCase()) break;
       const section = sections[s];
-      if (section.data.length > 0) {
-        if (expandedCounties.includes(currentCounty)) {
-          offsetY += section.data.length * ITEM_HEIGHT;
-        } else {
-          offsetY += ITEM_HEIGHT;
-        }
-      }
+      offsetY += section.data.length * ITEM_HEIGHT;
     }
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollTo({ y: offsetY, animated: true });
@@ -236,7 +166,7 @@ const VolunteerCarousel = ({ route }) => {
         <MaterialIcons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
 
-      {/* Search Icon (only when bubble is not active) */}
+      {/* Search Icon (if bubble not visible) */}
       {!isSearchBubbleVisible && (
         <TouchableOpacity
           style={styles.searchIconContainer}
@@ -246,7 +176,7 @@ const VolunteerCarousel = ({ route }) => {
         </TouchableOpacity>
       )}
 
-      {/* Quick Search Bubble with fade in/out */}
+      {/* Quick Search Bubble */}
       {isSearchBubbleVisible && (
         <Animated.View
           style={[
@@ -287,59 +217,20 @@ const VolunteerCarousel = ({ route }) => {
 
       {/* Main Collapsible List */}
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollViewContent}>
-        {sections.map((section, sIndex) => {
-          const isExpandable = section.data.length > 1;
-          const isExpanded = expandedCounties.includes(section.title);
-          return (
-            <View key={sIndex}>
+        {sections.map((section, sIndex) => (
+          <View key={sIndex}>
+            <Text style={styles.countyHeaderText}>{section.title}</Text>
+            {section.data.map((orgItem, iIndex) => (
               <TouchableOpacity
-                style={styles.countyHeader}
-                onPress={() => {
-                  if (isExpandable) toggleCounty(section.title);
-                }}
+                key={iIndex}
+                style={styles.card}
+                onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
               >
-                <Text style={styles.countyHeaderText}>{section.title}</Text>
-                {isExpandable && (
-                  <MaterialIcons
-                    name={isExpanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                    size={24}
-                    color="#333"
-                  />
-                )}
+                <Text style={styles.cardTitle}>{orgItem.title}</Text>
               </TouchableOpacity>
-              {section.data.slice(0, 1).map((orgItem, iIndex) => (
-                <TouchableOpacity
-                  key={iIndex}
-                  style={styles.card}
-                  onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
-                >
-                  <Text style={styles.cardTitle}>{orgItem.title}</Text>
-                </TouchableOpacity>
-              ))}
-              {isExpandable && isExpanded && (
-                <>
-                  {section.data.slice(1).map((orgItem, iIndex) => (
-                    <Animated.View
-                      key={iIndex}
-                      style={{
-                        opacity: countyAnims[section.title]
-                          ? countyAnims[section.title][iIndex]
-                          : 1,
-                      }}
-                    >
-                      <TouchableOpacity
-                        style={styles.card}
-                        onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
-                      >
-                        <Text style={styles.cardTitle}>{orgItem.title}</Text>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  ))}
-                </>
-              )}
-            </View>
-          );
-        })}
+            ))}
+          </View>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -391,18 +282,11 @@ const styles = StyleSheet.create({
     paddingBottom: 90,
     paddingHorizontal: 20,
   },
-  countyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'transparent',
-    marginVertical: 10,
-    paddingVertical: 5,
-  },
   countyHeaderText: {
     fontSize: RFPercentage(2.5),
     fontWeight: 'bold',
     color: '#333',
+    marginVertical: 10,
   },
   card: {
     width: width * 0.9,
