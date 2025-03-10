@@ -9,7 +9,6 @@ import AccountScreen from '../volcarosuel/screens/AccountScreen';
 
 const Drawer = createDrawerNavigator();
 
-// Example baseline (iPhone 16 Pro Max)
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width } = Dimensions.get('window');
@@ -22,23 +21,15 @@ const DrawerNavigator = () => {
       <Drawer.Navigator
         drawerContent={(props) => <CustomSideBarMenu {...props} />}
         screenOptions={{
-          // Make the drawer slide over the content rather than push it
           drawerType: 'front',
-
-          // Dark semi-transparent overlay behind the drawer
           overlayColor: 'rgba(0,0,0,0.5)',
-
-          // Drawer background is transparent so the app screen remains visible behind
           drawerStyle: {
             backgroundColor: 'transparent',
-            width: scale(280), // Adjust drawer width as desired
+            width: scale(280),
           },
-
-          // Keep the main scene background transparent behind the drawer
           sceneContainerStyle: {
             backgroundColor: 'transparent',
           },
-
           headerBackground: () => (
             <LinearGradient
               colors={['#fff6e7', '#fff6e7']}

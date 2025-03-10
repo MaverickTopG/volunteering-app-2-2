@@ -40,6 +40,8 @@ const groupByCounty = (data) => {
     }
     counties[item.county].push(item);
   });
+  // For testing, you could force one county to be empty:
+  // counties["EmptyCounty"] = [];
   return Object.keys(counties).map((county) => ({
     title: county,
     data: counties[county],
@@ -220,15 +222,21 @@ const VolunteerCarousel = ({ route }) => {
         {sections.map((section, sIndex) => (
           <View key={sIndex}>
             <Text style={styles.countyHeaderText}>{section.title}</Text>
-            {section.data.map((orgItem, iIndex) => (
-              <TouchableOpacity
-                key={iIndex}
-                style={styles.card}
-                onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
-              >
-                <Text style={styles.cardTitle}>{orgItem.title}</Text>
-              </TouchableOpacity>
-            ))}
+            {section.data && section.data.length > 0 ? (
+              section.data.map((orgItem, iIndex) => (
+                <TouchableOpacity
+                  key={iIndex}
+                  style={styles.card}
+                  onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
+                >
+                  <Text style={styles.cardTitle}>{orgItem.title}</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.comingSoonContainer}>
+                <Text style={styles.comingSoonText}>Coming Soon!</Text>
+              </View>
+            )}
           </View>
         ))}
       </ScrollView>
@@ -303,6 +311,15 @@ const styles = StyleSheet.create({
     fontSize: RFPercentage(2),
     color: '#333333',
     textAlign: 'center',
+  },
+  comingSoonContainer: {
+    height: ITEM_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  comingSoonText: {
+    fontSize: RFPercentage(2.2),
+    color: '#000',
   },
   searchIconContainer: {
     position: 'absolute',

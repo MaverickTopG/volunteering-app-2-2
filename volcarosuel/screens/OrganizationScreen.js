@@ -23,7 +23,7 @@ const { width, height } = Dimensions.get('window');
 const scale = (size) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
-export default function SuggestOrganizationScreen() {
+export default function SuggestOrganizationScreen({ navigation }) {
   const { user } = useContext(AuthContext);
 
   // Form state
@@ -41,7 +41,7 @@ export default function SuggestOrganizationScreen() {
   // Success message state
   const [submissionMessage, setSubmissionMessage] = useState('');
 
-  // If user is not logged in, display a prompt to log in
+  // If user is not logged in, display a prompt to log in and a register button
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -49,6 +49,17 @@ export default function SuggestOrganizationScreen() {
           <Text style={styles.notLoggedInText}>
             You must be logged in to suggest an organization.
           </Text>
+          <TouchableOpacity
+            style={styles.registerButton}
+            onPress={() =>
+              navigation.navigate('NexoLink', {
+                screen: 'Show',
+                params: { screen: 'Register' },
+              })
+            }
+          >
+            <Text style={styles.registerButtonText}>Register Now!</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -56,25 +67,16 @@ export default function SuggestOrganizationScreen() {
 
   // Submit handler
   const handleSubmit = async () => {
-    const { name, description, location, requirements, contact, website, county, reference } = form;
+    const { name, location, contact, description, requirements, website, county, reference } = form;
 
-    // Check required fields
-    if (
-      !name ||
-      !description ||
-      !location ||
-      !requirements ||
-      !contact ||
-      !website ||
-      !county ||
-      !reference
-    ) {
-      Alert.alert('Validation Error', 'Please fill in all required fields (marked with *).');
+    // Only Name, Location, and Contact are mandatory now
+    if (!name || !location || !contact) {
+      Alert.alert('Validation Error', 'Please fill in Name, Location, and Contact Information.');
       return;
     }
 
-    // Basic website URL validation
-    if (!website.startsWith('http://') && !website.startsWith('https://')) {
+    // Basic website URL validation if a website is provided
+    if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
       Alert.alert('Validation Error', 'Please provide a valid website URL (starting with http:// or https://).');
       return;
     }
@@ -137,7 +139,7 @@ export default function SuggestOrganizationScreen() {
 
             <TextInput
               style={[styles.input, styles.multiline]}
-              placeholder="Description *"
+              placeholder="Description"
               placeholderTextColor="#555"
               multiline
               value={form.description}
@@ -156,7 +158,7 @@ export default function SuggestOrganizationScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Requirements *"
+              placeholder="Requirements"
               placeholderTextColor="#555"
               value={form.requirements}
               onChangeText={(text) => setForm({ ...form, requirements: text })}
@@ -174,7 +176,7 @@ export default function SuggestOrganizationScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Website *"
+              placeholder="Website"
               placeholderTextColor="#555"
               value={form.website}
               onChangeText={(text) => setForm({ ...form, website: text })}
@@ -183,7 +185,7 @@ export default function SuggestOrganizationScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="County *"
+              placeholder="County"
               placeholderTextColor="#555"
               value={form.county}
               onChangeText={(text) => setForm({ ...form, county: text })}
@@ -192,7 +194,7 @@ export default function SuggestOrganizationScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Which Category *"
+              placeholder="Which Category"
               placeholderTextColor="#555"
               value={form.reference}
               onChangeText={(text) => setForm({ ...form, reference: text })}
@@ -235,6 +237,18 @@ const styles = StyleSheet.create({
     fontSize: scale(18),
     color: '#333',
     textAlign: 'center',
+    marginBottom: verticalScale(20),
+  },
+  registerButton: {
+    backgroundColor: '#000',
+    paddingVertical: verticalScale(12),
+    paddingHorizontal: scale(20),
+    borderRadius: scale(8),
+  },
+  registerButtonText: {
+    color: '#fff6e7',
+    fontSize: scale(16),
+    fontWeight: 'bold',
   },
   title: {
     fontSize: scale(26),

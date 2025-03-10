@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { Alert, ActivityIndicator, View, StyleSheet, Text, Image, Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from './firebase'; // Import the initialized auth object
 import {
   signInWithEmailAndPassword,
@@ -7,8 +8,6 @@ import {
   signOut,
   onAuthStateChanged,
   deleteUser,
-  EmailAuthProvider, 
-  reauthenticateWithCredential
 } from 'firebase/auth';
 
 export const AuthContext = createContext();
@@ -20,15 +19,37 @@ const { width, height } = Dimensions.get('window');
 const scale = (size) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen to auth state changes
+  // Listen to auth state changes and auto sign out if login is older than one week
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false); // Stop loading once the user is fetched
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        try {
+          const loginTimeStr = await AsyncStorage.getItem('loginTime');
+          if (loginTimeStr) {
+            const loginTime = parseInt(loginTimeStr, 10);
+            const now = Date.now();
+            if (now - loginTime > ONE_WEEK_MS) {
+              // Automatically sign out the user after 1 week
+              await signOut(auth);
+              await AsyncStorage.removeItem('loginTime');
+              setUser(null);
+              Alert.alert('Session Expired', 'Your session has expired. Please log in again.');
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking login time:', error);
+        }
+      }
+      setUser(currentUser);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -37,7 +58,10 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Store the login time (in ms) in AsyncStorage
+      await AsyncStorage.setItem('loginTime', Date.now().toString());
+      setUser(userCredential.user);
     } catch (error) {
       Alert.alert('Login Error', error.message);
     } finally {
@@ -48,7 +72,10 @@ export const AuthProvider = ({ children }) => {
   const signUp = async (email, password) => {
     try {
       setLoading(true);
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Automatically store the login time on sign up as well
+      await AsyncStorage.setItem('loginTime', Date.now().toString());
+      setUser(userCredential.user);
       Alert.alert('Success', 'Account created successfully!');
       return true;
     } catch (error) {
@@ -63,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await signOut(auth);
       setUser(null);
+      await AsyncStorage.removeItem('loginTime');
     } catch (error) {
       Alert.alert('Logout Error', error.message);
     }
@@ -79,6 +107,7 @@ export const AuthProvider = ({ children }) => {
       const currentUser = userCredential.user;
       await deleteUser(currentUser);
   
+      await AsyncStorage.removeItem('loginTime');
       Alert.alert('Success', 'Your account and its content have been deleted.');
       return true;
     } catch (error) {

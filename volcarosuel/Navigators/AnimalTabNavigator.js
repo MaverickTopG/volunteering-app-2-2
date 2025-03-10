@@ -91,7 +91,6 @@ const TabIcon = ({ routeName, selectedTab, onPress }) => {
       spinAnim.setValue(0);
     });
   };
-
   let iconName = '';
   switch (routeName) {
     case 'Show':
@@ -110,9 +109,10 @@ const TabIcon = ({ routeName, selectedTab, onPress }) => {
       iconName = 'person';
       break;
     default:
-      iconName = 'alert';
+      iconName = 'home';
       break;
   }
+  
 
   return (
     <TouchableOpacity onPress={handlePress} style={styles.tabButton}>
@@ -175,7 +175,7 @@ const AnimalTabNavigator = () => {
         height={verticalScale(65)}
         circleWidth={scale(75)}
         bgColor="black"
-        initialRouteName="Search"
+        initialRouteName="Center"
         borderTopLeftRight
         renderCircle={({ selectedTab, navigate }) => (
           <View style={styles.circleContainer}>

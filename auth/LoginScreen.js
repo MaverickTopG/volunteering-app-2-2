@@ -14,8 +14,9 @@ import {
 import { AuthContext } from './AuthContext'; // Adjust path to your AuthContext
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { CommonActions } from '@react-navigation/native';
 
-// Define baseline dimensions (iPhone 16 Pro Max as an example)
+
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
@@ -30,16 +31,30 @@ const LoginScreen = () => {
   const { signIn } = useContext(AuthContext);
   const navigation = useNavigation();
 
+
+  // Inside your handleLogin:
   const handleLogin = async () => {
     try {
       await signIn(email, password);
-      // You can navigate somewhere upon success, if desired
-      // e.g. navigation.navigate('VolunteerLogs');
+      // Reset the navigation state so that we go to the 'NexoLink' drawer route,
+      // and within that, navigate to the nested 'Show' route with parameter to load VolunteerLogs.
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Nexolink',
+              params: { screen: 'Show', params: { screen: 'VolunteerLogs' } },
+            },
+          ],
+        })
+      );
     } catch (error) {
       console.error(error);
       Alert.alert('Login Failed', 'Please check your credentials and try again.');
     }
   };
+  
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
@@ -56,7 +71,6 @@ const LoginScreen = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          {/* Email Field */}
           <TextInput
             style={styles.input}
             placeholder="Email"
@@ -68,7 +82,6 @@ const LoginScreen = () => {
             keyboardAppearance="dark"
           />
 
-          {/* Password with toggle icon */}
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -106,7 +119,7 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7', // Light cream background
+    backgroundColor: '#fff6e7',
   },
   contentContainer: {
     flex: 1,
@@ -125,7 +138,6 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginTop: verticalScale(20),
   },
-  /* Single-field styling */
   input: {
     height: verticalScale(50),
     borderColor: '#333',
@@ -137,7 +149,6 @@ const styles = StyleSheet.create({
     color: 'black',
     marginBottom: verticalScale(15),
   },
-  /* Container for password + icon */
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -158,7 +169,7 @@ const styles = StyleSheet.create({
     padding: scale(5),
   },
   button: {
-    backgroundColor: '#000', // Black button for contrast
+    backgroundColor: '#000',
     padding: scale(15),
     borderRadius: scale(25),
     alignItems: 'center',
@@ -166,7 +177,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(20),
   },
   buttonText: {
-    color: '#fff6e7', // Cream-colored text
+    color: '#fff6e7',
     fontSize: scale(16),
     fontWeight: 'bold',
   },
