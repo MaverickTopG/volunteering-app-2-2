@@ -11,11 +11,9 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { AuthContext } from './AuthContext'; // Adjust path to your AuthContext
+import { AuthContext } from './AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { CommonActions } from '@react-navigation/native';
-
 
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
@@ -31,30 +29,17 @@ const LoginScreen = () => {
   const { signIn } = useContext(AuthContext);
   const navigation = useNavigation();
 
-
-  // Inside your handleLogin:
   const handleLogin = async () => {
     try {
       await signIn(email, password);
-      // Reset the navigation state so that we go to the 'NexoLink' drawer route,
-      // and within that, navigate to the nested 'Show' route with parameter to load VolunteerLogs.
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [
-            {
-              name: 'Nexolink',
-              params: { screen: 'Show', params: { screen: 'VolunteerLogs' } },
-            },
-          ],
-        })
-      );
+      // Removed any navigation dispatch that forces a new route on login success.
+      // If you want to navigate somewhere manually, you can add it back or use navigation.navigate().
+      Alert.alert('Login Successful', 'You are now logged in.');
     } catch (error) {
       console.error(error);
       Alert.alert('Login Failed', 'Please check your credentials and try again.');
     }
   };
-  
 
   const togglePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);

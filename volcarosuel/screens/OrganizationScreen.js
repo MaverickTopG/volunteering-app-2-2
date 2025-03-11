@@ -41,7 +41,7 @@ export default function SuggestOrganizationScreen({ navigation }) {
   // Success message state
   const [submissionMessage, setSubmissionMessage] = useState('');
 
-  // If user is not logged in, display a prompt to log in and a register button
+  // If user is not logged in, display a prompt to log in (without the register button)
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -49,17 +49,6 @@ export default function SuggestOrganizationScreen({ navigation }) {
           <Text style={styles.notLoggedInText}>
             You must be logged in to suggest an organization.
           </Text>
-          <TouchableOpacity
-            style={styles.registerButton}
-            onPress={() =>
-              navigation.navigate('NexoLink', {
-                screen: 'Show',
-                params: { screen: 'Register' },
-              })
-            }
-          >
-            <Text style={styles.registerButtonText}>Register Now!</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -238,17 +227,6 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
     marginBottom: verticalScale(20),
-  },
-  registerButton: {
-    backgroundColor: '#000',
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(20),
-    borderRadius: scale(8),
-  },
-  registerButtonText: {
-    color: '#fff6e7',
-    fontSize: scale(16),
-    fontWeight: 'bold',
   },
   title: {
     fontSize: scale(26),
