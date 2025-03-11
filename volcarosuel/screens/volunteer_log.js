@@ -29,7 +29,7 @@ const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-// Colors and thickness constants
+// Colors & thickness
 const BLACK = '#000';
 const BRONZE = '#cd7f32';
 const SILVER = '#c0c0c0';
@@ -37,13 +37,15 @@ const GOLD = '#FFD700';
 const BACKGROUND = '#fff6e7';
 const ORIGINAL_THICKNESS = 20;
 
-// Base diameters for original UI (all the same => no gap)
-const baseSize = scale(200); // black ring
-const blackSize = baseSize;  // black ring
-// We’ll also define expansions for the “expanded UI”:
-const bronzeSize = baseSize + ORIGINAL_THICKNESS;
-const silverSize = bronzeSize + ORIGINAL_THICKNESS;
-const goldSize   = silverSize + ORIGINAL_THICKNESS;
+// For original UI, all rings share the same diameter (no gap)
+const baseSize = scale(200);
+const blackSize = baseSize;
+
+// For expanded UI, rings have increasing diameters
+const expandedBlackSize = scale(350);
+const expandedBronzeSize = expandedBlackSize + 2 * (30 / 4);
+const expandedSilverSize = expandedBlackSize + 2 * (30 / 4) * 2;
+const expandedGoldSize = expandedBlackSize + 2 * (30 / 4) * 3;
 
 export default function VolunteerLogs() {
   const { user, signOut } = useContext(AuthContext);
@@ -51,8 +53,8 @@ export default function VolunteerLogs() {
 
   // Data states
   const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [totalHours, setTotalHours] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   // Weekly goal
   const [weeklyGoal, setWeeklyGoal] = useState(10);
@@ -60,20 +62,19 @@ export default function VolunteerLogs() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [tempGoal, setTempGoal] = useState('');
 
-  // Expanded UI
+  // Expanded UI states
   const [expanded, setExpanded] = useState(false);
   const [showLogs, setShowLogs] = useState(true);
   const [showExpandedUI, setShowExpandedUI] = useState(false);
 
-  // Modals
-  const [showLogsModal, setShowLogsModal] = useState(false);
+  // Modals for logs and hours
   const [addHoursModal, setAddHoursModal] = useState(false);
 
   // "Log Hours" fields
   const [newHours, setNewHours] = useState('');
   const [newSite, setNewSite] = useState('');
 
-  // Fade animations
+  // Animations
   const logsOpacity = useRef(new Animated.Value(1)).current;
   const expandedOpacity = useRef(new Animated.Value(0)).current;
 
@@ -116,7 +117,7 @@ export default function VolunteerLogs() {
     }
   };
 
-  // Log hours
+  // Save hours
   const handleSaveHours = async () => {
     if (!newHours || !newSite) {
       Alert.alert('Error', 'Please fill both site and hours');
@@ -139,17 +140,11 @@ export default function VolunteerLogs() {
     }
   };
 
-  // Fractions for black, bronze, silver, gold
+  // Calculate ring fractions
   const fractionBlack = Math.min(totalHours / weeklyGoal, 1);
-  const fractionBronze = totalHours > weeklyGoal
-    ? Math.min((totalHours - weeklyGoal) / weeklyGoal, 1)
-    : 0;
-  const fractionSilver = totalHours > 2 * weeklyGoal
-    ? Math.min((totalHours - 2 * weeklyGoal) / weeklyGoal, 1)
-    : 0;
-  const fractionGold = totalHours > 3 * weeklyGoal
-    ? Math.min((totalHours - 3 * weeklyGoal) / weeklyGoal, 1)
-    : 0;
+  const fractionBronze = totalHours > weeklyGoal ? Math.min((totalHours - weeklyGoal) / weeklyGoal, 1) : 0;
+  const fractionSilver = totalHours > 2 * weeklyGoal ? Math.min((totalHours - 2 * weeklyGoal) / weeklyGoal, 1) : 0;
+  const fractionGold = totalHours > 3 * weeklyGoal ? Math.min((totalHours - 3 * weeklyGoal) / weeklyGoal, 1) : 0;
 
   // Toggle expanded UI
   const handleCirclePress = () => {
@@ -210,18 +205,13 @@ export default function VolunteerLogs() {
     setShowGoalModal(false);
   };
 
-  // Show all logs
-  const handleShowAllLogs = () => {
-    setShowLogsModal(true);
-  };
-
   // Sign out
   const handleSignOut = () => {
     signOut();
     navigation.navigate('NexoLink');
   };
 
-  // Render each log
+  // RENDER LOGS
   const renderLogItem = ({ item }) => (
     <View style={styles.logItem}>
       <Text style={styles.logText}>Site: {item.site}</Text>
@@ -247,50 +237,19 @@ export default function VolunteerLogs() {
               onChangeText={setTempGoal}
             />
             <View style={styles.modalBtnRow}>
-              <TouchableOpacity style={[styles.modalButton, { backgroundColor: BLACK }]} onPress={saveNewGoal}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: BLACK }]}
+                onPress={saveNewGoal}
+              >
                 <Text style={styles.modalButtonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButton, { backgroundColor: 'gray' }]} onPress={() => setShowGoalModal(false)}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: 'gray' }]}
+                onPress={() => setShowGoalModal(false)}
+              >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Show All Logs Modal */}
-      <Modal visible={showLogsModal} transparent animationType="slide">
-        <View style={styles.logsModalOverlay}>
-          <View style={styles.logsModal}>
-            <Text style={styles.modalTitle}>All Volunteer Logs</Text>
-            {loading ? (
-              <ActivityIndicator size="large" color="#000" style={{ marginVertical: verticalScale(20) }} />
-            ) : logs.length === 0 ? (
-              <Text style={styles.noLogsText}>No logs yet.</Text>
-            ) : (
-              <FlatList
-                data={logs}
-                keyExtractor={(item) => item.id}
-                renderItem={renderLogItem}
-                style={styles.allLogsList}
-                showsVerticalScrollIndicator={false}
-              />
-            )}
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: BLACK, marginTop: verticalScale(15) }]}
-              onPress={() => {
-                setShowLogsModal(false);
-                setAddHoursModal(true);
-              }}
-            >
-              <Text style={styles.modalButtonText}>Log Hours</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalButton, { backgroundColor: 'gray', marginTop: verticalScale(10) }]}
-              onPress={() => setShowLogsModal(false)}
-            >
-              <Text style={styles.modalButtonText}>Close</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -316,10 +275,16 @@ export default function VolunteerLogs() {
               onChangeText={setNewHours}
             />
             <View style={styles.modalBtnRow}>
-              <TouchableOpacity style={[styles.modalButton, { backgroundColor: BLACK }]} onPress={handleSaveHours}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: BLACK }]}
+                onPress={handleSaveHours}
+              >
                 <Text style={styles.modalButtonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalButton, { backgroundColor: 'gray' }]} onPress={() => setAddHoursModal(false)}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: 'gray' }]}
+                onPress={() => setAddHoursModal(false)}
+              >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -334,7 +299,7 @@ export default function VolunteerLogs() {
           <View style={styles.expandedCircleContainer}>
             {/* Black ring */}
             <Progress.Circle
-              size={scale(350)}
+              size={expandedBlackSize}
               progress={fractionBlack}
               thickness={30}
               color={BLACK}
@@ -347,7 +312,7 @@ export default function VolunteerLogs() {
             {/* Bronze ring */}
             {fractionBronze > 0 && (
               <Progress.Circle
-                size={scale(350) + 2 * (30 / 4)}
+                size={expandedBronzeSize}
                 progress={fractionBronze}
                 thickness={30 / 4}
                 color={BRONZE}
@@ -361,7 +326,7 @@ export default function VolunteerLogs() {
             {/* Silver ring */}
             {fractionSilver > 0 && (
               <Progress.Circle
-                size={scale(350) + 2 * (30 / 4) * 2}
+                size={expandedSilverSize}
                 progress={fractionSilver}
                 thickness={30 / 4}
                 color={SILVER}
@@ -375,7 +340,7 @@ export default function VolunteerLogs() {
             {/* Gold ring */}
             {fractionGold > 0 && (
               <Progress.Circle
-                size={scale(350) + 2 * (30 / 4) * 3}
+                size={expandedGoldSize}
                 progress={fractionGold}
                 thickness={30 / 4}
                 color={GOLD}
@@ -394,38 +359,30 @@ export default function VolunteerLogs() {
             </View>
           </View>
 
-          {/* Top-right container: settings + sign out side by side */}
-          <View style={styles.expandedTopIconsContainer}>
-            {/* Settings icon */}
+          {/* Top-right container for Settings & Sign Out at the tippy top */}
+          <View style={[styles.expandedTopIconsContainer]}>
             <TouchableOpacity style={styles.expandedIconButton} onPress={handleSettingsPress}>
               <Ionicons name="settings-outline" size={scale(24)} color="black" />
             </TouchableOpacity>
-            {/* Sign out icon */}
-            <TouchableOpacity style={[styles.expandedIconButton, { marginLeft: scale(15) }]} onPress={handleSignOut}>
+            <TouchableOpacity
+              style={[styles.expandedIconButton, { marginLeft: scale(15) }]}
+              onPress={handleSignOut}
+            >
               <Ionicons name="log-out-outline" size={scale(24)} color="black" />
             </TouchableOpacity>
           </View>
 
-          {/* Bottom-right: revert UI button */}
-          <View style={styles.expandedBottomContainer}>
-            <TouchableOpacity
-              style={styles.expandedButton}
-              onPress={() => {
-                setShowExpandedUI(false);
-                setExpanded(false);
-                fadeInLogs();
-              }}
-            >
-              <Text style={styles.expandedButtonText}>Revert UI</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* "Show All Logs" button (center bottom) */}
+          {/* Instead of Show All Logs, we have a "Go Back" button in the center bottom */}
           <TouchableOpacity
-            style={[styles.modalButton, { backgroundColor: BLACK, marginTop: verticalScale(20) }]}
-            onPress={handleShowAllLogs}
+            style={[styles.modalButton, styles.goBackButton]}
+            onPress={() => {
+              // revert UI
+              setShowExpandedUI(false);
+              setExpanded(false);
+              fadeInLogs();
+            }}
           >
-            <Text style={styles.modalButtonText}>Show All Logs</Text>
+            <Text style={styles.modalButtonText}>Go Back</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
@@ -457,7 +414,7 @@ export default function VolunteerLogs() {
           rotation={270}
           style={styles.absoluteCircle}
         />
-        {/* Bronze ring (no gap => same size) */}
+        {/* Bronze ring */}
         {fractionBronze > 0 && (
           <Progress.Circle
             size={blackSize}
@@ -509,7 +466,7 @@ export default function VolunteerLogs() {
 
       {/* Logs list */}
       {showLogs && (
-        <Animated.View style={[styles.logsContainer, { opacity: logsOpacity }]}>
+        <View style={styles.logsContainer}>
           {loading ? (
             <ActivityIndicator size="large" color="#000" style={{ flex: 1 }} />
           ) : logs.length === 0 ? (
@@ -520,19 +477,12 @@ export default function VolunteerLogs() {
             <FlatList
               data={logs}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View style={styles.logItem}>
-                  <Text style={styles.logText}>Site: {item.site}</Text>
-                  <Text style={styles.logText}>Hours: {item.hours_contributed}</Text>
-                  <Text style={styles.logText}>Date: {item.date}</Text>
-                  <Text style={styles.logText}>Time: {item.time}</Text>
-                </View>
-              )}
+              renderItem={renderLogItem}
               contentContainerStyle={styles.logsListContent}
               showsVerticalScrollIndicator={false}
             />
           )}
-        </Animated.View>
+        </View>
       )}
 
       {/* Log Hours button */}
@@ -556,8 +506,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.2,
+    shadowRadius: scale(2),
     elevation: 3,
-    zIndex: 10,
+    zIndex: 1,
   },
   headerTitle: {
     fontSize: scale(18),
@@ -628,7 +582,7 @@ const styles = StyleSheet.create({
   },
   logHoursButton: {
     position: 'absolute',
-    bottom: verticalScale(20),
+    bottom: verticalScale(85),
     right: scale(20),
     backgroundColor: BLACK,
     borderRadius: scale(20),
@@ -658,6 +612,7 @@ const styles = StyleSheet.create({
     height: scale(350),
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: scale(120),
   },
   centerExpanded: {
     position: 'absolute',
@@ -684,25 +639,23 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: verticalScale(5),
   },
-
-  // Top-right container for settings + sign out side by side
+  // Top-right container for icons at the tippy top
   expandedTopIconsContainer: {
     position: 'absolute',
-    top: verticalScale(0),
+    top: verticalScale(0), // pinned at top
     right: scale(20),
     flexDirection: 'row',
     alignItems: 'center',
   },
   expandedIconButton: {
-    backgroundColor: '#fff6e7',
+    backgroundColor: BACKGROUND,
     borderRadius: scale(20),
     padding: scale(10),
   },
-
   // Bottom-right container for Revert UI
   expandedBottomContainer: {
     position: 'absolute',
-    bottom: verticalScale(90),
+    bottom: verticalScale(20),
     right: scale(20),
   },
   expandedButton: {
@@ -717,7 +670,11 @@ const styles = StyleSheet.create({
     fontSize: scale(14),
     fontWeight: 'bold',
   },
-
+  // The "Go Back" button in the center bottom
+  goBackButton: {
+    alignSelf: 'center',
+    marginTop: verticalScale(-60), // or adjust as needed
+  },
   // Modal overlays
   modalOverlay: {
     flex: 1,
@@ -725,13 +682,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: scale(20),
-  },
-  logsModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: scale(10),
   },
   goalModal: {
     width: '90%',
@@ -769,24 +719,12 @@ const styles = StyleSheet.create({
     borderRadius: scale(15),
     paddingHorizontal: scale(20),
     paddingVertical: verticalScale(10),
+    backgroundColor: '#000',
   },
   modalButtonText: {
     color: BACKGROUND,
     fontSize: scale(16),
     fontWeight: 'bold',
-  },
-  logsModal: {
-    width: '95%',
-    maxHeight: '85%',
-    backgroundColor: BACKGROUND,
-    borderRadius: scale(20),
-    padding: scale(30),
-    alignItems: 'center',
-  },
-  allLogsList: {
-    width: '100%',
-    maxHeight: verticalScale(350),
-    marginTop: verticalScale(10),
   },
   addHoursModal: {
     width: '90%',
