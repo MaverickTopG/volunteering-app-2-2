@@ -24,11 +24,11 @@ const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 let categories = [
   { id: '1',  title: 'Animals',    icon: 'paw-outline',            reference: 'Animal' },
   { id: '2',  title: 'Arts',       icon: 'color-palette-outline',  reference: 'Arts' },
-  { id: '4',  title: 'Family',    icon: 'people-circle-outline',  reference: 'Family' },
+  { id: '4',  title: 'Family',     icon: 'people-circle-outline',  reference: 'Family' },
   { id: '5',  title: 'Tech',       icon: 'laptop-outline',         reference: 'Tech' },
   { id: '6',  title: 'Education',  icon: 'school-outline',         reference: 'Education' },
-  { id: '7',  title: 'Environs',    icon: 'leaf-outline',           reference: 'Environment' },
-  { id: '8',  title: 'Hospital',     icon: 'medkit-outline',         reference: 'Hospital' },
+  { id: '7',  title: 'Environs',   icon: 'leaf-outline',           reference: 'Environment' },
+  { id: '8',  title: 'Hospital',   icon: 'medkit-outline',         reference: 'Hospital' },
   { id: '9',  title: 'Library',    icon: 'book-outline',           reference: 'Library' },
   { id: '11', title: 'Seniors',    icon: 'walk-outline',           reference: 'Seniors' },
 ];
@@ -71,11 +71,15 @@ export default function CausesScreen() {
     }, [animations])
   );
 
+  // Update the navigation call so that it passes nested parameters to TabStack.
+  // This directs the TabStack navigator to immediately show the "Carousel" screen with the selected category,
+  // while TabStack will always reset to "SearchScreen" on unmount.
   const handleCategoryPress = (cat) => {
-    navigation.navigate('CarouselStack', {
-      carouselName: cat.title,
-      reference: cat.reference,
+    navigation.navigate('Search', {
+      screen: 'Carousel',
+      params: { reference: cat.reference, carouselName: cat.title },
     });
+    
   };
 
   // Render each item in the FlatList
@@ -163,7 +167,7 @@ const styles = StyleSheet.create({
     flex: 1,
     // Add top margin so the list starts below the blurred header
     marginTop: verticalScale(80),
-  },
+  }, 
   flatListContent: {
     // Extra bottom padding so cards don't collide with bottom tabs
     paddingBottom: verticalScale(120),

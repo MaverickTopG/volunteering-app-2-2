@@ -1,9 +1,16 @@
-import React, { useContext, useRef } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View, Image, Dimensions } from 'react-native';
+import React, { useContext, useRef, useCallback } from 'react';
+import {
+  Animated,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Image,
+  Dimensions,
+} from 'react-native';
 import { CurvedBottomBarExpo } from 'react-native-curved-bottom-bar';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { createStackNavigator } from '@react-navigation/stack';
-import { AuthContext } from '../../auth/AuthContext'; // AuthContext for authentication state
+import { AuthContext } from '../../auth/AuthContext';
 import AnimalCarousel from '../displayer/showContainer';
 import SearchScreen from '../screens/SearchScreen';
 import AIScreen from '../screens/ProfileScreen';
@@ -15,42 +22,71 @@ import MapScreen from '../screens/MapScreen';
 import SplashScreen from '../screens/Splashscreen';
 import DeleteScreen from '../../auth/deleteScreen';
 
+// Import focus hooks
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+
 const Stack = createStackNavigator();
 
-// Define baseline dimensions (iPhone 16 Pro Max as an example)
+// Define baseline dimensions
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
 const scale = (size) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
-// Carousel Stack for Dynamic Navigation
-const CarouselStack = ({ route }) => {
-  const { reference } = route.params || {};
+/* --------------------------------------
+   TabStack (merged carousel functionalities)
+-------------------------------------- */
+const TabStack = ({ route }) => {
+  const { reference } = route?.params || {};
+  const stackNavigation = useNavigation();
+
+  // When TabStack gains focus, reset so that SearchScreen is on top
+  useFocusEffect(
+    useCallback(() => {
+      stackNavigation.reset({
+        index: 0,
+        routes: [{ name: 'SearchScreen' }],
+      });
+    }, [stackNavigation])
+  );
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen 
-        name="Carousel" 
-        component={AnimalCarousel} 
-        initialParams={{ reference: reference }} 
+    <Stack.Navigator
+      initialRouteName="SearchScreen"
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen
+        name="SearchScreen"
+        component={SearchScreen}
+        options={{ unmountOnBlur: true }}
       />
-      <Stack.Screen name="DisplayScreen" component={DisplayScreen} />
+      <Stack.Screen
+        name="Carousel"
+        component={AnimalCarousel}
+        initialParams={{ reference }}
+        options={{ unmountOnBlur: true }}
+      />
+      <Stack.Screen
+        name="DisplayScreen"
+        component={DisplayScreen}
+        options={{ unmountOnBlur: true }}
+      />
     </Stack.Navigator>
   );
 };
 
-// Volunteer Logs Stack with Auth Integration
+/* --------------------------------------
+   VolunteerLogsStack with Auth Integration
+-------------------------------------- */
 const VolunteerLogsStack = () => {
   const { user } = useContext(AuthContext);
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        // Authenticated users
         <Stack.Screen name="VolunteerLogs" component={VolunteerLogs} />
       ) : (
-        // Unauthenticated users with proper transitions
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
@@ -61,17 +97,9 @@ const VolunteerLogsStack = () => {
   );
 };
 
-const TabStack = () => {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="SearchScreen" component={SearchScreen} />
-      <Stack.Screen name="CarouselStack" component={CarouselStack} />
-    </Stack.Navigator>
-  );
-};
-
-// New TabIcon component with spinning animation on press.
-// When pressed, navigation is triggered immediately, then the icon spins.
+/* --------------------------------------
+   TabIcon and CenterIcon with animations
+-------------------------------------- */
 const TabIcon = ({ routeName, selectedTab, onPress }) => {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const spin = spinAnim.interpolate({
@@ -80,9 +108,7 @@ const TabIcon = ({ routeName, selectedTab, onPress }) => {
   });
 
   const handlePress = () => {
-    // Navigate immediately.
     onPress();
-    // Then spin the icon.
     Animated.timing(spinAnim, {
       toValue: 1,
       duration: 500,
@@ -91,6 +117,7 @@ const TabIcon = ({ routeName, selectedTab, onPress }) => {
       spinAnim.setValue(0);
     });
   };
+
   let iconName = '';
   switch (routeName) {
     case 'Show':
@@ -112,7 +139,6 @@ const TabIcon = ({ routeName, selectedTab, onPress }) => {
       iconName = 'home';
       break;
   }
-  
 
   return (
     <TouchableOpacity onPress={handlePress} style={styles.tabButton}>
@@ -127,7 +153,6 @@ const TabIcon = ({ routeName, selectedTab, onPress }) => {
   );
 };
 
-// Create a similar component for the center (circle) icon.
 const CenterIcon = ({ onPress }) => {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const spin = spinAnim.interpolate({
@@ -156,18 +181,28 @@ const CenterIcon = ({ onPress }) => {
   );
 };
 
-const renderTabBar = ({ routeName, selectedTab, navigate }) => {
-  return (
-    <TabIcon
-      routeName={routeName}
-      selectedTab={selectedTab}
-      onPress={() => navigate(routeName)}
-    />
-  );
-};
+const renderTabBar = ({ routeName, selectedTab, navigate }) => (
+  <TabIcon
+    routeName={routeName}
+    selectedTab={selectedTab}
+    onPress={() => navigate(routeName)}
+  />
+);
 
-// Tab Navigator
+/* --------------------------------------
+   Main Tab Navigator using CurvedBottomBarExpo
+-------------------------------------- */
 const AnimalTabNavigator = () => {
+  const navigation = useNavigation();
+
+  // Whenever AnimalTabNavigator regains focus (e.g. from the Drawer "Home"),
+  // navigate to the "Search" tab so the user sees SearchScreen first.
+  useFocusEffect(
+    useCallback(() => {
+      navigation.navigate('Search');
+    }, [navigation])
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <CurvedBottomBarExpo.Navigator
