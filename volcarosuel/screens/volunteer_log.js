@@ -67,16 +67,24 @@ export default function VolunteerLogs() {
   const [showLogs, setShowLogs] = useState(true);
   const [showExpandedUI, setShowExpandedUI] = useState(false);
 
-  // Modals for logs and hours
+  // "Log Hours" modal
   const [addHoursModal, setAddHoursModal] = useState(false);
 
   // "Log Hours" fields
   const [newHours, setNewHours] = useState('');
   const [newSite, setNewSite] = useState('');
 
-  // Animations
+  // Fade animations for logs & expanded UI
   const logsOpacity = useRef(new Animated.Value(1)).current;
   const expandedOpacity = useRef(new Animated.Value(0)).current;
+
+  // (1) Circle blinking on mount
+  const circleOpacity = useRef(new Animated.Value(1)).current;
+
+  // (2) Toggling text every 5s
+  const [showWeekly, setShowWeekly] = useState(true);
+  const textOpacityHeader = useRef(new Animated.Value(1)).current;
+  const textOpacityExpanded = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!user) {
@@ -96,6 +104,7 @@ export default function VolunteerLogs() {
     }
   }, [goalSetTime]);
 
+  // Fetch logs
   const fetchLogs = async () => {
     setLoading(true);
     try {
@@ -140,16 +149,83 @@ export default function VolunteerLogs() {
     }
   };
 
-  // Calculate ring fractions
+  // Ring fractions
   const fractionBlack = Math.min(totalHours / weeklyGoal, 1);
   const fractionBronze = totalHours > weeklyGoal ? Math.min((totalHours - weeklyGoal) / weeklyGoal, 1) : 0;
   const fractionSilver = totalHours > 2 * weeklyGoal ? Math.min((totalHours - 2 * weeklyGoal) / weeklyGoal, 1) : 0;
   const fractionGold = totalHours > 3 * weeklyGoal ? Math.min((totalHours - 3 * weeklyGoal) / weeklyGoal, 1) : 0;
 
-  // Toggle expanded UI
+  // (1) On mount, blink circle 2 times
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(circleOpacity, {
+        toValue: 0.3,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(circleOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(circleOpacity, {
+        toValue: 0.3,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(circleOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // (2) Toggle text every 5s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // fade out both
+      Animated.parallel([
+        Animated.timing(textOpacityHeader, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textOpacityExpanded, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // toggle
+        setShowWeekly((prev) => !prev);
+        // fade in both
+        Animated.parallel([
+          Animated.timing(textOpacityHeader, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(textOpacityExpanded, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Decide which text to show in header & expanded
+  const headerText = showWeekly
+    ? `Weekly Goal: ${weeklyGoal} hrs`
+    : `Total Hours: ${totalHours}`;
+
+  // Expand/collapse
   const handleCirclePress = () => {
     if (expanded) {
-      // collapse
       Animated.timing(expandedOpacity, {
         toValue: 0,
         duration: 400,
@@ -157,7 +233,6 @@ export default function VolunteerLogs() {
       }).start(() => setShowExpandedUI(false));
       fadeInLogs();
     } else {
-      // expand
       fadeOutLogs();
       setShowExpandedUI(true);
       Animated.timing(expandedOpacity, {
@@ -188,7 +263,7 @@ export default function VolunteerLogs() {
     }).start();
   };
 
-  // Weekly goal settings
+  // Settings
   const handleSettingsPress = () => {
     setTempGoal(String(weeklyGoal));
     setShowGoalModal(true);
@@ -205,13 +280,13 @@ export default function VolunteerLogs() {
     setShowGoalModal(false);
   };
 
-  // Sign out
+  // sign out
   const handleSignOut = () => {
     signOut();
     navigation.navigate('NexoLink');
   };
 
-  // RENDER LOGS
+  // Render logs
   const renderLogItem = ({ item }) => (
     <View style={styles.logItem}>
       <Text style={styles.logText}>Site: {item.site}</Text>
@@ -295,7 +370,6 @@ export default function VolunteerLogs() {
       {/* Expanded UI Overlay */}
       {showExpandedUI && (
         <Animated.View style={[styles.expandedOverlay, { opacity: expandedOpacity }]}>
-          {/* Large circle with stacked rings */}
           <View style={styles.expandedCircleContainer}>
             {/* Black ring */}
             <Progress.Circle
@@ -351,15 +425,26 @@ export default function VolunteerLogs() {
                 style={styles.absoluteCircle}
               />
             )}
+
+            {/* Original lines inside expanded circle */}
             <View style={styles.centerExpanded}>
               <Text style={styles.expandedHours}>{totalHours}</Text>
               <Text style={styles.expandedLabel}>hours</Text>
               <Text style={styles.motivationText}>Keep It Up!</Text>
-              <Text style={styles.expandedGoalText}>Weekly Goal: {weeklyGoal} hrs</Text>
+
+              {/* Fading line for Weekly vs. total hours */}
+              <Animated.Text
+                style={[styles.expandedGoalText, { opacity: textOpacityExpanded }]}
+              >
+                {showWeekly
+                  ? `Weekly Goal: ${weeklyGoal} hrs`
+                  : `Total Hours: ${totalHours}`
+                }
+              </Animated.Text>
             </View>
           </View>
 
-          {/* Top-right container for Settings & Sign Out at the tippy top */}
+          {/* Top-right container for Settings & Sign Out */}
           <View style={[styles.expandedTopIconsContainer]}>
             <TouchableOpacity style={styles.expandedIconButton} onPress={handleSettingsPress}>
               <Ionicons name="settings-outline" size={scale(24)} color="black" />
@@ -372,11 +457,10 @@ export default function VolunteerLogs() {
             </TouchableOpacity>
           </View>
 
-          {/* Instead of Show All Logs, we have a "Go Back" button in the center bottom */}
+          {/* "Go Back" button in center bottom */}
           <TouchableOpacity
             style={[styles.modalButton, styles.goBackButton]}
             onPress={() => {
-              // revert UI
               setShowExpandedUI(false);
               setExpanded(false);
               fadeInLogs();
@@ -389,7 +473,14 @@ export default function VolunteerLogs() {
 
       {/* Header (original UI) */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Weekly Goal: {weeklyGoal} hrs</Text>
+        {/* Fading text for weekly vs. total hours in the header */}
+        <Animated.Text style={[styles.headerTitle, { opacity: textOpacityHeader }]}>
+          {showWeekly
+            ? `Weekly Goal: ${weeklyGoal} hrs`
+            : `Total Hours: ${totalHours}`
+          }
+        </Animated.Text>
+
         <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity onPress={handleSettingsPress} style={{ marginRight: scale(20) }}>
             <Ionicons name="settings-outline" size={scale(24)} color="#000" />
@@ -400,9 +491,8 @@ export default function VolunteerLogs() {
         </View>
       </View>
 
-      {/* Original UI Circle */}
-      <View style={styles.circleWrapper}>
-        {/* Black ring */}
+      {/* Original UI Circle with blink animation */}
+      <Animated.View style={[styles.circleWrapper, { opacity: circleOpacity }]}>
         <Progress.Circle
           size={blackSize}
           progress={fractionBlack}
@@ -414,7 +504,6 @@ export default function VolunteerLogs() {
           rotation={270}
           style={styles.absoluteCircle}
         />
-        {/* Bronze ring */}
         {fractionBronze > 0 && (
           <Progress.Circle
             size={blackSize}
@@ -428,7 +517,6 @@ export default function VolunteerLogs() {
             style={styles.absoluteCircle}
           />
         )}
-        {/* Silver ring */}
         {fractionSilver > 0 && (
           <Progress.Circle
             size={blackSize}
@@ -442,7 +530,6 @@ export default function VolunteerLogs() {
             style={styles.absoluteCircle}
           />
         )}
-        {/* Gold ring */}
         {fractionGold > 0 && (
           <Progress.Circle
             size={blackSize}
@@ -460,9 +547,11 @@ export default function VolunteerLogs() {
           <Text style={styles.centerHours}>{totalHours}</Text>
           <Text style={styles.centerLabel}>hours</Text>
         </View>
-        {/* Press area toggles expanded UI */}
-        <TouchableOpacity style={styles.circlePressArea} onPress={handleCirclePress} />
-      </View>
+        <TouchableOpacity
+          style={styles.circlePressArea}
+          onPress={handleCirclePress}
+        />
+      </Animated.View>
 
       {/* Logs list */}
       {showLogs && (
@@ -517,6 +606,7 @@ const styles = StyleSheet.create({
     fontSize: scale(18),
     fontWeight: 'bold',
     color: '#000',
+    marginRight: scale(20), // give a bit of space from the icons
   },
   circleWrapper: {
     alignSelf: 'center',
@@ -642,7 +732,7 @@ const styles = StyleSheet.create({
   // Top-right container for icons at the tippy top
   expandedTopIconsContainer: {
     position: 'absolute',
-    top: verticalScale(0), // pinned at top
+    top: verticalScale(0),
     right: scale(20),
     flexDirection: 'row',
     alignItems: 'center',
@@ -652,7 +742,12 @@ const styles = StyleSheet.create({
     borderRadius: scale(20),
     padding: scale(10),
   },
-  // Bottom-right container for Revert UI
+  // The "Go Back" button in the center bottom
+  goBackButton: {
+    alignSelf: 'center',
+    marginTop: verticalScale(-60),
+  },
+  // Optional: a bottom-right container if needed
   expandedBottomContainer: {
     position: 'absolute',
     bottom: verticalScale(20),
@@ -669,11 +764,6 @@ const styles = StyleSheet.create({
     color: BACKGROUND,
     fontSize: scale(14),
     fontWeight: 'bold',
-  },
-  // The "Go Back" button in the center bottom
-  goBackButton: {
-    alignSelf: 'center',
-    marginTop: verticalScale(-60), // or adjust as needed
   },
   // Modal overlays
   modalOverlay: {
