@@ -1,9 +1,8 @@
-<!-- Important! DONT DELETE-->
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Firebase Data Upload</title>
+  <title>Firebase Data Upload - Multiple Orgs</title>
   <!-- Import Firebase SDK modules from CDN -->
   <script type="module">
     // Import Firebase functions from the CDN
@@ -12,10 +11,10 @@
       getFirestore,
       collection,
       doc,
-      setDoc,
+      setDoc
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-    // Your Firebase configuration (replace with your actual config)
+    // Your Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyC1kY4dlbg9v38ZkuYVPJGnSulMEouvw58",
       authDomain: "nexolink-b8eb5.firebaseapp.com",
@@ -29,55 +28,212 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Array of volunteer fun facts
-    const FACTS = [
-      { fun_fact: "Volunteers are worth an average $28.54 an hour according to an Independent Sector Study." },
-      { fun_fact: "Volunteers are almost twice as likely to donate to a charity than those that don’t volunteer according to The Corporation for National & Community Service." },
-      { fun_fact: "Volunteerism has a value of over $184 billion dollars." },
-      { fun_fact: "Volunteerism improves health by strengthening the body, improving mood, and lessening stress in participants." },
-      { fun_fact: "Those who volunteer regularly have a 27% better chance of gaining employment." },
-      { fun_fact: "60% of hiring managers see volunteerism as a valuable asset when making recruitment decisions." },
-      { fun_fact: "Volunteers, on average, spend 50 hours per year donating their time to the greater good." },
-      { fun_fact: "Aristotle once said: 'the essence of life is to serve others and do good.'" },
-      { fun_fact: "Volunteers are 66% more likely to donate financially to the organization they support than non-volunteers." },
-      { fun_fact: "77% of nonprofits believe that skilled volunteers could improve their organization's business practices." },
-      { fun_fact: "66% of volunteers give their time to improve their community, and 83% do so to contribute to a cause they care about." },
-      { fun_fact: "According to an AmeriCorps report, people who volunteer over 100 hours a year are among the healthiest in the U.S." },
-      { fun_fact: "Utah has the highest rate of volunteers in America (51%)." },
-      { fun_fact: "The COVID-19 response added more than 110,000 volunteer activities per month, double the rate in 2017." },
-      { fun_fact: "Volunteering decreases the likelihood of high blood pressure development by 40%." },
-      { fun_fact: "70% of corporate volunteers believe volunteerism boosts morale more than company mixers." },
-      { fun_fact: "96% of volunteers reported that volunteering enriched their sense of purpose in life." }
+   
+// Array of updated organizations
+const orgs = [
+      {
+        title: "FRIENDS OF THE LAGUNA HILLS TECHNOLOGY LIBRARY",
+        address: "Laguna Hills, CA",
+        county: "Orange County",
+        date: "Updated: July 22, 2021",
+        reference: "Tech",
+        description:
+          "The Laguna Hills Technology Library provides digital resources and hands-on computer training, empowering children and the community with essential tech skills."
+      },
+      {
+        title: "Beckman Robotics Organization",
+        address: "Irvine, CA",
+        county: "Orange County",
+        date: "Updated: September 30, 2009",
+        reference: "Tech",
+        description:
+          "Beckman Robotics Organization inspires youth through robotics competitions that build engineering, design, and programming skills while fostering teamwork."
+      },
+      {
+        title: "ASTRA LABS",
+        address: "Costa Mesa, CA",
+        county: "Orange County",
+        date: "Updated: August 8, 2021",
+        reference: "Tech",
+        description:
+          "ASTRA LABS develops innovative apps and software solutions to improve access to charitable aid—leveraging technology to streamline crisis support."
+      },
+      {
+        title: "OC PUBLIC LIBRARIES - LAGUNA HILLS TECHNOLOGY BRANCH",
+        address: "Laguna Hills, CA",
+        county: "Orange County",
+        date: "Updated: March 11, 2013",
+        reference: "Tech",
+        description:
+          "This branch of OC Public Libraries offers state-of-the-art digital resources and computer literacy classes to enhance community learning."
+      },
+      {
+        title: "FORGE54",
+        address: "Irvine, CA",
+        county: "Orange County",
+        date: "Updated: December 11, 2019",
+        reference: "Tech",
+        description:
+          "Forge54 provides creative technology solutions—combining digital storytelling and media production—to help nonprofits amplify their impact."
+      },
+      {
+        title: "ASSOCIATION FOR WOMEN IN TECHNOLOGY",
+        address: "Newport Beach, CA",
+        county: "Orange County",
+        date: "Updated: June 28, 2010",
+        reference: "Tech",
+        description:
+          "This organization fosters mentorship and professional growth for women in tech, offering networking events and educational forums to bridge the gender gap in technology."
+      },
+      {
+        title: "MIND INSTITUTE",
+        address: "Costa Mesa, CA",
+        county: "Orange County",
+        date: "Updated: May 23, 2011",
+        reference: "Tech",
+        description:
+          "The MIND Institute uses non-language-based computer math games and specialized curricula to enhance problem-solving skills and boost math scores among students."
+      },
+      {
+        title: "SAB SERVICES, INC.",
+        address: "Placentia, CA",
+        county: "Orange County",
+        date: "Updated: August 17, 2002",
+        reference: "Tech",
+        description:
+          "SAB Services, Inc. provides online re-enrollment and administrative solutions to schools, streamlining digital processes and improving educational efficiency."
+      },
+      {
+        title: "LOS ANGELES ACADEMY OF MEDIA &TECHNOLOGY",
+        address: "Tustin, CA",
+        county: "Orange County",
+        date: "Updated: June 16, 2021",
+        reference: "Tech",
+        description:
+          "Focused on media production and digital technology, the Los Angeles Academy of Media & Technology creates opportunities for minority and female students through innovative workshops and events."
+      },
+      {
+        title: "EnCiv, Inc.",
+        address: "Irvine, CA",
+        county: "Orange County",
+        date: "Updated: February 14, 2022",
+        reference: "Tech",
+        description:
+          "EnCiv, Inc. develops online platforms that promote bipartisan dialogue and civic engagement, harnessing technology to facilitate inclusive, digital public discourse."
+      },
+      {
+        title: "Senior Net",
+        address: "Laguna Niguel, CA",
+        county: "Orange County",
+        date: "Updated: June 14, 2007",
+        reference: "Tech",
+        description:
+          "Senior Net offers computer classes specifically designed for older adults, empowering seniors to learn digital literacy skills and stay connected in the modern world."
+      },
+      {
+        title: "IMPACT SYSTEMS BUILDERS",
+        address: "Brea, CA",
+        county: "Orange County",
+        date: "Updated: February 27, 2019",
+        reference: "Tech",
+        description:
+          "Impact Systems Builders provides strategic consulting and technology support to nonprofits, accelerating digital transformation and operational excellence."
+      },
+      {
+        title: "LABDOO INC",
+        address: "Irvine, CA",
+        county: "Orange County",
+        date: "Updated: February 22, 2017",
+        reference: "Tech",
+        description:
+          "Labdoo repurposes used laptops to deliver free digital educational tools to children worldwide, effectively bridging the digital divide through sustainable technology recycling."
+      },
+      {
+        title: "COMMUNITY TECHNOLOGY PARTNERSHIP",
+        address: "Garden Grove, CA",
+        county: "Orange County",
+        date: "Updated: November 7, 2001",
+        reference: "Tech",
+        description:
+          "Community Technology Partnership refurbishes donated computers for low-income students, helping to close the digital divide and boost technology access in Orange County."
+      },
+      {
+        title: "SMILES FOR LEARNING",
+        address: "Westminster, CA",
+        county: "Orange County",
+        date: "Updated: August 22, 2021",
+        reference: "Tech",
+        description:
+          "Smiles for Learning provides free online lessons in math, English, and computer science—leveraging technology to revolutionize education for underserved youth."
+      },
+      {
+        title: "PROJECT MANAGEMENT INSTITUTE - ORANGE COUNTY",
+        address: "Irvine, CA",
+        county: "Orange County",
+        date: "Updated: July 12, 2005",
+        reference: "Tech",
+        description:
+          "PMI-OC promotes project management education and best practices by organizing events and workshops that blend technology and leadership to enhance professional development."
+      },
+      {
+        title: "DRONES4KIDS",
+        address: "Atwood, CA",
+        county: "Orange County",
+        date: "Updated: January 8, 2024",
+        reference: "Tech",
+        description:
+          "Drones4kids offers hands-on drone flight programs and training events, inspiring youth to explore unmanned aerial systems and modern technology in aviation."
+      },
+      {
+        title: "NIGUEL HILLS MIDDLE SCHOOL",
+        address: "Laguna Niguel, CA",
+        county: "Orange County",
+        date: "Updated: August 20, 2016",
+        reference: "Tech",
+        description:
+          "Niguel Hills Middle School’s theatre department incorporates digital media and technology into its creative productions, providing students with exposure to computer-based arts and technology."
+      },
+      {
+        title: "CLAMA",
+        address: "Orange, CA",
+        county: "Orange County",
+        date: "N/A",
+        reference: "Tech",
+        description:
+          "CLAMA is a music and technology-based program that uses digital tools and innovative media techniques to equip youth with occupational skills and prepare them for future careers in tech."
+      }
     ];
 
-    async function uploadFactsToFirebase() {
-      // Reference to the new 'volunteer_funfacts' collection
-      const collectionRef = collection(db, "volunteer_funfacts");
 
-      for (let i = 0; i < FACTS.length; i++) {
-        const item = FACTS[i];
-        // Use a unique doc ID. For instance, 'fact-0', 'fact-1', etc.
-        const docId = `fact-${i}`;
+
+    async function uploadOrgs() {
+      // Reference to the 'volunteer_orgs' collection
+      const collectionRef = collection(db, "volunteer_organizations");
+
+      for (const org of orgs) {
+        // Construct a doc ID combining reference + title
+        // e.g. "Education_ACADEMY FOR INTERNATIONAL CULTURE AND PROFESSIONAL EDUCATION"
+        const docId = `${org.reference}_${org.title}`;
         const docRef = doc(collectionRef, docId);
 
         try {
-          await setDoc(docRef, item);
-          console.log(`Uploaded: ${item.fun_fact}`);
+          await setDoc(docRef, org);
+          console.log(`Uploaded: ${docId}`);
         } catch (error) {
-          console.error(`Error uploading ${item.fun_fact}:`, error);
+          console.error(`Error uploading ${docId}:`, error);
         }
       }
-      console.log("All fun facts have been uploaded!");
+      console.log("All organizations have been uploaded!");
     }
 
-    // Automatically upload the facts when the page loads
+    // Automatically upload on page load
     window.addEventListener("load", () => {
-      uploadFactsToFirebase();
+      uploadOrgs();
     });
   </script>
 </head>
 <body>
-  <h1>Firebase Data Upload - Volunteer Fun Facts</h1>
+  <h1>Firebase Data Upload - Multiple Volunteer Orgs</h1>
   <p>Check your browser console for upload logs.</p>
 </body>
 </html>

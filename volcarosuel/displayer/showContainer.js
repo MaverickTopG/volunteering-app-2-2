@@ -40,8 +40,6 @@ const groupByCounty = (data) => {
     }
     counties[item.county].push(item);
   });
-  // For testing, you could force one county to be empty:
-  // counties["EmptyCounty"] = [];
   return Object.keys(counties).map((county) => ({
     title: county,
     data: counties[county],
@@ -59,6 +57,11 @@ const VolunteerCarousel = ({ route }) => {
 
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState([]);
+  // Track expanded state for each county
+  const [expandedSections, setExpandedSections] = useState({});
+  // Animated values for each county dropdown
+  const animValuesRef = useRef({});
+
   const scrollViewRef = useRef(null);
 
   // Quick Search Bubble state & animation
@@ -80,6 +83,12 @@ const VolunteerCarousel = ({ route }) => {
         });
         const grouped = groupByCounty(results);
         setSections(grouped);
+        // Initialize animated values for each county if not already set
+        grouped.forEach(section => {
+          if (!animValuesRef.current[section.title]) {
+            animValuesRef.current[section.title] = new Animated.Value(0);
+          }
+        });
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -132,7 +141,7 @@ const VolunteerCarousel = ({ route }) => {
     let offsetY = 0;
     for (let s = 0; s < sections.length; s++) {
       const currentCounty = sections[s].title;
-      offsetY += HEADER_HEIGHT; // add header height for each county
+      offsetY += HEADER_HEIGHT;
       if (currentCounty.toLowerCase() === county.toLowerCase()) break;
       const section = sections[s];
       offsetY += section.data.length * ITEM_HEIGHT;
@@ -145,6 +154,33 @@ const VolunteerCarousel = ({ route }) => {
 
   const handleBackPress = () => {
     navigation.goBack();
+  };
+
+  // Toggle dropdown with fade animation
+  const toggleSection = (county) => {
+    const isExpanded = expandedSections[county];
+    const animValue = animValuesRef.current[county];
+    if (!animValue) return;
+
+    if (isExpanded) {
+      // Animate fade out from current opacity to 0
+      Animated.timing(animValue, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setExpandedSections(prev => ({ ...prev, [county]: false }));
+      });
+    } else {
+      // Set expanded state immediately and animate fade in from 0 to 1
+      setExpandedSections(prev => ({ ...prev, [county]: true }));
+      animValue.setValue(0);
+      Animated.timing(animValue, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   if (loading) {
@@ -219,26 +255,44 @@ const VolunteerCarousel = ({ route }) => {
 
       {/* Main Collapsible List */}
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollViewContent}>
-        {sections.map((section, sIndex) => (
-          <View key={sIndex}>
-            <Text style={styles.countyHeaderText}>{section.title}</Text>
-            {section.data && section.data.length > 0 ? (
-              section.data.map((orgItem, iIndex) => (
-                <TouchableOpacity
-                  key={iIndex}
-                  style={styles.card}
-                  onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
-                >
-                  <Text style={styles.cardTitle}>{orgItem.title}</Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={styles.comingSoonContainer}>
-                <Text style={styles.comingSoonText}>Coming Soon!</Text>
-              </View>
-            )}
-          </View>
-        ))}
+        {sections.map((section, sIndex) => {
+          const isExpanded = expandedSections[section.title];
+          const animValue = animValuesRef.current[section.title];
+          return (
+            <View key={sIndex}>
+              <TouchableOpacity
+                style={styles.dropdownHeader}
+                onPress={() => toggleSection(section.title)}
+              >
+                <Text style={styles.countyHeaderText}>{section.title}</Text>
+                <MaterialIcons 
+                  name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+                  size={24} 
+                  color="#333" 
+                />
+              </TouchableOpacity>
+              {isExpanded && (
+                <Animated.View style={{ opacity: animValue }}>
+                  {section.data && section.data.length > 0 ? (
+                    section.data.map((orgItem, iIndex) => (
+                      <TouchableOpacity
+                        key={iIndex}
+                        style={styles.card}
+                        onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
+                      >
+                        <Text style={styles.cardTitle}>{orgItem.title}</Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View style={styles.comingSoonContainer}>
+                      <Text style={styles.comingSoonText}>Coming Soon!</Text>
+                    </View>
+                  )}
+                </Animated.View>
+              )}
+            </View>
+          );
+        })}
       </ScrollView>
     </SafeAreaView>
   );
@@ -294,6 +348,16 @@ const styles = StyleSheet.create({
     fontSize: RFPercentage(2.5),
     fontWeight: 'bold',
     color: '#333',
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff6e7',
+    borderRadius: 15,
+    // Removed outline (borderWidth and borderColor)
     marginVertical: 10,
   },
   card: {
