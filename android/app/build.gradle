@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.nexolink"
+    namespace "com.ayanshsingh.nexo"
     defaultConfig {
-        applicationId "com.nexolink"
+        applicationId "com.ayanshsingh.nexo"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -162,6 +162,7 @@ const CustomSideBarMenu = (props) => {
               accessibilityRole="button"
             />
           </View>
+       
 
           {/* Black card for fun fact */}
           <View style={styles.blackCard}>

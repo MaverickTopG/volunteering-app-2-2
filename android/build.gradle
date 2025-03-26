@@ -22,7 +22,6 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
-
 allprojects {
     repositories {
         maven {
@@ -33,9 +32,22 @@ allprojects {
             // Android JSC is installed from npm
             url(new File(['node', '--print', "require.resolve('jsc-android/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim(), '../dist'))
         }
-
+        
+        // Mapbox Maven repository with authentication
+        maven {
+            url 'https://api.mapbox.com/downloads/v2/releases/maven'
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = 'mapbox'
+                password = project.findProperty("sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA") ?: ""
+            }
+        }
+        
         google()
         mavenCentral()
         maven { url 'https://www.jitpack.io' }
     }
 }
+

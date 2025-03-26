@@ -30,179 +30,61 @@
 
    
 // Array of updated organizations
-const orgs = [
-      {
-        title: "FRIENDS OF THE LAGUNA HILLS TECHNOLOGY LIBRARY",
-        address: "Laguna Hills, CA",
-        county: "Orange County",
-        date: "Updated: July 22, 2021",
-        reference: "Tech",
-        description:
-          "The Laguna Hills Technology Library provides digital resources and hands-on computer training, empowering children and the community with essential tech skills."
-      },
-      {
-        title: "Beckman Robotics Organization",
-        address: "Irvine, CA",
-        county: "Orange County",
-        date: "Updated: September 30, 2009",
-        reference: "Tech",
-        description:
-          "Beckman Robotics Organization inspires youth through robotics competitions that build engineering, design, and programming skills while fostering teamwork."
-      },
-      {
-        title: "ASTRA LABS",
-        address: "Costa Mesa, CA",
-        county: "Orange County",
-        date: "Updated: August 8, 2021",
-        reference: "Tech",
-        description:
-          "ASTRA LABS develops innovative apps and software solutions to improve access to charitable aid—leveraging technology to streamline crisis support."
-      },
-      {
-        title: "OC PUBLIC LIBRARIES - LAGUNA HILLS TECHNOLOGY BRANCH",
-        address: "Laguna Hills, CA",
-        county: "Orange County",
-        date: "Updated: March 11, 2013",
-        reference: "Tech",
-        description:
-          "This branch of OC Public Libraries offers state-of-the-art digital resources and computer literacy classes to enhance community learning."
-      },
-      {
-        title: "FORGE54",
-        address: "Irvine, CA",
-        county: "Orange County",
-        date: "Updated: December 11, 2019",
-        reference: "Tech",
-        description:
-          "Forge54 provides creative technology solutions—combining digital storytelling and media production—to help nonprofits amplify their impact."
-      },
-      {
-        title: "ASSOCIATION FOR WOMEN IN TECHNOLOGY",
-        address: "Newport Beach, CA",
-        county: "Orange County",
-        date: "Updated: June 28, 2010",
-        reference: "Tech",
-        description:
-          "This organization fosters mentorship and professional growth for women in tech, offering networking events and educational forums to bridge the gender gap in technology."
-      },
-      {
-        title: "MIND INSTITUTE",
-        address: "Costa Mesa, CA",
-        county: "Orange County",
-        date: "Updated: May 23, 2011",
-        reference: "Tech",
-        description:
-          "The MIND Institute uses non-language-based computer math games and specialized curricula to enhance problem-solving skills and boost math scores among students."
-      },
-      {
-        title: "SAB SERVICES, INC.",
-        address: "Placentia, CA",
-        county: "Orange County",
-        date: "Updated: August 17, 2002",
-        reference: "Tech",
-        description:
-          "SAB Services, Inc. provides online re-enrollment and administrative solutions to schools, streamlining digital processes and improving educational efficiency."
-      },
-      {
-        title: "LOS ANGELES ACADEMY OF MEDIA &TECHNOLOGY",
-        address: "Tustin, CA",
-        county: "Orange County",
-        date: "Updated: June 16, 2021",
-        reference: "Tech",
-        description:
-          "Focused on media production and digital technology, the Los Angeles Academy of Media & Technology creates opportunities for minority and female students through innovative workshops and events."
-      },
-      {
-        title: "EnCiv, Inc.",
-        address: "Irvine, CA",
-        county: "Orange County",
-        date: "Updated: February 14, 2022",
-        reference: "Tech",
-        description:
-          "EnCiv, Inc. develops online platforms that promote bipartisan dialogue and civic engagement, harnessing technology to facilitate inclusive, digital public discourse."
-      },
-      {
-        title: "Senior Net",
-        address: "Laguna Niguel, CA",
-        county: "Orange County",
-        date: "Updated: June 14, 2007",
-        reference: "Tech",
-        description:
-          "Senior Net offers computer classes specifically designed for older adults, empowering seniors to learn digital literacy skills and stay connected in the modern world."
-      },
-      {
-        title: "IMPACT SYSTEMS BUILDERS",
-        address: "Brea, CA",
-        county: "Orange County",
-        date: "Updated: February 27, 2019",
-        reference: "Tech",
-        description:
-          "Impact Systems Builders provides strategic consulting and technology support to nonprofits, accelerating digital transformation and operational excellence."
-      },
-      {
-        title: "LABDOO INC",
-        address: "Irvine, CA",
-        county: "Orange County",
-        date: "Updated: February 22, 2017",
-        reference: "Tech",
-        description:
-          "Labdoo repurposes used laptops to deliver free digital educational tools to children worldwide, effectively bridging the digital divide through sustainable technology recycling."
-      },
-      {
-        title: "COMMUNITY TECHNOLOGY PARTNERSHIP",
-        address: "Garden Grove, CA",
-        county: "Orange County",
-        date: "Updated: November 7, 2001",
-        reference: "Tech",
-        description:
-          "Community Technology Partnership refurbishes donated computers for low-income students, helping to close the digital divide and boost technology access in Orange County."
-      },
-      {
-        title: "SMILES FOR LEARNING",
-        address: "Westminster, CA",
-        county: "Orange County",
-        date: "Updated: August 22, 2021",
-        reference: "Tech",
-        description:
-          "Smiles for Learning provides free online lessons in math, English, and computer science—leveraging technology to revolutionize education for underserved youth."
-      },
-      {
-        title: "PROJECT MANAGEMENT INSTITUTE - ORANGE COUNTY",
-        address: "Irvine, CA",
-        county: "Orange County",
-        date: "Updated: July 12, 2005",
-        reference: "Tech",
-        description:
-          "PMI-OC promotes project management education and best practices by organizing events and workshops that blend technology and leadership to enhance professional development."
-      },
-      {
-        title: "DRONES4KIDS",
-        address: "Atwood, CA",
-        county: "Orange County",
-        date: "Updated: January 8, 2024",
-        reference: "Tech",
-        description:
-          "Drones4kids offers hands-on drone flight programs and training events, inspiring youth to explore unmanned aerial systems and modern technology in aviation."
-      },
-      {
-        title: "NIGUEL HILLS MIDDLE SCHOOL",
-        address: "Laguna Niguel, CA",
-        county: "Orange County",
-        date: "Updated: August 20, 2016",
-        reference: "Tech",
-        description:
-          "Niguel Hills Middle School’s theatre department incorporates digital media and technology into its creative productions, providing students with exposure to computer-based arts and technology."
-      },
-      {
-        title: "CLAMA",
-        address: "Orange, CA",
-        county: "Orange County",
-        date: "N/A",
-        reference: "Tech",
-        description:
-          "CLAMA is a music and technology-based program that uses digital tools and innovative media techniques to equip youth with occupational skills and prepare them for future careers in tech."
-      }
-    ];
+const orgs = 
+[
+  {
+    "title": "Alliance for Technology Access",
+    "address": "San Rafael, CA",
+    "county": "Marin County",
+    "date": "Updated: June 28, 2001",
+    "reference": "Tech",
+    "description": "The ATA is a national network of centers, developers, educators, and families dedicated to promoting access to technology for people with disabilities."
+  },
+  {
+    "title": "Computer & Technology Resource Center",
+    "address": "NOVATO, CA",
+    "county": "Marin County",
+    "date": "Updated: March 9, 2014",
+    "reference": "Tech",
+    "description": "CTRC recycles household electronics and provides free refurbished computers to help narrow the digital divide in the San Francisco Bay Area."
+  },
+  {
+    "title": "CoDA - Center for Digital Archaeology",
+    "address": "San Rafael, CA",
+    "county": "Marin County",
+    "date": "Updated: June 20, 2016",
+    "reference": "Tech",
+    "description": "Operating at the intersection of anthropology, archaeology, and digital technology, CoDA helps preserve cultural heritage by providing digital tools and collaborative solutions."
+  },
+  {
+    "title": "GRACESIGNS",
+    "address": "TIBURON, CA",
+    "county": "Marin County",
+    "date": "Updated: February 12, 2016",
+    "reference": "Tech",
+    "description": "GraceSigns develops educational apps for learning sign language and reading, aiming to enhance communication and disability awareness through innovative technology."
+  },
+  {
+    "title": "BUCK INSTITUTE FOR RESEARCH ON AGING",
+    "address": "NOVATO, CA",
+    "county": "Marin County",
+    "date": "Updated: April 3, 2018",
+    "reference": "Tech",
+    "description": "Organizes a year-long, volunteer-driven STEM event—North Bay Science Discovery Day—that brings together science, technology, engineering, and math to offer free educational experiences to families."
+  },
+  {
+    "title": "Digital Story Center",
+    "address": "San Anselmo, CA",
+    "county": "Marin County",
+    "date": "Updated: August 10, 2001",
+    "reference": "Tech",
+    "description": "Offers workshops with professional guidance and digital equipment to help individuals create short films and narratives, bridging the digital divide and enhancing communication skills."
+  }
+]
+
+
+
+;
 
 
 
