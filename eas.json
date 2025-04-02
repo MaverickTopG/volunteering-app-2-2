@@ -15,7 +15,9 @@
       "ios": {
         "scheme": "NexoLink"
       },
-      "autoIncrement": true
+      "android": {
+        "buildType": "app-bundle" 
+      }
     }
   },
   "submit": {

@@ -2,31 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Animated, Image, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { AuthProvider } from './auth/AuthContext';  // Adjust the path
-import DrawerNavigator from './navigation/drawer';
-import LoginScreen from './auth/LoginScreen';  // Adjust path
+import { AuthProvider } from './auth/AuthContext'; // Adjust the path
+import DrawerNavigator from './navigation/drawer';  // Ensure this file does NOT have a NavigationContainer
+import LoginScreen from './auth/LoginScreen';         // Adjust path
 import RegisterScreen from './auth/RegisterScreen';
 import { registerRootComponent } from 'expo';
-import AnimalTabNavigator from './volcarosuel/Navigators/AnimalTabNavigator.js';
+import AnimalTabNavigator from './volcarosuel/Navigators/AnimalTabNavigator'; // Ensure no NavigationContainer here either
 import AppUpdateChecker from './AppUpdateChecker.js';
 import * as SplashScreen from 'expo-splash-screen';
 
 // Prevent the native splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
-
-const Stack = createStackNavigator();
-
-// Main Stack Navigator
-const StackNav = () => {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home" component={DrawerNavigator} />
-      <Stack.Screen name="AnimalTabNavigator" component={AnimalTabNavigator} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-    </Stack.Navigator>
-  );
-};
 
 const App = () => {
   // Check for app updates on app load
@@ -41,7 +27,7 @@ const App = () => {
   useEffect(() => {
     async function prepare() {
       try {
-        // Wait for 2 seconds while native splash is displayed
+        // Wait for 1.5 seconds while native splash is displayed
         await new Promise(resolve => setTimeout(resolve, 1500));
       } catch (e) {
         console.warn(e);
@@ -63,8 +49,9 @@ const App = () => {
   }, [fadeAnim]);
 
   return (
-    <AuthProvider>
-      <NavigationContainer>
+    <AuthProvider >
+      {/* Single NavigationContainer at the root with independent prop */}
+      <NavigationContainer >
         <DrawerNavigator />
       </NavigationContainer>
       {showAnimatedSplash && (

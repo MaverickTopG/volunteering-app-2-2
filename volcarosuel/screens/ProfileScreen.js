@@ -9,8 +9,6 @@ import {
   Animated,
   FlatList,
   Image,
-  Keyboard,
-  TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
   Dimensions,
@@ -19,20 +17,24 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import Geolocation from 'react-native-geolocation-service';
 
-// Define baseline dimensions (iPhone 16 Pro Max as an example)
+// Define baseline dimensions (e.g. iPhone 16 Pro Max)
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
 const scale = (size) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
-// Helper function to generate a unique id.
+// Helper function to generate a unique ID
 const generateUniqueId = () =>
   Date.now().toString() + Math.random().toString(36).substring(2, 9);
 
-// Memoized animated message component.
+// Create an animated version of TouchableOpacity
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
+// -- AnimatedMessage --
 const AnimatedMessage = memo(({ item }) => {
   const fadeAnimMessage = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     Animated.timing(fadeAnimMessage, {
       toValue: 1,
@@ -40,6 +42,7 @@ const AnimatedMessage = memo(({ item }) => {
       useNativeDriver: true,
     }).start();
   }, [fadeAnimMessage]);
+
   return (
     <Animated.View style={{ opacity: fadeAnimMessage }}>
       <View
@@ -55,12 +58,13 @@ const AnimatedMessage = memo(({ item }) => {
   );
 });
 
-// Memoized chat section component.
+// -- ChatSection --
 const ChatSection = memo(({ data, isLoading, flatListRef }) => {
   const renderItem = useCallback(
     ({ item }) => <AnimatedMessage key={item.id} item={item} />,
     []
   );
+
   return (
     <View style={styles.chatContainer}>
       <FlatList
@@ -71,27 +75,24 @@ const ChatSection = memo(({ data, isLoading, flatListRef }) => {
         style={{ flex: 1 }}
         contentContainerStyle={styles.flatListContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={true}
-        scrollEnabled={true}
+        showsVerticalScrollIndicator
       />
       {isLoading && <TypingIndicator />}
     </View>
   );
 });
 
-// Intro section remains unchanged.
+// -- IntroSection --
 const IntroSection = memo(() => {
   const introPhrases = [
-    "How can I help you today?",
-    "What volunteering opportunities interest you?",
-    "Need assistance finding a volunteer project?",
-    "Looking for ways to make an impact?",
+    'How can I help you today?',
+    'What volunteering opportunities interest you?',
+    'Need assistance finding a volunteer project?',
+    'Looking for ways to make an impact?',
   ];
   const PHRASE_ANIMATION_SPEED = 300;
   const [introPhrase, setIntroPhrase] = useState(introPhrases[0]);
   const introFadeAnim = useRef(new Animated.Value(1)).current;
-  const tapToStartOpacity = useRef(new Animated.Value(1)).current;
-  const [showTapToStart, setShowTapToStart] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -112,17 +113,9 @@ const IntroSection = memo(() => {
         }).start();
       });
     }, 3000);
+
     return () => clearInterval(interval);
   }, [introFadeAnim]);
-
-  useEffect(() => {
-    Animated.timing(tapToStartOpacity, {
-      toValue: 0,
-      duration: 2000,
-      delay: 2000,
-      useNativeDriver: true,
-    }).start(() => setShowTapToStart(false));
-  }, [tapToStartOpacity]);
 
   return (
     <View style={styles.centerIntroContainer}>
@@ -135,16 +128,11 @@ const IntroSection = memo(() => {
       <Animated.Text style={[styles.introSubtitle, { opacity: introFadeAnim }]}>
         {introPhrase}
       </Animated.Text>
-      {showTapToStart && (
-        <Animated.Text style={[styles.tapToStartText, { opacity: tapToStartOpacity }]}>
-          Tap to start
-        </Animated.Text>
-      )}
     </View>
   );
 });
 
-// Typing indicator remains unchanged.
+// -- TypingIndicator --
 const TypingIndicator = () => {
   const dot1Opacity = useRef(new Animated.Value(0)).current;
   const dot2Opacity = useRef(new Animated.Value(0)).current;
@@ -177,79 +165,47 @@ const TypingIndicator = () => {
   );
 };
 
+// -- ChatGPT (Main) --
 const ChatGPT = () => {
   const textInputRef = useRef(null);
   const flatListRef = useRef(null);
   const [fadeAnim] = useState(new Animated.Value(1));
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  // Input bar position animation.
-  const INITIAL_INPUT_OFFSET = 80;
-  const FOCUSED_INPUT_OFFSET = -312;
-  const [inputYOffset] = useState(new Animated.Value(INITIAL_INPUT_OFFSET));
-
-  const handleInputFocus = () => {
-    Animated.timing(inputYOffset, {
-      toValue: FOCUSED_INPUT_OFFSET,
-      duration: 260,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handleInputBlur = () => {
-    Animated.timing(inputYOffset, {
-      toValue: INITIAL_INPUT_OFFSET,
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const initialMessage = {
-    id: 'init',
-    type: 'bot',
-    text:
-      "Welcome to Nexolink – your volunteering companion. How can I help you find meaningful volunteer opportunities today?",
-  };
-
-  // Chat data state.
-  const [data, setData] = useState([initialMessage]);
+  const [data, setData] = useState([
+    {
+      id: 'init',
+      type: 'bot',
+      text:
+        'Welcome to Nexolink – your volunteering companion. How can I help you find meaningful volunteer opportunities today?',
+    },
+  ]);
   const [textInput, setTextInput] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearchActive, setIsSearchActive] = useState(false);
+
+  const morphAnim = useRef(new Animated.Value(0)).current;
+  const revertTimerRef = useRef(null);
 
   const apiKey = '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';
   const apiUrl = 'https://api.openai.com/v1/chat/completions';
   const modelId = 'gpt-3.5-turbo';
 
-  // ********* INPUT BAR POSITION ANIMATION *********
-  // (The animation values remain the same; only the styles of the input bar will be scaled.)
-  // ***********************************************
-
-  const isChatEmpty = data.length === 1;
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardDidShow', () =>
-      setKeyboardVisible(true)
-    );
-    const hideSubscription = Keyboard.addListener('keyboardDidHide', () =>
-      setKeyboardVisible(false)
-    );
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
-
-  // Sends user input to either a custom response or the ChatGPT API.
+  // -- Handle sending the user's message
   const handleSend = async () => {
     const messageText = textInput.trim();
     if (!messageText) return;
+
+    // If user typed something, cancel the revert timer
+    if (revertTimerRef.current) {
+      clearTimeout(revertTimerRef.current);
+      revertTimerRef.current = null;
+    }
 
     setIsLoading(true);
     const lowerMessage = messageText.toLowerCase();
     const messageId = generateUniqueId();
 
-    // Custom responses for predefined questions.
+    // Quick custom responses
     if (
       lowerMessage.includes('what is nexolink') ||
       lowerMessage.includes('what is this app') ||
@@ -284,12 +240,15 @@ const ChatGPT = () => {
       return;
     }
 
-    // Add the user's message to the chat.
-    setData((prevData) => [...prevData, { id: messageId, type: 'user', text: messageText }]);
+    // Otherwise, send to ChatGPT
+    setData((prevData) => [
+      ...prevData,
+      { id: messageId, type: 'user', text: messageText },
+    ]);
     setTextInput('');
 
     try {
-      const systemInstruction = "You are a helpful AI volunteer assistant.";
+      const systemInstruction = 'You are a helpful AI volunteer assistant.';
       const response = await axios.post(
         apiUrl,
         {
@@ -339,74 +298,181 @@ const ChatGPT = () => {
     }
   };
 
-  // Allow tapping the content area to dismiss or focus the input.
-  const handleContentPress = () => {
-    if (keyboardVisible) {
-      Keyboard.dismiss();
-    } else if (textInputRef.current) {
-      textInputRef.current.focus();
+  // -- Handle "Ask" button press
+  const handleAskPress = () => {
+    Animated.timing(morphAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start(() => {
+      setIsSearchActive(true);
+      textInputRef.current?.focus();
+    });
+  };
+
+  // -- Revert to the small Ask button if user doesn't type anything for 5s on the first query
+  useEffect(() => {
+    if (isSearchActive && data.length === 1 && textInput.trim() === '') {
+      revertTimerRef.current = setTimeout(() => {
+        Animated.timing(morphAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: false,
+        }).start(() => {
+          setIsSearchActive(false);
+        });
+      }, 5000);
     }
+    return () => {
+      if (revertTimerRef.current) {
+        clearTimeout(revertTimerRef.current);
+        revertTimerRef.current = null;
+      }
+    };
+  }, [isSearchActive, data.length, textInput]);
+
+  // -- MorphingSearchBar
+  const MorphingSearchBar = () => {
+    // Very small initial width, so the button just fits "Ask" text
+    const initialWidth = scale(60);
+    // Expand to near full screen
+    const finalWidth = width - scale(20);
+
+    const containerWidth = morphAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [initialWidth, finalWidth],
+    });
+    // From round to slightly rounded
+    const containerBorderRadius = morphAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [scale(30), scale(10)],
+    });
+    // From black to light background
+    const containerBackgroundColor = morphAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['black', '#fff6e7'],
+    });
+    // Fade out "Ask" text from 0 to 0.5
+    const askTextOpacity = morphAnim.interpolate({
+      inputRange: [0, 0.5],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+    // Fade in text input from 0.5 to 1
+    const searchContentOpacity = morphAnim.interpolate({
+      inputRange: [0.5, 1],
+      outputRange: [0, 1],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View
+        style={[
+          styles.morphContainer,
+          {
+            width: containerWidth,
+            borderRadius: containerBorderRadius,
+            backgroundColor: containerBackgroundColor,
+          },
+        ]}
+      >
+        {!isSearchActive && (
+          <AnimatedTouchableOpacity
+            style={[styles.askButton, { opacity: askTextOpacity }]}
+            onPress={handleAskPress}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.askButtonText}>Ask</Text>
+          </AnimatedTouchableOpacity>
+        )}
+
+        {/* Search content is invisible until morph is halfway done */}
+        <Animated.View style={[styles.searchSection, { opacity: searchContentOpacity }]}>
+          {isSearchActive && (
+            <>
+              <TextInput
+                ref={textInputRef}
+                style={styles.textInput}
+                placeholder="Message Ordix"
+                placeholderTextColor="#aaa"
+                value={textInput}
+                keyboardAppearance="dark"
+                onChangeText={setTextInput}
+                onSubmitEditing={handleSend}
+                returnKeyType="send"
+              />
+              <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+                <Ionicons name="send-outline" size={scale(22)} color="black" />
+              </TouchableOpacity>
+            </>
+          )}
+        </Animated.View>
+      </Animated.View>
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={handleContentPress}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.contentContainer}
-        >
-          {isChatEmpty ? (
-            <IntroSection />
-          ) : (
-            <ChatSection data={data} isLoading={isLoading} flatListRef={flatListRef} />
-          )}
-          {error ? (
-            <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
-              <Text style={styles.errorText}>{error}</Text>
-            </Animated.View>
-          ) : null}
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
-      <Animated.View style={[styles.inputBar, { transform: [{ translateY: inputYOffset }] }]}>
-        <TextInput
-          ref={textInputRef}
-          style={styles.textInput}
-          placeholder="Message Ordix"
-          placeholderTextColor="#aaa"
-          value={textInput}
-          keyboardAppearance="dark"
-          onChangeText={setTextInput}
-          onSubmitEditing={handleSend}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          blurOnSubmit={false}
-          returnKeyType="send"
-        />
-        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-          <Ionicons name="send-outline" size={scale(22)} color="black" />
-        </TouchableOpacity>
-      </Animated.View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.contentContainer}
+      >
+        {data.length === 1 ? (
+          <IntroSection />
+        ) : (
+          <ChatSection data={data} isLoading={isLoading} flatListRef={flatListRef} />
+        )}
+        {error ? (
+          <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
+            <Text style={styles.errorText}>{error}</Text>
+          </Animated.View>
+        ) : null}
+      </KeyboardAvoidingView>
+      <MorphingSearchBar />
     </SafeAreaView>
   );
 };
 
 export default ChatGPT;
 
+// -- STYLES --
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff6e7' },
-  contentContainer: { flex: 1 },
-  centerIntroContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  logoStyle: { width: scale(80), height: scale(80), marginBottom: verticalScale(20) },
-  introTitle: { fontSize: scale(22), fontWeight: '600', color: '#333', marginBottom: verticalScale(6) },
-  introSubtitle: { fontSize: scale(16), color: '#555' },
-  tapToStartText: { fontSize: scale(14), color: '#333', marginTop: verticalScale(10) },
-  chatContainer: { flex: 1 },
-  flatListContent: { 
-    paddingTop: verticalScale(10), 
-    paddingHorizontal: scale(10), 
-    paddingBottom: verticalScale(80), 
-    flexGrow: 1, 
-    minHeight: '100%' 
+  container: {
+    flex: 1,
+    backgroundColor: '#fff6e7',
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  centerIntroContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoStyle: {
+    width: scale(80),
+    height: scale(80),
+    marginBottom: verticalScale(20),
+  },
+  introTitle: {
+    fontSize: scale(22),
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: verticalScale(6),
+  },
+  introSubtitle: {
+    fontSize: scale(16),
+    color: '#555',
+  },
+  chatContainer: {
+    flex: 1,
+  },
+  flatListContent: {
+    paddingTop: verticalScale(10),
+    paddingHorizontal: scale(10),
+    paddingBottom: verticalScale(80),
+    flexGrow: 1,
+    minHeight: '100%',
   },
   userMessageContainer: {
     alignSelf: 'flex-end',
@@ -426,50 +492,84 @@ const styles = StyleSheet.create({
     padding: scale(10),
     maxWidth: '70%',
   },
-  messageText: { fontSize: scale(16), color: '#333' },
-  typingIndicatorContainer: { 
-    flexDirection: 'row', 
-    paddingHorizontal: scale(10), 
-    paddingBottom: verticalScale(10) 
+  messageText: {
+    fontSize: scale(16),
+    color: '#333',
   },
-  typingDot: { fontSize: scale(24), color: '#333', marginHorizontal: scale(2) },
-  errorContainer: { 
-    position: 'absolute', 
-    top: '25%', 
-    left: '10%', 
-    right: '10%', 
-    backgroundColor: '#ff3333', 
-    borderRadius: scale(10), 
-    padding: scale(15), 
-    alignItems: 'center' 
+  typingIndicatorContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: scale(10),
+    paddingBottom: verticalScale(10),
   },
-  errorText: { color: '#fff', fontSize: scale(16) },
-  inputBar: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: '#fff6e7', 
-    paddingHorizontal: scale(10), 
-    paddingVertical: verticalScale(8), 
-    borderTopColor: '#fff6e7', 
-    borderTopWidth: scale(1) 
+  typingDot: {
+    fontSize: scale(24),
+    color: '#333',
+    marginHorizontal: scale(2),
   },
-  textInput: { 
-    flex: 1, 
-    backgroundColor: '#fff6e7', 
-    height: verticalScale(40), 
-    borderRadius: scale(20), 
-    paddingHorizontal: scale(15), 
-    fontSize: scale(16), 
-    color: '#333', 
-    marginRight: scale(8), 
-    borderColor: 'black', 
-    borderWidth: scale(1) 
+  errorContainer: {
+    position: 'absolute',
+    top: '25%',
+    left: '10%',
+    right: '10%',
+    backgroundColor: '#ff3333',
+    borderRadius: scale(10),
+    padding: scale(15),
+    alignItems: 'center',
   },
-  sendButton: { 
-    backgroundColor: '#fff6e7', 
-    borderRadius: scale(20), 
-    padding: scale(10), 
-    borderColor: 'black', 
-    borderWidth: scale(1) 
+  errorText: {
+    color: '#fff',
+    fontSize: scale(16),
+  },
+  // Morphing container
+  morphContainer: {
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(8),
+    alignSelf: 'center',
+    marginBottom: verticalScale(20),
+    flexDirection: 'row',
+    alignItems: 'center',
+    bottom:'35%'
+  },
+  // Ask button
+  askButton: {
+    // No flex:1 so it stays small
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: scale(6),
+    paddingVertical: verticalScale(4),
+  },
+  askButtonText: {
+    textAlign: 'center',
+    color: '#fff',
+    // Smaller font so the button is "way smaller"
+    fontSize: scale(14),
+  },
+  // The container for the TextInput and Send button
+  searchSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    // We'll let the container expand once isSearchActive is true
+    flex: 1,
+  },
+  // Text input styling
+  textInput: {
+    flex: 1,
+    height: verticalScale(40),
+    borderRadius: scale(20),
+    paddingHorizontal: scale(15),
+    fontSize: scale(16),
+    color: '#333',
+    marginRight: scale(8),
+    backgroundColor: '#fff6e7',
+    borderColor: 'black',
+    borderWidth: scale(1),
+  },
+  // Send button styling
+  sendButton: {
+    backgroundColor: '#fff6e7',
+    borderRadius: scale(20),
+    padding: scale(10),
+    borderColor: 'black',
+    borderWidth: scale(1),
   },
 });
