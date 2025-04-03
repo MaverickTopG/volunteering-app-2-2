@@ -15,64 +15,159 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
-import Geolocation from 'react-native-geolocation-service';
 
-// Define baseline dimensions (e.g. iPhone 16 Pro Max)
+// Firebase (Web SDK) + Firestore
+import { db } from '../../auth/firebase';
+import { collection, query, limit, getDocs, where } from 'firebase/firestore';
+
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
 const scale = (size) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
-// Helper function to generate a unique ID
+// Categories for fallback volunteer sections
+const categories = [
+  { id: '1',  title: 'Animals',    icon: 'paw-outline',            reference: 'Animal' },
+  { id: '2',  title: 'Arts',       icon: 'color-palette-outline',  reference: 'Arts' },
+  { id: '4',  title: 'Family',     icon: 'people-circle-outline',  reference: 'Family' },
+  { id: '5',  title: 'Tech',       icon: 'laptop-outline',         reference: 'Tech' },
+  { id: '6',  title: 'Education',  icon: 'school-outline',         reference: 'Education' },
+  { id: '7',  title: 'Environs',   icon: 'leaf-outline',           reference: 'Environment' },
+  { id: '8',  title: 'Hospital',   icon: 'medkit-outline',         reference: 'Hospital' },
+  { id: '9',  title: 'Library',    icon: 'book-outline',           reference: 'Library' },
+  { id: '11', title: 'Seniors',    icon: 'walk-outline',           reference: 'Seniors' },
+];
+
+// A small synonyms map for references (to improve matching)
+const synonymsMap = {
+  tech: 'Tech',
+  technology: 'Tech',
+  animal: 'Animal',
+  animals: 'Animal',
+  family: 'Family',
+  education: 'Education',
+  school: 'Education',
+  environ: 'Environment',
+  environment: 'Environment',
+  hospital: 'Hospital',
+  library: 'Library',
+  seniors: 'Seniors',
+  elder: 'Seniors',
+};
+
+// Normalize user input to a Firestore reference
+const normalizeReference = (rawRef) => {
+  if (!rawRef) return null;
+  const lower = rawRef.toLowerCase();
+  if (synonymsMap[lower]) {
+    return synonymsMap[lower];
+  }
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+};
+
+// Generate a unique ID for messages
 const generateUniqueId = () =>
   Date.now().toString() + Math.random().toString(36).substring(2, 9);
 
-// Create an animated version of TouchableOpacity
-const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+// -------------------------------------
+// VolunteerBox: Display organization info as non-clickable text
+// -------------------------------------
+const VolunteerBox = ({ org }) => (
+  <View style={styles.volunteerBox}>
+    <Text style={styles.volunteerBoxTitle}>{org.name}</Text>
+    {org.description && <Text style={styles.volunteerBoxDetail}>{org.description}</Text>}
+    {org.address && <Text style={styles.volunteerBoxDetail}>Address: {org.address}</Text>}
+    {org.website && <Text style={styles.volunteerBoxDetail}>Website: {org.website}</Text>}
+  </View>
+);
 
-// -- AnimatedMessage --
-const AnimatedMessage = memo(({ item }) => {
-  const fadeAnimMessage = useRef(new Animated.Value(0)).current;
+// -------------------------------------
+// FallbackVolunteerSections: Fallback buttons in a chat message
+// -------------------------------------
+const FallbackVolunteerSections = ({ onSelectCategory }) => (
+  <View style={styles.fallbackContainer}>
+    <Text style={styles.fallbackTitle}>No results found. Try these volunteer sections:</Text>
+    <FlatList
+      data={categories}
+      horizontal
+      keyExtractor={(item) => item.id}
+      showsHorizontalScrollIndicator={false}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={styles.fallbackButton}
+          onPress={() => onSelectCategory(item)}
+        >
+          <Ionicons name={item.icon} size={scale(20)} color="black" style={{ marginRight: scale(4) }} />
+          <Text style={styles.fallbackButtonText}>{item.title}</Text>
+        </TouchableOpacity>
+      )}
+    />
+  </View>
+);
 
+// -------------------------------------
+// AnimatedMessage: Renders a chat message with animation
+// -------------------------------------
+const AnimatedMessage = memo(({ item, onSelectFallbackCategory }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(fadeAnimMessage, {
+    Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 500,
       useNativeDriver: true,
     }).start();
-  }, [fadeAnimMessage]);
+  }, [fadeAnim]);
+
+  if (item.type === 'volunteerResources') {
+    return (
+      <Animated.View style={[{ opacity: fadeAnim }, styles.volunteerResourcesContainer]}>
+        <Text style={styles.volunteerHeaderText}>
+          {item.categoryTitle
+            ? `Top ${item.categoryTitle} Organizations:`
+            : 'Top Volunteering Organizations:'}
+        </Text>
+        {item.organizations.length > 0 ? (
+          item.organizations.map((org) => <VolunteerBox key={org.id} org={org} />)
+        ) : (
+          <Text style={styles.noResultsText}>No organizations found for this category.</Text>
+        )}
+      </Animated.View>
+    );
+  }
+
+  if (item.type === 'fallbackVolunteerSections') {
+    return (
+      <Animated.View style={[{ opacity: fadeAnim }, styles.volunteerResourcesContainer]}>
+        <FallbackVolunteerSections onSelectCategory={onSelectFallbackCategory} />
+      </Animated.View>
+    );
+  }
 
   return (
-    <Animated.View style={{ opacity: fadeAnimMessage }}>
-      <View
-        style={
-          item.type === 'user'
-            ? styles.userMessageContainer
-            : styles.botMessageContainer
-        }
-      >
+    <Animated.View style={{ opacity: fadeAnim }}>
+      <View style={item.type === 'user' ? styles.userMessageContainer : styles.botMessageContainer}>
         <Text style={styles.messageText}>{item.text}</Text>
       </View>
     </Animated.View>
   );
 });
 
-// -- ChatSection --
-const ChatSection = memo(({ data, isLoading, flatListRef }) => {
+// -------------------------------------
+// ChatSection
+// -------------------------------------
+const ChatSection = memo(({ data, isLoading, flatListRef, inputFocused, onSelectFallbackCategory }) => {
   const renderItem = useCallback(
-    ({ item }) => <AnimatedMessage key={item.id} item={item} />,
-    []
+    ({ item }) => <AnimatedMessage key={item.id} item={item} onSelectFallbackCategory={onSelectFallbackCategory} />,
+    [onSelectFallbackCategory]
   );
-
   return (
-    <View style={styles.chatContainer}>
+    <View style={[styles.chatContainer, inputFocused && { paddingBottom: verticalScale(150) }]}>
       <FlatList
         ref={flatListRef}
         data={data}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        style={{ flex: 1 }}
         contentContainerStyle={styles.flatListContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator
@@ -82,7 +177,9 @@ const ChatSection = memo(({ data, isLoading, flatListRef }) => {
   );
 });
 
-// -- IntroSection --
+// -------------------------------------
+// IntroSection
+// -------------------------------------
 const IntroSection = memo(() => {
   const introPhrases = [
     'How can I help you today?',
@@ -113,7 +210,6 @@ const IntroSection = memo(() => {
         }).start();
       });
     }, 3000);
-
     return () => clearInterval(interval);
   }, [introFadeAnim]);
 
@@ -132,12 +228,13 @@ const IntroSection = memo(() => {
   );
 });
 
-// -- TypingIndicator --
+// -------------------------------------
+// TypingIndicator
+// -------------------------------------
 const TypingIndicator = () => {
   const dot1Opacity = useRef(new Animated.Value(0)).current;
   const dot2Opacity = useRef(new Animated.Value(0)).current;
   const dot3Opacity = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     const animate = () => {
       Animated.sequence([
@@ -155,7 +252,6 @@ const TypingIndicator = () => {
     };
     animate();
   }, []);
-
   return (
     <View style={styles.typingIndicatorContainer}>
       <Animated.Text style={[styles.typingDot, { opacity: dot1Opacity }]}>•</Animated.Text>
@@ -165,47 +261,139 @@ const TypingIndicator = () => {
   );
 };
 
-// -- ChatGPT (Main) --
+// -------------------------------------
+// ChatGPT (Main)
+// -------------------------------------
 const ChatGPT = () => {
   const textInputRef = useRef(null);
   const flatListRef = useRef(null);
-  const [fadeAnim] = useState(new Animated.Value(1));
   const [data, setData] = useState([
     {
       id: 'init',
       type: 'bot',
-      text:
-        'Welcome to Nexolink – your volunteering companion. How can I help you find meaningful volunteer opportunities today?',
+      text: 'Welcome to Nexolink – your volunteering companion. How can I help you find meaningful volunteer opportunities today?',
     },
   ]);
   const [textInput, setTextInput] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+
+  // DB mode state
+  const [dbMode, setDbMode] = useState(false);
+  // Show fallback sections message when no orgs found
+  const [showFallback, setShowFallback] = useState(false);
 
   const morphAnim = useRef(new Animated.Value(0)).current;
   const revertTimerRef = useRef(null);
 
-  const apiKey = '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';
+  // ChatGPT API keys (for non-volunteer queries)
+  const apiKey = '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'; // your key
   const apiUrl = 'https://api.openai.com/v1/chat/completions';
   const modelId = 'gpt-3.5-turbo';
 
-  // -- Handle sending the user's message
+  // -------------------------------------------------
+  // fetchVolunteerOrganizations with optional reference
+  // -------------------------------------------------
+  const fetchVolunteerOrganizations = async (rawReference) => {
+    try {
+      const finalRef = normalizeReference(rawReference);
+      let q = query(collection(db, 'volunteer_organizations'), limit(10));
+      if (finalRef) {
+        q = query(
+          collection(db, 'volunteer_organizations'),
+          where('reference', '==', finalRef),
+          limit(10)
+        );
+      }
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+      return [];
+    }
+  };
+
+  // -------------------------------------
+  // handleFallbackCategorySelect: user clicks a fallback category button
+  // -------------------------------------
+  const handleFallbackCategorySelect = async (category) => {
+    setIsLoading(true);
+    const messageId = generateUniqueId();
+    // Append user's selection as a message for context
+    setData((prevData) => [
+      ...prevData,
+      { id: messageId, type: 'user', text: `Show me ${category.title} organizations` },
+    ]);
+    try {
+      const organizations = await fetchVolunteerOrganizations(category.reference);
+      // Remove fallback message (if present) and add the resources message
+      setData((prevData) => [
+        ...prevData.filter((msg) => msg.type !== 'fallbackVolunteerSections'),
+        {
+          id: messageId + '-vol',
+          type: 'volunteerResources',
+          organizations,
+          categoryTitle: category.title,
+        },
+      ]);
+      setShowFallback(false);
+      setError('');
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch (err) {
+      setError('Failed to load volunteering organizations for this category.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // -------------------------------------
+  // handleSend
+  // -------------------------------------
   const handleSend = async () => {
     const messageText = textInput.trim();
     if (!messageText) return;
-
-    // If user typed something, cancel the revert timer
     if (revertTimerRef.current) {
       clearTimeout(revertTimerRef.current);
       revertTimerRef.current = null;
     }
-
     setIsLoading(true);
     const lowerMessage = messageText.toLowerCase();
     const messageId = generateUniqueId();
 
-    // Quick custom responses
+    // DB mode: only query DB using user text as reference
+    if (dbMode) {
+      setData((prevData) => [
+        ...prevData,
+        { id: messageId, type: 'user', text: messageText },
+      ]);
+      setTextInput('');
+      try {
+        const organizations = await fetchVolunteerOrganizations(messageText);
+        if (organizations.length === 0) {
+          // Instead of showing fallback externally, add a fallback chat message
+          setData((prevData) => [
+            ...prevData,
+            { id: messageId + '-fb', type: 'fallbackVolunteerSections' },
+          ]);
+        } else {
+          setData((prevData) => [
+            ...prevData,
+            { id: messageId + '-vol', type: 'volunteerResources', organizations },
+          ]);
+        }
+        setError('');
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      } catch (err) {
+        setError('Failed to load volunteering organizations from DB mode.');
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Otherwise, normal logic using ChatGPT for non-volunteer queries
     if (
       lowerMessage.includes('what is nexolink') ||
       lowerMessage.includes('what is this app') ||
@@ -225,7 +413,6 @@ const ChatGPT = () => {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       return;
     }
-
     if (lowerMessage.includes('who are you')) {
       const ordixResponse = 'I am Ordix, a helpful AI assistant.';
       setData((prevData) => [
@@ -239,14 +426,52 @@ const ChatGPT = () => {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       return;
     }
-
-    // Otherwise, send to ChatGPT
+    // Check if the query appears to be about volunteering organizations
+    if (
+      lowerMessage.includes('volunteering organizations') ||
+      lowerMessage.includes('volunteer opportunities') ||
+      lowerMessage.includes('good volunteering org')
+    ) {
+      // Try to parse "for <reference>"
+      let reference = null;
+      const forIndex = lowerMessage.indexOf('for ');
+      if (forIndex !== -1) {
+        reference = messageText.substring(forIndex + 4).trim();
+      }
+      setData((prevData) => [
+        ...prevData,
+        { id: messageId, type: 'user', text: messageText },
+      ]);
+      setTextInput('');
+      try {
+        const organizations = await fetchVolunteerOrganizations(reference);
+        if (organizations.length === 0) {
+          // If no organizations found, add a fallback volunteer sections message
+          setData((prevData) => [
+            ...prevData,
+            { id: messageId + '-fb', type: 'fallbackVolunteerSections' },
+          ]);
+        } else {
+          setData((prevData) => [
+            ...prevData,
+            { id: messageId + '-vol', type: 'volunteerResources', organizations },
+          ]);
+        }
+        setError('');
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      } catch (err) {
+        setError('Failed to load volunteering organizations.');
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+    // Fallback to ChatGPT for other queries
     setData((prevData) => [
       ...prevData,
       { id: messageId, type: 'user', text: messageText },
     ]);
     setTextInput('');
-
     try {
       const systemInstruction = 'You are a helpful AI volunteer assistant.';
       const response = await axios.post(
@@ -281,24 +506,14 @@ const ChatGPT = () => {
       } else {
         setError('An error occurred while fetching response. Please try again.');
       }
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 0,
-        useNativeDriver: false,
-      }).start(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 1000,
-          delay: 3000,
-          useNativeDriver: false,
-        }).start();
-      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // -- Handle "Ask" button press
+  // -------------------------------------
+  // handleAskPress
+  // -------------------------------------
   const handleAskPress = () => {
     Animated.timing(morphAnim, {
       toValue: 1,
@@ -310,7 +525,7 @@ const ChatGPT = () => {
     });
   };
 
-  // -- Revert to the small Ask button if user doesn't type anything for 5s on the first query
+  // Revert to small "Ask" after 5s if no input
   useEffect(() => {
     if (isSearchActive && data.length === 1 && textInput.trim() === '') {
       revertTimerRef.current = setTimeout(() => {
@@ -331,34 +546,29 @@ const ChatGPT = () => {
     };
   }, [isSearchActive, data.length, textInput]);
 
-  // -- MorphingSearchBar
+  // -------------------------------------
+  // MorphingSearchBar
+  // -------------------------------------
   const MorphingSearchBar = () => {
-    // Very small initial width, so the button just fits "Ask" text
     const initialWidth = scale(60);
-    // Expand to near full screen
     const finalWidth = width - scale(20);
-
     const containerWidth = morphAnim.interpolate({
       inputRange: [0, 1],
       outputRange: [initialWidth, finalWidth],
     });
-    // From round to slightly rounded
     const containerBorderRadius = morphAnim.interpolate({
       inputRange: [0, 1],
       outputRange: [scale(30), scale(10)],
     });
-    // From black to light background
     const containerBackgroundColor = morphAnim.interpolate({
       inputRange: [0, 1],
       outputRange: ['black', '#fff6e7'],
     });
-    // Fade out "Ask" text from 0 to 0.5
     const askTextOpacity = morphAnim.interpolate({
       inputRange: [0, 0.5],
       outputRange: [1, 0],
       extrapolate: 'clamp',
     });
-    // Fade in text input from 0.5 to 1
     const searchContentOpacity = morphAnim.interpolate({
       inputRange: [0.5, 1],
       outputRange: [0, 1],
@@ -377,25 +587,37 @@ const ChatGPT = () => {
         ]}
       >
         {!isSearchActive && (
-          <AnimatedTouchableOpacity
+          <TouchableOpacity
             style={[styles.askButton, { opacity: askTextOpacity }]}
             onPress={handleAskPress}
             activeOpacity={0.8}
           >
             <Text style={styles.askButtonText}>Ask</Text>
-          </AnimatedTouchableOpacity>
+          </TouchableOpacity>
         )}
-
-        {/* Search content is invisible until morph is halfway done */}
         <Animated.View style={[styles.searchSection, { opacity: searchContentOpacity }]}>
           {isSearchActive && (
             <>
+              {/* DB Mode Toggle Icon Only */}
+              <TouchableOpacity
+                style={styles.dbModeButton}
+                onPress={() => setDbMode(!dbMode)}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="server-outline"
+                  size={scale(22)}
+                  color={dbMode ? 'green' : 'black'}
+                />
+              </TouchableOpacity>
               <TextInput
                 ref={textInputRef}
                 style={styles.textInput}
-                placeholder="Message Ordix"
+                placeholder={dbMode ? 'Message Ordix with database mode' : 'Message Ordix'}
                 placeholderTextColor="#aaa"
                 value={textInput}
+                autoFocus={true}
+                blurOnSubmit={false}
                 keyboardAppearance="dark"
                 onChangeText={setTextInput}
                 onSubmitEditing={handleSend}
@@ -413,14 +635,13 @@ const ChatGPT = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.contentContainer}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.contentContainer}>
         {data.length === 1 ? (
           <IntroSection />
         ) : (
-          <ChatSection data={data} isLoading={isLoading} flatListRef={flatListRef} />
+          <>
+            <ChatSection data={data} isLoading={isLoading} flatListRef={flatListRef} inputFocused={inputFocused} onSelectFallbackCategory={handleFallbackCategorySelect} />
+          </>
         )}
         {error ? (
           <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
@@ -435,7 +656,9 @@ const ChatGPT = () => {
 
 export default ChatGPT;
 
-// -- STYLES --
+// -------------------------------------
+// STYLES
+// -------------------------------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -481,8 +704,8 @@ const styles = StyleSheet.create({
     marginVertical: verticalScale(5),
     padding: scale(10),
     maxWidth: '70%',
-    borderBottomColor: 'black',
     borderWidth: scale(1),
+    borderColor: 'black',
   },
   botMessageContainer: {
     alignSelf: 'flex-start',
@@ -511,7 +734,7 @@ const styles = StyleSheet.create({
     top: '25%',
     left: '10%',
     right: '10%',
-    backgroundColor: '#ff3333',
+    backgroundColor: '#fff6e7',
     borderRadius: scale(10),
     padding: scale(15),
     alignItems: 'center',
@@ -520,7 +743,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: scale(16),
   },
-  // Morphing container
   morphContainer: {
     paddingHorizontal: scale(10),
     paddingVertical: verticalScale(8),
@@ -528,11 +750,9 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(20),
     flexDirection: 'row',
     alignItems: 'center',
-    bottom:'35%'
+    bottom: '35%',
   },
-  // Ask button
   askButton: {
-    // No flex:1 so it stays small
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: scale(6),
@@ -541,35 +761,124 @@ const styles = StyleSheet.create({
   askButtonText: {
     textAlign: 'center',
     color: '#fff',
-    // Smaller font so the button is "way smaller"
     fontSize: scale(14),
   },
-  // The container for the TextInput and Send button
+  dbModeButton: {
+    flexDirection: 'row',
+    marginRight: scale(8),
+    backgroundColor: '#fff6e7',
+    padding: scale(8),
+    borderRadius: scale(20),
+    borderColor: 'black',
+    borderWidth: scale(1),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   searchSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    // We'll let the container expand once isSearchActive is true
     flex: 1,
   },
-  // Text input styling
   textInput: {
     flex: 1,
     height: verticalScale(40),
     borderRadius: scale(20),
     paddingHorizontal: scale(15),
     fontSize: scale(16),
-    color: '#333',
-    marginRight: scale(8),
     backgroundColor: '#fff6e7',
     borderColor: 'black',
     borderWidth: scale(1),
+    color: '#333',
+    marginRight: scale(8),
   },
-  // Send button styling
   sendButton: {
     backgroundColor: '#fff6e7',
     borderRadius: scale(20),
     padding: scale(10),
     borderColor: 'black',
     borderWidth: scale(1),
+  },
+  volunteerResourcesContainer: {
+    backgroundColor: '#fff6e7',
+    borderRadius: scale(15),
+    padding: scale(10),
+    marginVertical: verticalScale(5),
+    maxWidth: '70%',
+  },
+  volunteerHeaderText: {
+    fontSize: scale(16),
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: verticalScale(5),
+  },
+  volunteerBox: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: scale(10),
+    padding: scale(8),
+    marginVertical: verticalScale(3),
+    borderWidth: scale(1),
+    borderColor: 'black',
+  },
+  volunteerBoxTitle: {
+    fontSize: scale(14),
+    fontWeight: '600',
+    color: '#333',
+  },
+  volunteerBoxDetail: {
+    fontSize: scale(12),
+    color: '#555',
+    marginTop: verticalScale(2),
+  },
+  noResultsText: {
+    fontSize: scale(14),
+    color: 'red',
+  },
+  fallbackContainer: {
+    padding: scale(10),
+    backgroundColor: '#fff6e7',
+    borderRadius: scale(10),
+    marginVertical: verticalScale(10),
+    alignItems: 'center',
+  },
+  fallbackTitle: {
+    fontSize: scale(14),
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: verticalScale(5),
+  },
+  fallbackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff6e7',
+    padding: scale(8),
+    marginHorizontal: scale(4),
+    borderRadius: scale(10),
+    borderWidth: scale(1),
+    borderColor: 'black',
+  },
+  fallbackButtonText: {
+    fontSize: scale(14),
+    color: '#333',
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    marginBottom: verticalScale(8),
+  },
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff6e7',
+    padding: scale(8),
+    marginRight: scale(8),
+    borderRadius: scale(10),
+    borderWidth: scale(1),
+    borderColor: 'black',
+  },
+  categoryButtonSelected: {
+    backgroundColor: '#e0e0e0',
+  },
+  categoryButtonText: {
+    fontSize: scale(14),
+    color: '#333',
   },
 });

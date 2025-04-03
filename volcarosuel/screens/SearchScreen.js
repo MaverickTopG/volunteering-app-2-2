@@ -122,7 +122,7 @@ export default function CausesScreen() {
   return (
     <View style={styles.rootContainer}>
       {/* Absolute BlurView behind the header text */}
-      <BlurView style={styles.blurHeader} intensity={80} tint="light">
+      <BlurView style={styles.blurHeader} intensity={0} >
         <Text style={styles.headerText}>Volunteer Causes</Text>
       </BlurView>
 
