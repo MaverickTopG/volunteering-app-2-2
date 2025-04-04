@@ -1848,6 +1848,27 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - RNKeychain (10.0.0):
+    - DoubleConversion
+    - glog
+    - RCT-Folly (= 2024.01.01.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - rnmapbox-maps (10.1.33):
     - MapboxMaps (~> 10.19.0)
     - React
@@ -2091,6 +2112,7 @@ DEPENDENCIES:
   - RNDeviceInfo (from `../node_modules/react-native-device-info`)
   - "RNFBApp (from `../node_modules/@react-native-firebase/app`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
+  - RNKeychain (from `../node_modules/react-native-keychain`)
   - "rnmapbox-maps (from `../node_modules/@rnmapbox/maps`)"
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
@@ -2297,6 +2319,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-firebase/app"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
+  RNKeychain:
+    :path: "../node_modules/react-native-keychain"
   rnmapbox-maps:
     :path: "../node_modules/@rnmapbox/maps"
   RNReanimated:
@@ -2412,6 +2436,7 @@ SPEC CHECKSUMS:
   RNDeviceInfo: 900bd20e1fd3bfd894e7384cc4a83880c0341bd3
   RNFBApp: 4097f75673f8b42a7cd1ba17e6ea85a94b45e4d1
   RNGestureHandler: 8b1af6cd70dc46784c37a60e6b7a66f3607f11bf
+  RNKeychain: c5b2f839364d339eb5440608bd33770123b5e6e1
   rnmapbox-maps: 42fe0ccc373fe24032aa224736feb4c39a24d604
   RNReanimated: 4c7c727cd8a93d31956b9fb6b911891cef003254
   RNScreens: f29995706037ad605aae7b170d7821630f654996

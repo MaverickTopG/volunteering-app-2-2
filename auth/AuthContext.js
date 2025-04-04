@@ -1,7 +1,8 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { Alert, ActivityIndicator, View, StyleSheet, Text, Image, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from './firebase'; // Import the initialized auth object
+import * as Keychain from 'react-native-keychain';
+import { auth } from './firebase';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -12,7 +13,6 @@ import {
 
 export const AuthContext = createContext();
 
-// Define baseline dimensions (iPhone 16 Pro Max as an example)
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
@@ -25,7 +25,40 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen to auth state changes and auto sign out if login is older than one week
+  // Auto‑login on app startup using secure storage for credentials.
+  useEffect(() => {
+    const autoLogin = async () => {
+      try {
+        // Retrieve login time from AsyncStorage.
+        const loginTimeStr = await AsyncStorage.getItem('loginTime');
+        if (loginTimeStr) {
+          const loginTime = parseInt(loginTimeStr, 10);
+          if (Date.now() - loginTime <= ONE_WEEK_MS) {
+            // Retrieve credentials securely from Keychain.
+            const credentials = await Keychain.getGenericPassword();
+            if (credentials) {
+              const { username: storedEmail, password: storedPassword } = credentials;
+              const userCredential = await signInWithEmailAndPassword(auth, storedEmail, storedPassword);
+              setUser(userCredential.user);
+              return; // Successful auto‑login.
+            }
+          } else {
+            // If the session is expired, remove stored data.
+            await AsyncStorage.removeItem('loginTime');
+            await Keychain.resetGenericPassword();
+          }
+        }
+      } catch (error) {
+        console.error('Auto login error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    autoLogin();
+  }, []);
+
+  // Listen to auth state changes and check session expiration.
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -33,14 +66,12 @@ export const AuthProvider = ({ children }) => {
           const loginTimeStr = await AsyncStorage.getItem('loginTime');
           if (loginTimeStr) {
             const loginTime = parseInt(loginTimeStr, 10);
-            const now = Date.now();
-            if (now - loginTime > ONE_WEEK_MS) {
-              // Automatically sign out the user after 1 week
+            if (Date.now() - loginTime > ONE_WEEK_MS) {
               await signOut(auth);
               await AsyncStorage.removeItem('loginTime');
+              await Keychain.resetGenericPassword();
               setUser(null);
               Alert.alert('Session Expired', 'Your session has expired. Please log in again.');
-              setLoading(false);
               return;
             }
           }
@@ -49,18 +80,43 @@ export const AuthProvider = ({ children }) => {
         }
       }
       setUser(currentUser);
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
+  // Periodic session check (every 60 seconds)
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      if (auth.currentUser) {
+        try {
+          const loginTimeStr = await AsyncStorage.getItem('loginTime');
+          if (loginTimeStr) {
+            const loginTime = parseInt(loginTimeStr, 10);
+            if (Date.now() - loginTime > ONE_WEEK_MS) {
+              await signOut(auth);
+              await AsyncStorage.removeItem('loginTime');
+              await Keychain.resetGenericPassword();
+              setUser(null);
+              Alert.alert('Session Expired', 'Your session has expired. Please log in again.');
+            }
+          }
+        } catch (error) {
+          console.error('Error during periodic session check:', error);
+        }
+      }
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Sign in: store login time in AsyncStorage and credentials in secure Keychain.
   const signIn = async (email, password) => {
     try {
       setLoading(true);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Store the login time (in ms) in AsyncStorage
       await AsyncStorage.setItem('loginTime', Date.now().toString());
+      await Keychain.setGenericPassword(email, password);
       setUser(userCredential.user);
     } catch (error) {
       Alert.alert('Login Error', error.message);
@@ -69,12 +125,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Sign up: create account and securely store credentials.
   const signUp = async (email, password) => {
     try {
       setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Automatically store the login time on sign up as well
       await AsyncStorage.setItem('loginTime', Date.now().toString());
+      await Keychain.setGenericPassword(email, password);
       setUser(userCredential.user);
       Alert.alert('Success', 'Account created successfully!');
       return true;
@@ -86,28 +143,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Sign out: clear both AsyncStorage and secure Keychain.
   const signOutUser = async () => {
     try {
       await signOut(auth);
       setUser(null);
       await AsyncStorage.removeItem('loginTime');
+      await Keychain.resetGenericPassword();
     } catch (error) {
       Alert.alert('Logout Error', error.message);
     }
   };
 
+  // Delete account: reauthenticate then delete account, and clear stored data.
   const deleteAccount = async (email, password) => {
     try {
       setLoading(true);
-  
-      // Authenticate the user with the provided email and password
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  
-      // If authentication succeeds, delete the account
       const currentUser = userCredential.user;
       await deleteUser(currentUser);
-  
       await AsyncStorage.removeItem('loginTime');
+      await Keychain.resetGenericPassword();
       Alert.alert('Success', 'Your account and its content have been deleted.');
       return true;
     } catch (error) {
@@ -122,7 +178,7 @@ export const AuthProvider = ({ children }) => {
     return (
       <View style={styles.loadingContainer}>
         <Image
-          source={require('../assets/spaceship.png')} // Replace with your app's logo
+          source={require('../assets/spaceship.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -157,3 +213,5 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(10),
   },
 });
+
+export default AuthProvider;

@@ -12,6 +12,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
@@ -20,6 +22,7 @@ import axios from 'axios';
 import { db } from '../../auth/firebase';
 import { collection, query, limit, getDocs, where } from 'firebase/firestore';
 
+// Baseline dimensions (example: iPhone 16 Pro Max)
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
@@ -28,15 +31,15 @@ const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 // Categories for fallback volunteer sections
 const categories = [
-  { id: '1',  title: 'Animals',    icon: 'paw-outline',            reference: 'Animal' },
-  { id: '2',  title: 'Arts',       icon: 'color-palette-outline',  reference: 'Arts' },
-  { id: '4',  title: 'Family',     icon: 'people-circle-outline',  reference: 'Family' },
-  { id: '5',  title: 'Tech',       icon: 'laptop-outline',         reference: 'Tech' },
-  { id: '6',  title: 'Education',  icon: 'school-outline',         reference: 'Education' },
-  { id: '7',  title: 'Environs',   icon: 'leaf-outline',           reference: 'Environment' },
-  { id: '8',  title: 'Hospital',   icon: 'medkit-outline',         reference: 'Hospital' },
-  { id: '9',  title: 'Library',    icon: 'book-outline',           reference: 'Library' },
-  { id: '11', title: 'Seniors',    icon: 'walk-outline',           reference: 'Seniors' },
+  { id: '1', title: 'Animals', icon: 'paw-outline', reference: 'Animal' },
+  { id: '2', title: 'Arts', icon: 'color-palette-outline', reference: 'Arts' },
+  { id: '4', title: 'Family', icon: 'people-circle-outline', reference: 'Family' },
+  { id: '5', title: 'Tech', icon: 'laptop-outline', reference: 'Tech' },
+  { id: '6', title: 'Education', icon: 'school-outline', reference: 'Education' },
+  { id: '7', title: 'Environs', icon: 'leaf-outline', reference: 'Environment' },
+  { id: '8', title: 'Hospital', icon: 'medkit-outline', reference: 'Hospital' },
+  { id: '9', title: 'Library', icon: 'book-outline', reference: 'Library' },
+  { id: '11', title: 'Seniors', icon: 'walk-outline', reference: 'Seniors' },
 ];
 
 // A small synonyms map for references (to improve matching)
@@ -71,7 +74,7 @@ const generateUniqueId = () =>
   Date.now().toString() + Math.random().toString(36).substring(2, 9);
 
 // -------------------------------------
-// VolunteerBox: Display organization info as non-clickable text
+// VolunteerBox: Displays organization info as non-clickable text
 // -------------------------------------
 const VolunteerBox = ({ org }) => (
   <View style={styles.volunteerBox}>
@@ -83,7 +86,7 @@ const VolunteerBox = ({ org }) => (
 );
 
 // -------------------------------------
-// FallbackVolunteerSections: Fallback buttons in a chat message
+// FallbackVolunteerSections: Renders fallback category buttons
 // -------------------------------------
 const FallbackVolunteerSections = ({ onSelectCategory }) => (
   <View style={styles.fallbackContainer}>
@@ -107,7 +110,7 @@ const FallbackVolunteerSections = ({ onSelectCategory }) => (
 );
 
 // -------------------------------------
-// AnimatedMessage: Renders a chat message with animation
+// AnimatedMessage: Renders a message with fade-in animation
 // -------------------------------------
 const AnimatedMessage = memo(({ item, onSelectFallbackCategory }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -154,11 +157,11 @@ const AnimatedMessage = memo(({ item, onSelectFallbackCategory }) => {
 });
 
 // -------------------------------------
-// ChatSection
+// ChatSection: Renders the list of chat messages
 // -------------------------------------
 const ChatSection = memo(({ data, isLoading, flatListRef, inputFocused, onSelectFallbackCategory }) => {
   const renderItem = useCallback(
-    ({ item }) => <AnimatedMessage key={item.id} item={item} onSelectFallbackCategory={onSelectFallbackCategory} />,
+    ({ item }) => <AnimatedMessage item={item} onSelectFallbackCategory={onSelectFallbackCategory} />,
     [onSelectFallbackCategory]
   );
   return (
@@ -170,7 +173,7 @@ const ChatSection = memo(({ data, isLoading, flatListRef, inputFocused, onSelect
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.flatListContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator
+        showsVerticalScrollIndicator={false}
       />
       {isLoading && <TypingIndicator />}
     </View>
@@ -178,7 +181,7 @@ const ChatSection = memo(({ data, isLoading, flatListRef, inputFocused, onSelect
 });
 
 // -------------------------------------
-// IntroSection
+// IntroSection: Renders the introductory screen
 // -------------------------------------
 const IntroSection = memo(() => {
   const introPhrases = [
@@ -229,12 +232,13 @@ const IntroSection = memo(() => {
 });
 
 // -------------------------------------
-// TypingIndicator
+// TypingIndicator: Renders an animated typing indicator
 // -------------------------------------
 const TypingIndicator = () => {
   const dot1Opacity = useRef(new Animated.Value(0)).current;
   const dot2Opacity = useRef(new Animated.Value(0)).current;
   const dot3Opacity = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     const animate = () => {
       Animated.sequence([
@@ -252,6 +256,7 @@ const TypingIndicator = () => {
     };
     animate();
   }, []);
+
   return (
     <View style={styles.typingIndicatorContainer}>
       <Animated.Text style={[styles.typingDot, { opacity: dot1Opacity }]}>•</Animated.Text>
@@ -262,11 +267,14 @@ const TypingIndicator = () => {
 };
 
 // -------------------------------------
-// ChatGPT (Main)
+// ChatGPT: Main Component
 // -------------------------------------
 const ChatGPT = () => {
+  // Animated value for morphing the search bar
+  const morphAnim = useRef(new Animated.Value(0)).current;
   const textInputRef = useRef(null);
   const flatListRef = useRef(null);
+
   const [data, setData] = useState([
     {
       id: 'init',
@@ -278,24 +286,15 @@ const ChatGPT = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [inputFocused, setInputFocused] = useState(false);
-
-  // DB mode state
   const [dbMode, setDbMode] = useState(false);
-  // Show fallback sections message when no orgs found
   const [showFallback, setShowFallback] = useState(false);
 
-  const morphAnim = useRef(new Animated.Value(0)).current;
-  const revertTimerRef = useRef(null);
-
-  // ChatGPT API keys (for non-volunteer queries)
-  const apiKey = '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'; // your key
+  // ChatGPT API keys (replace with your own key)
+  const apiKey = 'sk-your-api-key';
   const apiUrl = 'https://api.openai.com/v1/chat/completions';
   const modelId = 'gpt-3.5-turbo';
 
-  // -------------------------------------------------
-  // fetchVolunteerOrganizations with optional reference
-  // -------------------------------------------------
+  // Fetch volunteer organizations from Firestore
   const fetchVolunteerOrganizations = async (rawReference) => {
     try {
       const finalRef = normalizeReference(rawReference);
@@ -315,20 +314,16 @@ const ChatGPT = () => {
     }
   };
 
-  // -------------------------------------
-  // handleFallbackCategorySelect: user clicks a fallback category button
-  // -------------------------------------
+  // Handle fallback category selection
   const handleFallbackCategorySelect = async (category) => {
     setIsLoading(true);
     const messageId = generateUniqueId();
-    // Append user's selection as a message for context
     setData((prevData) => [
       ...prevData,
       { id: messageId, type: 'user', text: `Show me ${category.title} organizations` },
     ]);
     try {
       const organizations = await fetchVolunteerOrganizations(category.reference);
-      // Remove fallback message (if present) and add the resources message
       setData((prevData) => [
         ...prevData.filter((msg) => msg.type !== 'fallbackVolunteerSections'),
         {
@@ -348,21 +343,15 @@ const ChatGPT = () => {
     }
   };
 
-  // -------------------------------------
-  // handleSend
-  // -------------------------------------
+  // Handle sending a message
   const handleSend = async () => {
     const messageText = textInput.trim();
     if (!messageText) return;
-    if (revertTimerRef.current) {
-      clearTimeout(revertTimerRef.current);
-      revertTimerRef.current = null;
-    }
     setIsLoading(true);
     const lowerMessage = messageText.toLowerCase();
     const messageId = generateUniqueId();
 
-    // DB mode: only query DB using user text as reference
+    // DB mode: query Firestore using message text as reference
     if (dbMode) {
       setData((prevData) => [
         ...prevData,
@@ -372,7 +361,6 @@ const ChatGPT = () => {
       try {
         const organizations = await fetchVolunteerOrganizations(messageText);
         if (organizations.length === 0) {
-          // Instead of showing fallback externally, add a fallback chat message
           setData((prevData) => [
             ...prevData,
             { id: messageId + '-fb', type: 'fallbackVolunteerSections' },
@@ -393,7 +381,7 @@ const ChatGPT = () => {
       return;
     }
 
-    // Otherwise, normal logic using ChatGPT for non-volunteer queries
+    // Special queries
     if (
       lowerMessage.includes('what is nexolink') ||
       lowerMessage.includes('what is this app') ||
@@ -401,7 +389,7 @@ const ChatGPT = () => {
       lowerMessage.includes('about this app')
     ) {
       const nexolinkResponse =
-        'Nexolink is a revolutionary platform designed to connect volunteers with opportunities in their communities. It streamlines the process of finding and engaging in meaningful volunteer work, empowering you to make a positive impact. How else can I assist you today?';
+        'Nexolink is a revolutionary platform designed to connect volunteers with opportunities in their communities. It streamlines the process of finding and engaging in meaningful volunteer work. How else can I assist you today?';
       setData((prevData) => [
         ...prevData,
         { id: messageId, type: 'user', text: messageText },
@@ -426,13 +414,12 @@ const ChatGPT = () => {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       return;
     }
-    // Check if the query appears to be about volunteering organizations
+    // Check if query is about volunteering organizations
     if (
       lowerMessage.includes('volunteering organizations') ||
       lowerMessage.includes('volunteer opportunities') ||
       lowerMessage.includes('good volunteering org')
     ) {
-      // Try to parse "for <reference>"
       let reference = null;
       const forIndex = lowerMessage.indexOf('for ');
       if (forIndex !== -1) {
@@ -446,7 +433,6 @@ const ChatGPT = () => {
       try {
         const organizations = await fetchVolunteerOrganizations(reference);
         if (organizations.length === 0) {
-          // If no organizations found, add a fallback volunteer sections message
           setData((prevData) => [
             ...prevData,
             { id: messageId + '-fb', type: 'fallbackVolunteerSections' },
@@ -466,7 +452,7 @@ const ChatGPT = () => {
       }
       return;
     }
-    // Fallback to ChatGPT for other queries
+    // Fallback: use ChatGPT API for other queries
     setData((prevData) => [
       ...prevData,
       { id: messageId, type: 'user', text: messageText },
@@ -511,9 +497,7 @@ const ChatGPT = () => {
     }
   };
 
-  // -------------------------------------
-  // handleAskPress
-  // -------------------------------------
+  // Handle pressing the "Ask" button to activate the search bar
   const handleAskPress = () => {
     Animated.timing(morphAnim, {
       toValue: 1,
@@ -525,30 +509,7 @@ const ChatGPT = () => {
     });
   };
 
-  // Revert to small "Ask" after 5s if no input
-  useEffect(() => {
-    if (isSearchActive && data.length === 1 && textInput.trim() === '') {
-      revertTimerRef.current = setTimeout(() => {
-        Animated.timing(morphAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: false,
-        }).start(() => {
-          setIsSearchActive(false);
-        });
-      }, 5000);
-    }
-    return () => {
-      if (revertTimerRef.current) {
-        clearTimeout(revertTimerRef.current);
-        revertTimerRef.current = null;
-      }
-    };
-  }, [isSearchActive, data.length, textInput]);
-
-  // -------------------------------------
-  // MorphingSearchBar
-  // -------------------------------------
+  // MorphingSearchBar: Renders the Ask button or the active search bar
   const MorphingSearchBar = () => {
     const initialWidth = scale(60);
     const finalWidth = width - scale(20);
@@ -595,62 +556,92 @@ const ChatGPT = () => {
             <Text style={styles.askButtonText}>Ask</Text>
           </TouchableOpacity>
         )}
-        <Animated.View style={[styles.searchSection, { opacity: searchContentOpacity }]}>
-          {isSearchActive && (
-            <>
-              {/* DB Mode Toggle Icon Only */}
-              <TouchableOpacity
-                style={styles.dbModeButton}
-                onPress={() => setDbMode(!dbMode)}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name="server-outline"
-                  size={scale(22)}
-                  color={dbMode ? 'green' : 'black'}
-                />
-              </TouchableOpacity>
-              <TextInput
-                ref={textInputRef}
-                style={styles.textInput}
-                placeholder={dbMode ? 'Message Ordix with database mode' : 'Message Ordix'}
-                placeholderTextColor="#aaa"
-                value={textInput}
-                autoFocus={true}
-                blurOnSubmit={false}
-                keyboardAppearance="dark"
-                onChangeText={setTextInput}
-                onSubmitEditing={handleSend}
-                returnKeyType="send"
+        {isSearchActive && (
+          <Animated.View style={[styles.searchSection, { opacity: searchContentOpacity }]}>
+            <TouchableOpacity
+              style={styles.dbModeButton}
+              onPress={() => setDbMode(!dbMode)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="server-outline"
+                size={scale(22)}
+                color={dbMode ? 'green' : 'black'}
               />
-              <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                <Ionicons name="send-outline" size={scale(22)} color="black" />
-              </TouchableOpacity>
-            </>
-          )}
-        </Animated.View>
+            </TouchableOpacity>
+            <TextInput
+              ref={textInputRef}
+              style={styles.textInput}
+              placeholder={dbMode ? 'Message Ordix with database mode' : 'Message Ordix'}
+              placeholderTextColor="#aaa"
+              value={textInput}
+              autoFocus={true}
+              blurOnSubmit={false}
+              keyboardAppearance="dark"
+              onChangeText={setTextInput}
+              onSubmitEditing={handleSend}
+              returnKeyType="send"
+            />
+            <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+              <Ionicons name="send-outline" size={scale(22)} color="black" />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
       </Animated.View>
     );
   };
 
+  // Main render: Wrap entire view in TouchableWithoutFeedback to toggle search bar/keyboard
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.contentContainer}>
-        {data.length === 1 ? (
-          <IntroSection />
-        ) : (
-          <>
-            <ChatSection data={data} isLoading={isLoading} flatListRef={flatListRef} inputFocused={inputFocused} onSelectFallbackCategory={handleFallbackCategorySelect} />
-          </>
-        )}
-        {error ? (
-          <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
-            <Text style={styles.errorText}>{error}</Text>
-          </Animated.View>
-        ) : null}
-      </KeyboardAvoidingView>
-      <MorphingSearchBar />
-    </SafeAreaView>
+    <TouchableWithoutFeedback
+      onPress={() => {
+        if (isSearchActive) {
+          // If active, dismiss keyboard and hide search bar
+          Keyboard.dismiss();
+          setIsSearchActive(false);
+          Animated.timing(morphAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: false,
+          }).start();
+        } else {
+          // If inactive, activate the search bar
+          Animated.timing(morphAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: false,
+          }).start(() => {
+            setIsSearchActive(true);
+            textInputRef.current?.focus();
+          });
+        }
+      }}
+    >
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.contentContainer}
+        >
+          {data.length === 1 ? (
+            <IntroSection />
+          ) : (
+            <ChatSection
+              data={data}
+              isLoading={isLoading}
+              flatListRef={flatListRef}
+              inputFocused={isSearchActive}
+              onSelectFallbackCategory={handleFallbackCategorySelect}
+            />
+          )}
+          {error ? (
+            <Animated.View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </Animated.View>
+          ) : null}
+        </KeyboardAvoidingView>
+        <MorphingSearchBar />
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 };
 
