@@ -6,8 +6,8 @@ import {
   TouchableWithoutFeedback,
   StyleSheet,
   Dimensions,
+  
 } from "react-native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import * as Animatable from "react-native-animatable";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import EvilIcons from "@expo/vector-icons/EvilIcons";
@@ -16,22 +16,30 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  interpolate,
 } from "react-native-reanimated";
-import { AuthContext } from '../../auth/AuthContext';
-import AnimalCarousel from '../displayer/showContainer';
-import SearchScreen from '../screens/SearchScreen';
-import AIScreen from '../screens/ProfileScreen';
-import VolunteerLogs from '../screens/volunteer_log';
-import LoginScreen from '../../auth/LoginScreen';
-import RegisterScreen from '../../auth/RegisterScreen';
-import DisplayScreen from '../displayer/ShowScreen';
-import MapScreen from '../screens/MapScreen';
-import SplashScreen from '../screens/Splashscreen';
-import DeleteScreen from '../../auth/deleteScreen';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+
+import { AuthContext } from "../../auth/AuthContext";
+import AnimalCarousel from "../displayer/showContainer";
+import SearchScreen from "../screens/SearchScreen";
+import AIScreen from "../screens/ProfileScreen";
+import VolunteerLogs from "../screens/volunteer_log";
+import LoginScreen from "../../auth/LoginScreen";
+import RegisterScreen from "../../auth/RegisterScreen";
+import DisplayScreen from "../displayer/ShowScreen";
+import MapScreen from "../screens/MapScreen";
+import SplashScreen from "../screens/Splashscreen";
+import DeleteScreen from "../../auth/deleteScreen";
+
+// Imported extension screens
+import SuggestOrganizationScreen from "../screens/OrganizationScreen";
+import AccountStackNavigator from "../screens/AccountScreen";
 
 
+// ---------- Constants & Dimensions ----------
 const Colors = {
   primary: "#000", // Black
   white: "#fff",
@@ -40,66 +48,44 @@ const Colors = {
 
 const { width: screenWidth } = Dimensions.get("window");
 const ORIGINAL_WIDTH = screenWidth * 0.8; // Full width of the tab bar
-const COLLAPSED_WIDTH = ORIGINAL_WIDTH * 0.3; // 75% of original width
+const COLLAPSED_WIDTH = ORIGINAL_WIDTH * 0.3; // Collapsed width
 const TAB_BAR_HEIGHT = 60;
-const AUTO_COLLAPSE_DELAY = 5000; // 3 seconds delay
-const FADE_DURATION = 650; // 500ms for fade between states
+const AUTO_COLLAPSE_DELAY = 20000; // 20 seconds inactivity delay
+const FADE_DURATION = 650; // 650ms for fade
 
-
-const Stack = createStackNavigator();
-
-// Define baseline dimensions
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 const scale = (size) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
-/* --------------------------------------
-   TabStack (merged carousel functionalities)
--------------------------------------- */
+// ---------- Navigation Stacks ----------
+const Stack = createStackNavigator();
+
 const TabStack = ({ route }) => {
   const { reference } = route?.params || {};
   const stackNavigation = useNavigation();
 
-  // When TabStack gains focus, reset so that SearchScreen is on top
   useFocusEffect(
     useCallback(() => {
       stackNavigation.reset({
         index: 0,
-        routes: [{ name: 'SearchScreen' }],
+        routes: [{ name: "SearchScreen" }],
       });
     }, [stackNavigation])
   );
 
   return (
-    <Stack.Navigator
-      initialRouteName="SearchScreen"
-      screenOptions={{ headerShown: false }}
-    >
-      <Stack.Screen
-        name="SearchScreen"
-        component={SearchScreen}
-      />
-      <Stack.Screen
-        name="Carousel"
-        component={AnimalCarousel}
-        initialParams={{ reference }}
-      />
-      <Stack.Screen
-        name="DisplayScreen"
-        component={DisplayScreen}
-      />
+    <Stack.Navigator initialRouteName="SearchScreen" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SearchScreen" component={SearchScreen} />
+      <Stack.Screen name="Carousel" component={AnimalCarousel} initialParams={{ reference }} />
+      <Stack.Screen name="DisplayScreen" component={DisplayScreen} />
     </Stack.Navigator>
   );
 };
 
-/* --------------------------------------
-   VolunteerLogsStack with Auth Integration
--------------------------------------- */
 const VolunteerLogsStack = () => {
   const { user } = useContext(AuthContext);
-
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
@@ -115,23 +101,16 @@ const VolunteerLogsStack = () => {
   );
 };
 
-
-
+// ---------- Tab Routes Array ----------
 const TabArr = [
   { route: "Search", label: "Home", icon: "home", component: TabStack },
-  { route: "Ordix", label: "Ordix", icon: "search1", component: AIScreen,  },
+  { route: "Ordix", label: "Ordix", icon: "search1", component: AIScreen },
   { route: "Volunteer", label: "Logs", icon: "team", component: VolunteerLogsStack },
-  { route: "Map", label: "Map", icon: "location", component: MapScreen,   isEvilIcon: true, },
-  {
-    route: "Donate",
-    label: "Donate",
-    icon: "user",
-    component: SplashScreen,
-    isEvilIcon: true,
-  },
+  { route: "Map", label: "Map", icon: "location", component: MapScreen, isEvilIcon: true },
+  { route: "Donate", label: "Donate", icon: "user", component: SplashScreen, isEvilIcon: true },
 ];
 
-// Each tab button in expanded mode
+// ---------- Custom Tab Button ----------
 const TabButton = ({ item, onPress, accessibilityState }) => {
   const focused = accessibilityState.selected;
   const bubbleRef = useRef(null);
@@ -139,17 +118,11 @@ const TabButton = ({ item, onPress, accessibilityState }) => {
 
   useEffect(() => {
     if (focused) {
-      bubbleRef.current.animate({ 0: { scale: 0 }, 1: { scale: 1 } }, 300);
-      labelRef.current.animate(
-        { 0: { scale: 0, opacity: 0 }, 1: { scale: 1, opacity: 1 } },
-        300
-      );
+      bubbleRef.current?.animate({ 0: { scale: 0 }, 1: { scale: 1 } }, 300);
+      labelRef.current?.animate({ 0: { scale: 0, opacity: 0 }, 1: { scale: 1, opacity: 1 } }, 300);
     } else {
-      bubbleRef.current.animate({ 0: { scale: 1 }, 1: { scale: 0 } }, 300);
-      labelRef.current.animate(
-        { 0: { scale: 1, opacity: 1 }, 1: { scale: 0, opacity: 0 } },
-        300
-      );
+      bubbleRef.current?.animate({ 0: { scale: 1 }, 1: { scale: 0 } }, 300);
+      labelRef.current?.animate({ 0: { scale: 1, opacity: 1 }, 1: { scale: 0, opacity: 0 } }, 300);
     }
   }, [focused]);
 
@@ -179,18 +152,11 @@ const TabButton = ({ item, onPress, accessibilityState }) => {
   };
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={1}
-      style={[styles.tabItemContainer, { flex: focused ? 1.4 : 1 }]}
-    >
+    <TouchableOpacity onPress={onPress} activeOpacity={1} style={[styles.tabItemContainer, { flex: focused ? 1.4 : 1 }]}>
       <View>
         <Animatable.View
           ref={bubbleRef}
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: Colors.primary, borderRadius: 16 },
-          ]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: Colors.primary, borderRadius: 16 }]}
         />
         <View style={styles.tabItem}>
           {renderIcon()}
@@ -203,68 +169,139 @@ const TabButton = ({ item, onPress, accessibilityState }) => {
   );
 };
 
-// The custom tab bar with auto-collapse
+// ---------- Extension Buttons Component ----------
+const ExtensionButtons = ({ leftStyle, topStyle, rightStyle, onSelectExtension }) => {
+  return (
+    <>
+      <Animated.View style={[extBarStylesExtension.button, leftStyle]}>
+        <TouchableOpacity onPress={() => onSelectExtension("Suggestions")}>
+          <Ionicons name="bulb-outline" size={22} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+    
+      <Animated.View style={[extBarStylesExtension.button, rightStyle]}>
+        <TouchableOpacity onPress={() => onSelectExtension("Account")}>
+          <Ionicons name="person-outline" size={22} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+    </>
+  );
+};
+
+// ---------- Extension Bar (Reanimated 2) ----------
+const ExtensionBar = ({ onSelectExtension }) => {
+  const open = useSharedValue(0); // 0 collapsed, 1 expanded
+
+  const toggleExtension = () => {
+    open.value = withTiming(open.value === 1 ? 0 : 1, { duration: 300 });
+  };
+
+  const distance = 60; // How far the extension buttons should move
+  const leftStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(open.value, [0, 1], [0, -distance]) }],
+    opacity: open.value,
+  }));
+  const topStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(open.value, [0, 1], [0, -distance]) }],
+    opacity: open.value,
+  }));
+  const rightStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(open.value, [0, 1], [0, distance]) }],
+    opacity: open.value,
+  }));
+
+  return (
+    <View style={extBarStylesExtension.container}>
+      <ExtensionButtons
+        leftStyle={leftStyle}
+        topStyle={topStyle}
+        rightStyle={rightStyle}
+        onSelectExtension={onSelectExtension}
+      />
+      <TouchableOpacity onPress={toggleExtension} style={extBarStylesExtension.mainButton}>
+        <Ionicons name={open.value > 0.5 ? "close" : "add"} size={24} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const extBarStylesExtension = StyleSheet.create({
+  container: {
+    position: "absolute",
+    top: 25, // Adjust to position the extension bar above the pill
+    left: 45,
+    transform: [{ translateX: -25 }], // Center horizontally (half of main button width)
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mainButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "black",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  button: {
+    position: "absolute",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "black",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
+
+// ---------- Custom Tab Bar ----------
 const CustomTabBar = (props) => {
   const { state, navigation } = props;
-
-  // Track whether the bar is expanded or collapsed
   const [expanded, setExpanded] = useState(true);
-
-  // Timer to handle inactivity
   const autoCollapseTimer = useRef(null);
-
-  // Shared values for container width and icon fade
   const containerWidth = useSharedValue(ORIGINAL_WIDTH);
   const touchIDOpacity = useSharedValue(0);
 
-  // We define all hooks (useAnimatedStyle) unconditionally
-  const rContainerStyle = useAnimatedStyle(() => {
-    return {
-      width: withTiming(containerWidth.value, { duration: FADE_DURATION }),
-    };
-  });
-
-  const rTouchIDStyle = useAnimatedStyle(() => {
-    return {
-      opacity: withTiming(touchIDOpacity.value, { duration: FADE_DURATION }),
-    };
-  });
-
-  // Reset auto-collapse timer whenever the user interacts
   const resetAutoCollapse = useCallback(() => {
-    if (autoCollapseTimer.current) {
-      clearTimeout(autoCollapseTimer.current);
-    }
+    if (autoCollapseTimer.current) clearTimeout(autoCollapseTimer.current);
     if (expanded) {
       autoCollapseTimer.current = setTimeout(() => {
-        // Collapse
         setExpanded(false);
         containerWidth.value = COLLAPSED_WIDTH;
-        touchIDOpacity.value = 1; // fade in the Touch ID icon
+        touchIDOpacity.value = 1;
       }, AUTO_COLLAPSE_DELAY);
     }
   }, [expanded, containerWidth, touchIDOpacity]);
 
-  // Expand the bar if collapsed
   const handlePress = useCallback(() => {
     if (!expanded) {
-      // Expand
       setExpanded(true);
       containerWidth.value = ORIGINAL_WIDTH;
-      touchIDOpacity.value = 0; // fade out the Touch ID icon
+      touchIDOpacity.value = 0;
     }
     resetAutoCollapse();
   }, [expanded, containerWidth, touchIDOpacity, resetAutoCollapse]);
 
   useEffect(() => {
-    // Start or reset the auto-collapse countdown
     resetAutoCollapse();
     return () => {
       if (autoCollapseTimer.current) clearTimeout(autoCollapseTimer.current);
     };
   }, [resetAutoCollapse]);
 
-  // If expanded, show the normal tab bar with items
+  const rContainerStyle = useAnimatedStyle(() => ({
+    width: withTiming(containerWidth.value, { duration: FADE_DURATION }),
+  }));
+  const rTouchIDStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(touchIDOpacity.value, { duration: FADE_DURATION }),
+  }));
+
+  // Callback for extension selection
+  const handleSelectExtension = (extName) => {
+    navigation.navigate(extName);
+  };
+
   if (expanded) {
     return (
       <TouchableWithoutFeedback onPress={handlePress}>
@@ -274,16 +311,11 @@ const CustomTabBar = (props) => {
               (i) => i.route.toLowerCase() === route.name.toLowerCase()
             );
             if (!item) return null;
-
             const isFocused = state.index === index;
-
             const onPressTab = () => {
-              if (!isFocused) {
-                navigation.navigate(item.route);
-              }
+              if (!isFocused) navigation.navigate(item.route);
               resetAutoCollapse();
             };
-
             return (
               <TabButton
                 key={route.key}
@@ -293,20 +325,17 @@ const CustomTabBar = (props) => {
               />
             );
           })}
+          {/* Integrated Extension Bar */}
+          <View style={extensionStyles.centerWrapper}>
+            <ExtensionBar onSelectExtension={handleSelectExtension} />
+          </View>
         </Animated.View>
       </TouchableWithoutFeedback>
     );
   } else {
-    // Collapsed state: show a single fingerprint icon
     return (
       <TouchableOpacity onPress={handlePress} activeOpacity={1}>
-        <Animated.View
-          style={[
-            styles.tabBarContainer,
-            rContainerStyle,
-            { justifyContent: "center", alignItems: "center" },
-          ]}
-        >
+        <Animated.View style={[styles.tabBarContainer, rContainerStyle, { justifyContent: "center", alignItems: "center" }]}>
           <Animated.View style={rTouchIDStyle}>
             <Ionicons name="finger-print" size={28} color={Colors.white} />
           </Animated.View>
@@ -316,34 +345,49 @@ const CustomTabBar = (props) => {
   }
 };
 
-// Bottom Tab Navigator
-const Tab = createBottomTabNavigator();
+const extensionStyles = StyleSheet.create({
+  centerWrapper: {
+    position: "absolute",
+    top: -80, // Adjust to position the extension bar above the pill
+    left: "50%",
+    transform: [{ translateX: -25 }], // Half of main extension button width (50/2)
+  },
+});
+
+// ---------- Bottom Tab Navigator ----------
+const TabNav = createBottomTabNavigator();
 
 function PillTabNavigator() {
   return (
-    <Tab.Navigator
-      screenOptions={{ headerShown: false, tabBarStyle: { height: TAB_BAR_HEIGHT } }}
-      tabBar={(props) => <CustomTabBar {...props} />}
-    >
-      {TabArr.map((item) => (
-        <Tab.Screen
-          key={item.route}
-          name={item.route}
-          component={item.component}
-          options={{ title: item.label }}
-        />
-      ))}
-    </Tab.Navigator>
+    
+      <TabNav.Navigator
+        screenOptions={{ headerShown: false, tabBarStyle: { height: TAB_BAR_HEIGHT } }}
+        tabBar={(props) => <CustomTabBar {...props} />}
+      >
+        {TabArr.map((item) => (
+          <TabNav.Screen
+            key={item.route}
+            name={item.route}
+            component={item.component}
+            options={{ title: item.label }}
+          />
+        ))}
+        {/* Extension routes */}
+        <TabNav.Screen name="Suggestions" component={SuggestOrganizationScreen} options={{ headerShown: false }} />
+        <TabNav.Screen name="Account" component={AccountStackNavigator} options={{ headerShown: false }} />
+      </TabNav.Navigator>
+  
   );
 }
 
 export default PillTabNavigator;
 
+// ---------- Main Styles ----------
 const styles = StyleSheet.create({
   tabBarContainer: {
     flexDirection: "row",
     position: "absolute",
-    bottom: 25,
+    bottom: 25, // Set to 0 to remove extra white space at the bottom
     backgroundColor: Colors.primary,
     alignSelf: "center",
     paddingHorizontal: 20,
@@ -352,9 +396,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowRadius: 3,
   },
   tabItemContainer: {
     justifyContent: "center",
@@ -375,13 +419,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     paddingHorizontal: 8,
   },
-  screenContainer: {
+});
+
+const placeholderStyles = StyleSheet.create({
+  container: {
     flex: 1,
     backgroundColor: Colors.white,
     justifyContent: "center",
     alignItems: "center",
   },
-  screenText: {
+  text: {
     fontSize: 24,
     color: Colors.primary,
   },

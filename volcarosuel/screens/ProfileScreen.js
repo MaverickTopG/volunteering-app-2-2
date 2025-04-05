@@ -13,7 +13,6 @@ import {
   Platform,
   Dimensions,
   Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
@@ -22,7 +21,6 @@ import axios from 'axios';
 import { db } from '../../auth/firebase';
 import { collection, query, limit, getDocs, where } from 'firebase/firestore';
 
-// Baseline dimensions (example: iPhone 16 Pro Max)
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
@@ -42,7 +40,7 @@ const categories = [
   { id: '11', title: 'Seniors', icon: 'walk-outline', reference: 'Seniors' },
 ];
 
-// A small synonyms map for references (to improve matching)
+// Synonyms map for reference matching
 const synonymsMap = {
   tech: 'Tech',
   technology: 'Tech',
@@ -59,23 +57,17 @@ const synonymsMap = {
   elder: 'Seniors',
 };
 
-// Normalize user input to a Firestore reference
 const normalizeReference = (rawRef) => {
   if (!rawRef) return null;
   const lower = rawRef.toLowerCase();
-  if (synonymsMap[lower]) {
-    return synonymsMap[lower];
-  }
+  if (synonymsMap[lower]) return synonymsMap[lower];
   return lower.charAt(0).toUpperCase() + lower.slice(1);
 };
 
-// Generate a unique ID for messages
 const generateUniqueId = () =>
   Date.now().toString() + Math.random().toString(36).substring(2, 9);
 
-// -------------------------------------
-// VolunteerBox: Displays organization info as non-clickable text
-// -------------------------------------
+// VolunteerBox: Displays organization info as text boxes
 const VolunteerBox = ({ org }) => (
   <View style={styles.volunteerBox}>
     <Text style={styles.volunteerBoxTitle}>{org.name}</Text>
@@ -85,9 +77,7 @@ const VolunteerBox = ({ org }) => (
   </View>
 );
 
-// -------------------------------------
-// FallbackVolunteerSections: Renders fallback category buttons
-// -------------------------------------
+// FallbackVolunteerSections: Renders fallback category buttons as a chat message
 const FallbackVolunteerSections = ({ onSelectCategory }) => (
   <View style={styles.fallbackContainer}>
     <Text style={styles.fallbackTitle}>No results found. Try these volunteer sections:</Text>
@@ -109,17 +99,11 @@ const FallbackVolunteerSections = ({ onSelectCategory }) => (
   </View>
 );
 
-// -------------------------------------
-// AnimatedMessage: Renders a message with fade-in animation
-// -------------------------------------
+// AnimatedMessage: Renders a chat message with fade-in
 const AnimatedMessage = memo(({ item, onSelectFallbackCategory }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
   }, [fadeAnim]);
 
   if (item.type === 'volunteerResources') {
@@ -156,9 +140,7 @@ const AnimatedMessage = memo(({ item, onSelectFallbackCategory }) => {
   );
 });
 
-// -------------------------------------
-// ChatSection: Renders the list of chat messages
-// -------------------------------------
+// ChatSection: Renders the chat messages
 const ChatSection = memo(({ data, isLoading, flatListRef, inputFocused, onSelectFallbackCategory }) => {
   const renderItem = useCallback(
     ({ item }) => <AnimatedMessage item={item} onSelectFallbackCategory={onSelectFallbackCategory} />,
@@ -180,9 +162,7 @@ const ChatSection = memo(({ data, isLoading, flatListRef, inputFocused, onSelect
   );
 });
 
-// -------------------------------------
-// IntroSection: Renders the introductory screen
-// -------------------------------------
+// IntroSection: The initial screen
 const IntroSection = memo(() => {
   const introPhrases = [
     'How can I help you today?',
@@ -193,7 +173,6 @@ const IntroSection = memo(() => {
   const PHRASE_ANIMATION_SPEED = 300;
   const [introPhrase, setIntroPhrase] = useState(introPhrases[0]);
   const introFadeAnim = useRef(new Animated.Value(1)).current;
-
   useEffect(() => {
     const interval = setInterval(() => {
       Animated.timing(introFadeAnim, {
@@ -215,30 +194,20 @@ const IntroSection = memo(() => {
     }, 3000);
     return () => clearInterval(interval);
   }, [introFadeAnim]);
-
   return (
     <View style={styles.centerIntroContainer}>
-      <Image
-        source={require('../../assets/spaceship.png')}
-        style={styles.logoStyle}
-        resizeMode="contain"
-      />
+      <Image source={require('../../assets/spaceship.png')} style={styles.logoStyle} resizeMode="contain" />
       <Text style={styles.introTitle}>Hi, I'm Ordix.</Text>
-      <Animated.Text style={[styles.introSubtitle, { opacity: introFadeAnim }]}>
-        {introPhrase}
-      </Animated.Text>
+      <Animated.Text style={[styles.introSubtitle, { opacity: introFadeAnim }]}>{introPhrase}</Animated.Text>
     </View>
   );
 });
 
-// -------------------------------------
-// TypingIndicator: Renders an animated typing indicator
-// -------------------------------------
+// TypingIndicator: Animated dots
 const TypingIndicator = () => {
   const dot1Opacity = useRef(new Animated.Value(0)).current;
   const dot2Opacity = useRef(new Animated.Value(0)).current;
   const dot3Opacity = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     const animate = () => {
       Animated.sequence([
@@ -256,7 +225,6 @@ const TypingIndicator = () => {
     };
     animate();
   }, []);
-
   return (
     <View style={styles.typingIndicatorContainer}>
       <Animated.Text style={[styles.typingDot, { opacity: dot1Opacity }]}>•</Animated.Text>
@@ -266,15 +234,10 @@ const TypingIndicator = () => {
   );
 };
 
-// -------------------------------------
-// ChatGPT: Main Component
-// -------------------------------------
+// ChatGPT (Main Component)
 const ChatGPT = () => {
-  // Animated value for morphing the search bar
-  const morphAnim = useRef(new Animated.Value(0)).current;
   const textInputRef = useRef(null);
   const flatListRef = useRef(null);
-
   const [data, setData] = useState([
     {
       id: 'init',
@@ -288,8 +251,11 @@ const ChatGPT = () => {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [dbMode, setDbMode] = useState(false);
   const [showFallback, setShowFallback] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
 
-  // ChatGPT API keys (replace with your own key)
+  const morphAnim = useRef(new Animated.Value(0)).current;
+
+  // ChatGPT API keys (replace with your own)
   const apiKey = 'sk-your-api-key';
   const apiUrl = 'https://api.openai.com/v1/chat/completions';
   const modelId = 'gpt-3.5-turbo';
@@ -351,7 +317,6 @@ const ChatGPT = () => {
     const lowerMessage = messageText.toLowerCase();
     const messageId = generateUniqueId();
 
-    // DB mode: query Firestore using message text as reference
     if (dbMode) {
       setData((prevData) => [
         ...prevData,
@@ -381,7 +346,6 @@ const ChatGPT = () => {
       return;
     }
 
-    // Special queries
     if (
       lowerMessage.includes('what is nexolink') ||
       lowerMessage.includes('what is this app') ||
@@ -414,7 +378,6 @@ const ChatGPT = () => {
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
       return;
     }
-    // Check if query is about volunteering organizations
     if (
       lowerMessage.includes('volunteering organizations') ||
       lowerMessage.includes('volunteer opportunities') ||
@@ -452,7 +415,7 @@ const ChatGPT = () => {
       }
       return;
     }
-    // Fallback: use ChatGPT API for other queries
+    // Fallback: Use ChatGPT for other queries
     setData((prevData) => [
       ...prevData,
       { id: messageId, type: 'user', text: messageText },
@@ -497,7 +460,10 @@ const ChatGPT = () => {
     }
   };
 
-  // Handle pressing the "Ask" button to activate the search bar
+  // When the TextInput loses focus, do nothing (allow it to remain active)
+  // Instead, user can tap outside to dismiss the keyboard manually
+
+  // Handle Ask button press to open the search bar
   const handleAskPress = () => {
     Animated.timing(morphAnim, {
       toValue: 1,
@@ -505,11 +471,12 @@ const ChatGPT = () => {
       useNativeDriver: false,
     }).start(() => {
       setIsSearchActive(true);
+      setInputFocused(true);
       textInputRef.current?.focus();
     });
   };
 
-  // MorphingSearchBar: Renders the Ask button or the active search bar
+  // MorphingSearchBar: Renders the Ask button when inactive and the active search bar when active.
   const MorphingSearchBar = () => {
     const initialWidth = scale(60);
     const finalWidth = width - scale(20);
@@ -548,26 +515,14 @@ const ChatGPT = () => {
         ]}
       >
         {!isSearchActive && (
-          <TouchableOpacity
-            style={[styles.askButton, { opacity: askTextOpacity }]}
-            onPress={handleAskPress}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={[styles.askButton, { opacity: askTextOpacity }]} onPress={handleAskPress} activeOpacity={0.8}>
             <Text style={styles.askButtonText}>Ask</Text>
           </TouchableOpacity>
         )}
         {isSearchActive && (
           <Animated.View style={[styles.searchSection, { opacity: searchContentOpacity }]}>
-            <TouchableOpacity
-              style={styles.dbModeButton}
-              onPress={() => setDbMode(!dbMode)}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name="server-outline"
-                size={scale(22)}
-                color={dbMode ? 'green' : 'black'}
-              />
+            <TouchableOpacity style={styles.dbModeButton} onPress={() => setDbMode(!dbMode)} activeOpacity={0.8}>
+              <Ionicons name="server-outline" size={scale(22)} color={dbMode ? 'green' : 'black'} />
             </TouchableOpacity>
             <TextInput
               ref={textInputRef}
@@ -591,57 +546,22 @@ const ChatGPT = () => {
     );
   };
 
-  // Main render: Wrap entire view in TouchableWithoutFeedback to toggle search bar/keyboard
   return (
-    <TouchableWithoutFeedback
-      onPress={() => {
-        if (isSearchActive) {
-          // If active, dismiss keyboard and hide search bar
-          Keyboard.dismiss();
-          setIsSearchActive(false);
-          Animated.timing(morphAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: false,
-          }).start();
-        } else {
-          // If inactive, activate the search bar
-          Animated.timing(morphAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: false,
-          }).start(() => {
-            setIsSearchActive(true);
-            textInputRef.current?.focus();
-          });
-        }
-      }}
-    >
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.contentContainer}
-        >
-          {data.length === 1 ? (
-            <IntroSection />
-          ) : (
-            <ChatSection
-              data={data}
-              isLoading={isLoading}
-              flatListRef={flatListRef}
-              inputFocused={isSearchActive}
-              onSelectFallbackCategory={handleFallbackCategorySelect}
-            />
-          )}
-          {error ? (
-            <Animated.View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </Animated.View>
-          ) : null}
-        </KeyboardAvoidingView>
-        <MorphingSearchBar />
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.contentContainer}>
+        {data.length === 1 ? (
+          <IntroSection />
+        ) : (
+          <ChatSection data={data} isLoading={isLoading} flatListRef={flatListRef} inputFocused={isSearchActive} onSelectFallbackCategory={handleFallbackCategorySelect} />
+        )}
+        {error ? (
+          <Animated.View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </Animated.View>
+        ) : null}
+      </KeyboardAvoidingView>
+      <MorphingSearchBar />
+    </SafeAreaView>
   );
 };
 

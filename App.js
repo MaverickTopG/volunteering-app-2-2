@@ -52,7 +52,7 @@ const App = () => {
     <AuthProvider >
       {/* Single NavigationContainer at the root with independent prop */}
       <NavigationContainer >
-        <DrawerNavigator />
+      <AnimalTabNavigator></AnimalTabNavigator>
       </NavigationContainer>
       {showAnimatedSplash && (
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
