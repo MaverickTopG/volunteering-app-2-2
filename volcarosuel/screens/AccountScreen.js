@@ -9,10 +9,11 @@ import {
   Linking, 
   Dimensions 
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // For Expo (or use react-native-vector-icons/Ionicons)
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-  
+import { LinearGradient } from 'expo-linear-gradient';
+
 // Define baseline dimensions (iPhone 16 Pro Max as an example)
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
@@ -41,9 +42,18 @@ function AccountScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Header with Gradient */}
+        <LinearGradient
+          colors={['#fff0d4', '#ffe8c9']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerContainer}
+        >
+          <Text style={styles.headerText}>About</Text>
+        </LinearGradient>
+
         {/* About Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
           <TouchableOpacity
             style={styles.row}
             onPress={() => Linking.openURL('https://mavericktopg.github.io/privacy_policy.html')}
@@ -118,6 +128,24 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
   },
+  headerContainer: {
+    marginBottom: verticalScale(20),
+    paddingVertical: verticalScale(15),
+    paddingHorizontal: scale(20),
+    borderRadius: scale(25),
+    alignItems: 'center',
+    // Soft shadow matching the gradient
+    shadowColor: '#ffe8c9',
+    shadowOffset: { width: 0, height: scale(4) },
+    shadowOpacity: 0.6,
+    shadowRadius: scale(6),
+    elevation: 6,
+  },
+  headerText: {
+    fontSize: scale(28),
+    fontWeight: 'bold',
+    color: '#333',
+  },
   section: {
     marginBottom: verticalScale(20),
   },
@@ -137,6 +165,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: scale(1),
     borderColor: '#ccc',
+    // Subtle shadow for depth
+    shadowColor: '#ccc',
+    shadowOffset: { width: 0, height: scale(2) },
+    shadowOpacity: 0.3,
+    shadowRadius: scale(4),
+    elevation: 2,
   },
   rowText: {
     fontSize: scale(14),
@@ -152,14 +186,14 @@ const aboutStyles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: verticalScale(-10),
-    left: scale(5),
+    top: verticalScale(10),
+    left: scale(10),
     zIndex: 1,
     padding: scale(10),
   },
   scrollContent: {
     padding: scale(20),
-    paddingTop: verticalScale(50), // Ensure space for the back button
+    paddingTop: verticalScale(60), // Space for back button
   },
   header: {
     fontSize: scale(26),

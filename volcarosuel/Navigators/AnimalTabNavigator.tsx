@@ -50,7 +50,7 @@ const { width: screenWidth } = Dimensions.get("window");
 const ORIGINAL_WIDTH = screenWidth * 0.8; // Full width of the tab bar
 const COLLAPSED_WIDTH = ORIGINAL_WIDTH * 0.3; // Collapsed width
 const TAB_BAR_HEIGHT = 60;
-const AUTO_COLLAPSE_DELAY = 20000; // 20 seconds inactivity delay
+const AUTO_COLLAPSE_DELAY = 5000; // 20 seconds inactivity delay
 const FADE_DURATION = 650; // 650ms for fade
 
 const guidelineBaseWidth = 428;

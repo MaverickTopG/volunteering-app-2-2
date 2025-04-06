@@ -1,37 +1,38 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Animated, 
-  Dimensions, 
-  TouchableOpacity, 
-  Image, 
-  SafeAreaView, 
-  ScrollView, 
-  Linking 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  TouchableOpacity,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  Linking,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Use the iPhone 16 Pro Max as the design baseline.
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-
 const { width, height } = Dimensions.get('window');
 
 const scale = (size) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 const GoFundMeScreen = () => {
+  // Animations for logo & text opacity.
   const logoScale = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
 
+  // Typed text effect.
   const [typedText, setTypedText] = useState('');
   const indexRef = useRef(0);
-  const fullText = "Empowering volunteers!";
+  const fullText = 'Empowering volunteers!';
 
   useEffect(() => {
-    // Start animations on mount.
     logoScale.setValue(0);
     textOpacity.setValue(0);
 
@@ -48,6 +49,7 @@ const GoFundMeScreen = () => {
       useNativeDriver: true,
     }).start();
 
+    // Typed text effect.
     setTypedText('');
     indexRef.current = 0;
     const typeTimeout = setTimeout(() => {
@@ -62,26 +64,27 @@ const GoFundMeScreen = () => {
     }, 1000);
 
     return () => clearTimeout(typeTimeout);
-  }, [logoScale, textOpacity, fullText]);
+  }, [logoScale, textOpacity]);
 
-  const goFundMeUrl = 'https://www.gofundme.com/f/empower-volunteers-and-transform-communities-with-nexolink/cl/o?lang=en_US&utm_campaign=man_sharesheet_dash&utm_medium=customer&utm_source=copy_link&attribution_id=sl%3A48e2683e-cde6-4354-a729-ac076c7c4394';
+  const goFundMeUrl =
+    'https://www.gofundme.com/f/empower-volunteers-and-transform-communities-with-nexolink';
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {/* Logo */}
         <Animated.View style={[styles.logoContainer, { transform: [{ scale: logoScale }] }]}>
-          <Image 
+          <Image
             source={require('../../assets/spaceship.png')}
-            style={styles.logo} 
-            resizeMode="contain" 
+            style={styles.logo}
+            resizeMode="contain"
           />
         </Animated.View>
 
-        {/* App Name */}
+        {/* Title */}
         <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
           <Text style={styles.title}>NexoLink Fundraiser</Text>
         </Animated.View>
@@ -91,32 +94,47 @@ const GoFundMeScreen = () => {
           <Text style={styles.typingText}>{typedText}</Text>
         </Animated.View>
 
-        {/* Donate Now Button */}
-        <TouchableOpacity 
-          style={styles.donateButton} 
+        {/* Gradient "Donate Now" Button */}
+        <TouchableOpacity
           onPress={() => Linking.openURL(goFundMeUrl)}
+          activeOpacity={0.85}
+          style={{ marginTop: verticalScale(20) }}
         >
-          <Text style={styles.donateButtonText}>Donate Now</Text>
+          <LinearGradient
+            colors={['#fff0d4', '#ffe8c9']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientButton}
+          >
+            <Text style={styles.gradientButtonText}>Donate Now</Text>
+          </LinearGradient>
         </TouchableOpacity>
 
-        {/* Info Section (Previously in Modal) */}
-        <View style={styles.infoSection}>
+        {/* Info Section with Warm Gradient */}
+        <LinearGradient
+          colors={['#fff0d4', '#ffe8c9']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.infoSection}
+        >
           <Text style={styles.infoTitle}>Why We Need Your Help</Text>
           <Text style={styles.infoText}>
-            We're raising funds to keep NexoLink as a nonprofit and to purchase subscriptions 
-            that will enhance the app’s features. Your support helps us improve volunteering 
+            We're raising funds to keep NexoLink as a nonprofit and to purchase subscriptions
+            that will enhance the app’s features. Your support helps us improve volunteering
             accessibility and impact more lives.
           </Text>
-        </View>
+        </LinearGradient>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+export default GoFundMeScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7', 
+    backgroundColor: '#fff6e7',
   },
   contentContainer: {
     flexGrow: 1,
@@ -128,7 +146,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(20),
   },
   logo: {
-    width: scale(128),  // originally width * 0.3 on iPhone 16 Pro Max (~128px if guideline is 428)
+    width: scale(128),
     height: scale(128),
   },
   textContainer: {
@@ -136,43 +154,42 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(15),
   },
   title: {
-    fontSize: scale(30),  // adjust from width * 0.07
+    fontSize: scale(28),
     fontWeight: 'bold',
     color: '#333',
   },
   typingText: {
-    fontSize: scale(22),  // adjust from width * 0.05
+    fontSize: scale(20),
     color: '#333',
     marginTop: verticalScale(5),
   },
-  donateButton: {
-    marginTop: verticalScale(20),
-    backgroundColor: 'black',
+  gradientButton: {
+    borderRadius: scale(10),
     paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(25),
-    borderRadius: scale(8),
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: scale(5),
+    paddingHorizontal: scale(40),
+    shadowColor: '#ffe8c9',
+    shadowOpacity: 0.6,
+    shadowRadius: scale(6),
     shadowOffset: { width: 0, height: scale(3) },
-    elevation: 3,
+    elevation: 6,
   },
-  donateButtonText: {
-    color: '#fff',
+  gradientButtonText: {
+    color: '#333',
     fontSize: scale(18),
-    fontWeight: 'bold',
+    fontWeight: '700',
+    textAlign: 'center',
   },
   infoSection: {
     marginTop: verticalScale(30),
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(15),
-    backgroundColor: '#fff6e7',
+    width: '100%',
     borderRadius: scale(12),
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: scale(4),
-    shadowOffset: { width: 0, height: verticalScale(2) },
-    elevation: 2,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(15),
+    shadowColor: '#ffe8c9',
+    shadowOpacity: 0.3,
+    shadowRadius: scale(6),
+    shadowOffset: { width: 0, height: verticalScale(3) },
+    elevation: 4,
     alignItems: 'center',
   },
   infoTitle: {
@@ -180,12 +197,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: verticalScale(10),
+    textAlign: 'center',
   },
   infoText: {
     fontSize: scale(16),
     color: '#333',
     textAlign: 'center',
+    lineHeight: verticalScale(22),
   },
 });
-
-export default GoFundMeScreen;

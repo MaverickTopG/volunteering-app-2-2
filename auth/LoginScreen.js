@@ -14,6 +14,7 @@ import {
 import { AuthContext } from './AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
@@ -32,8 +33,6 @@ const LoginScreen = () => {
   const handleLogin = async () => {
     try {
       await signIn(email, password);
-      // Removed any navigation dispatch that forces a new route on login success.
-      // If you want to navigate somewhere manually, you can add it back or use navigation.navigate().
       Alert.alert('Login Successful', 'You are now logged in.');
     } catch (error) {
       console.error(error);
@@ -48,12 +47,18 @@ const LoginScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : null}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.contentContainer}
       >
-        <View style={styles.headerContainer}>
+        {/* Header with Gradient */}
+        <LinearGradient
+          colors={['rgba(255,240,212,0.8)', 'rgba(255,232,201,0.8)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerContainer}
+        >
           <Text style={styles.headerText}>Volunteer Logs</Text>
-        </View>
+        </LinearGradient>
 
         <View style={styles.inputContainer}>
           <TextInput
@@ -86,8 +91,16 @@ const LoginScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Login</Text>
+          {/* Gradient Login Button */}
+          <TouchableOpacity onPress={handleLogin} activeOpacity={0.85}>
+            <LinearGradient
+              colors={['#fff0d4', '#ffe8c9']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>Login</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
@@ -113,7 +126,15 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginBottom: verticalScale(30),
+    paddingVertical: verticalScale(15),
+    paddingHorizontal: scale(20),
+    borderRadius: scale(25),
     alignItems: 'center',
+    shadowColor: '#ffe8c9',
+    shadowOffset: { width: 0, height: scale(4) },
+    shadowOpacity: 0.6,
+    shadowRadius: scale(6),
+    elevation: 6,
   },
   headerText: {
     fontSize: scale(28),
@@ -125,22 +146,22 @@ const styles = StyleSheet.create({
   },
   input: {
     height: verticalScale(50),
-    borderColor: '#333',
+    backgroundColor: '#fff6e7',
+    borderColor: '#e1c699',
     borderWidth: scale(1),
     borderRadius: scale(25),
     paddingHorizontal: scale(20),
     fontSize: scale(16),
-    backgroundColor: '#fff6e7',
-    color: 'black',
+    color: '#333',
     marginBottom: verticalScale(15),
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: '#333',
+    backgroundColor: '#fff6e7',
+    borderColor: '#e1c699',
     borderWidth: scale(1),
     borderRadius: scale(25),
-    backgroundColor: '#fff6e7',
     marginBottom: verticalScale(15),
     height: verticalScale(50),
     paddingHorizontal: scale(20),
@@ -148,21 +169,27 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     fontSize: scale(16),
-    color: 'black',
+    color: '#333',
   },
   eyeIcon: {
     padding: scale(5),
   },
   button: {
-    backgroundColor: '#000',
-    padding: scale(15),
+    backgroundColor: 'transparent',
     borderRadius: scale(25),
+    paddingVertical: scale(15),
+    paddingHorizontal: scale(30),
     alignItems: 'center',
     marginTop: verticalScale(10),
     marginBottom: verticalScale(20),
+    shadowColor: '#ffe8c9',
+    shadowOpacity: 0.6,
+    shadowRadius: scale(6),
+    shadowOffset: { width: 0, height: scale(4) },
+    elevation: 6,
   },
   buttonText: {
-    color: '#fff6e7',
+    color: '#333',
     fontSize: scale(16),
     fontWeight: 'bold',
   },

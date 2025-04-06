@@ -2,21 +2,21 @@ import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
+  TextInput,
+  StyleSheet,
   SafeAreaView,
   ScrollView,
   Alert,
   KeyboardAvoidingView,
-  TextInput,
   Platform,
   Dimensions,
 } from 'react-native';
 import { AuthContext } from '../../auth/AuthContext';  // Adjust the path as needed
 import { db } from '../../auth/firebase';             // your firebase config/export
 import { collection, addDoc } from 'firebase/firestore';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// Define baseline dimensions (iPhone 16 Pro Max as an example)
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
@@ -41,7 +41,6 @@ export default function SuggestOrganizationScreen({ navigation }) {
   // Success message state
   const [submissionMessage, setSubmissionMessage] = useState('');
 
-  // If user is not logged in, display a prompt to log in (without the register button)
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -54,31 +53,28 @@ export default function SuggestOrganizationScreen({ navigation }) {
     );
   }
 
-  // Submit handler
   const handleSubmit = async () => {
     const { name, location, contact, description, requirements, website, county, reference } = form;
 
-    // Only Name, Location, and Contact are mandatory now
+    // Only Name, Location, and Contact are mandatory
     if (!name || !location || !contact) {
       Alert.alert('Validation Error', 'Please fill in Name, Location, and Contact Information.');
       return;
     }
 
-    // Basic website URL validation if a website is provided
+    // Basic website URL validation if provided
     if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
       Alert.alert('Validation Error', 'Please provide a valid website URL (starting with http:// or https://).');
       return;
     }
 
     try {
-      // Add to Firestore in a "suggested_orgs" collection
       await addDoc(collection(db, 'suggested_orgs'), {
         ...form,
         createdBy: user.uid,
         createdAt: new Date().toISOString(),
       });
 
-      // Clear the form
       setForm({
         name: '',
         description: '',
@@ -90,12 +86,10 @@ export default function SuggestOrganizationScreen({ navigation }) {
         reference: '',
       });
 
-      // Show success message
       setSubmissionMessage(
         'Thank you! Your suggestion has been submitted. Once added to the main database, it will appear in the app.'
       );
 
-      // Remove the message after 5 seconds
       setTimeout(() => {
         setSubmissionMessage('');
       }, 5000);
@@ -190,8 +184,16 @@ export default function SuggestOrganizationScreen({ navigation }) {
               keyboardAppearance="dark"
             />
 
+            {/* Gradient Submit Button */}
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-              <Text style={styles.submitButtonText}>Submit Organization</Text>
+              <LinearGradient
+                colors={['#fff0d4', '#ffe8c9']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.gradientButton}
+              >
+                <Text style={styles.submitButtonText}>Submit Organization</Text>
+              </LinearGradient>
             </TouchableOpacity>
 
             {submissionMessage ? (
@@ -206,6 +208,7 @@ export default function SuggestOrganizationScreen({ navigation }) {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -214,19 +217,6 @@ const styles = StyleSheet.create({
   scrollContainer: {
     padding: scale(20),
     alignItems: 'center',
-  },
-  notLoggedInContainer: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: scale(20),
-  },
-  notLoggedInText: {
-    fontSize: scale(18),
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: verticalScale(20),
   },
   title: {
     fontSize: scale(26),
@@ -249,9 +239,9 @@ const styles = StyleSheet.create({
     borderRadius: scale(12),
     padding: scale(20),
     // Shadow for iOS
-    shadowColor: '#000',
+    shadowColor: '#ffe8c9',
     shadowOffset: { width: 0, height: verticalScale(2) },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: scale(4),
     // Shadow for Android
     elevation: scale(4),
@@ -272,14 +262,22 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: '#333',
-    borderRadius: scale(8),
-    paddingVertical: verticalScale(14),
-    alignItems: 'center',
     marginTop: verticalScale(8),
   },
+  gradientButton: {
+    borderRadius: scale(8),
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: scale(20),
+    alignItems: 'center',
+    // Apply a warm gradient and shadow
+    shadowColor: '#ffe8c9',
+    shadowOpacity: 0.6,
+    shadowRadius: scale(6),
+    shadowOffset: { width: 0, height: verticalScale(3) },
+    elevation: 6,
+  },
   submitButtonText: {
-    color: '#fff6e7',
+    color: '#333',
     fontSize: scale(16),
     fontWeight: 'bold',
   },

@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { RFPercentage } from 'react-native-responsive-fontsize';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // ---- Firebase modules ----
 import { initializeApp } from 'firebase/app';
@@ -163,7 +164,6 @@ const VolunteerCarousel = ({ route }) => {
     if (!animValue) return;
 
     if (isExpanded) {
-      // Animate fade out from current opacity to 0
       Animated.timing(animValue, {
         toValue: 0,
         duration: 300,
@@ -172,7 +172,6 @@ const VolunteerCarousel = ({ route }) => {
         setExpandedSections(prev => ({ ...prev, [county]: false }));
       });
     } else {
-      // Set expanded state immediately and animate fade in from 0 to 1
       setExpandedSections(prev => ({ ...prev, [county]: true }));
       animValue.setValue(0);
       Animated.timing(animValue, {
@@ -187,7 +186,7 @@ const VolunteerCarousel = ({ route }) => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#333" />
-        <Text>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -231,7 +230,7 @@ const VolunteerCarousel = ({ route }) => {
           <View style={styles.bubbleHeader}>
             <Text style={styles.searchBubbleTitle}>Quick Search</Text>
             <TouchableOpacity onPress={toggleSearchBubble} style={styles.closeButton}>
-              <MaterialIcons name="close" size={24} color="black" />
+              <MaterialIcons name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
           <View style={styles.countyButtonsContainer}>
@@ -249,7 +248,7 @@ const VolunteerCarousel = ({ route }) => {
       )}
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: '#fff6e7' }]}>
+      <View style={styles.header}>
         <Text style={styles.headerText}>{referenceParam}</Text>
       </View>
 
@@ -260,16 +259,21 @@ const VolunteerCarousel = ({ route }) => {
           const animValue = animValuesRef.current[section.title];
           return (
             <View key={sIndex}>
-              <TouchableOpacity
-                style={styles.dropdownHeader}
-                onPress={() => toggleSection(section.title)}
-              >
-                <Text style={styles.countyHeaderText}>{section.title}</Text>
-                <MaterialIcons 
-                  name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-                  size={24} 
-                  color="#333" 
-                />
+              {/* Dropdown Header with Gradient */}
+              <TouchableOpacity onPress={() => toggleSection(section.title)} style={styles.gradientWrapper}>
+                <LinearGradient
+                  colors={['#fff0d4', '#ffe8c9']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.dropdownHeader}
+                >
+                  <Text style={styles.countyHeaderText}>{section.title}</Text>
+                  <MaterialIcons 
+                    name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+                    size={24} 
+                    color="#333" 
+                  />
+                </LinearGradient>
               </TouchableOpacity>
               {isExpanded && (
                 <Animated.View style={{ opacity: animValue }}>
@@ -277,10 +281,17 @@ const VolunteerCarousel = ({ route }) => {
                     section.data.map((orgItem, iIndex) => (
                       <TouchableOpacity
                         key={iIndex}
-                        style={styles.card}
                         onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
+                        style={styles.cardWrapper}
                       >
-                        <Text style={styles.cardTitle}>{orgItem.title}</Text>
+                        <LinearGradient
+                          colors={['#fff0d4', '#ffe8c9']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={styles.card}
+                        >
+                          <Text style={styles.cardTitle}>{orgItem.title}</Text>
+                        </LinearGradient>
                       </TouchableOpacity>
                     ))
                   ) : (
@@ -311,8 +322,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 18,
+    color: '#333',
+  },
   header: {
     height: 100,
+    backgroundColor: '#fff6e7',
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomLeftRadius: 30,
@@ -322,7 +339,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1,
-    shadowColor: '#333333',
+    shadowColor: '#333',
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
@@ -330,7 +347,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: RFPercentage(3),
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#333',
   },
   backButton: {
     marginTop: -85,
@@ -349,31 +366,40 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+  gradientWrapper: {
+    marginVertical: 10,
+  },
   dropdownHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff6e7',
-    borderRadius: 15,
-    // Removed outline (borderWidth and borderColor)
-    marginVertical: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  cardWrapper: {
+    alignSelf: 'center',
+    marginVertical: 8,
   },
   card: {
     width: width * 0.9,
-    backgroundColor: '#fff6e7',
     borderRadius: 15,
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: '#333333',
-    marginVertical: 10,
     padding: 15,
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
   },
   cardTitle: {
     fontSize: RFPercentage(2),
-    color: '#333333',
+    color: '#333',
     textAlign: 'center',
   },
   comingSoonContainer: {
@@ -383,7 +409,7 @@ const styles = StyleSheet.create({
   },
   comingSoonText: {
     fontSize: RFPercentage(2.2),
-    color: '#000',
+    color: '#333',
   },
   searchIconContainer: {
     position: 'absolute',
@@ -405,7 +431,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     alignItems: 'center',
     zIndex: 200,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.5,
     shadowRadius: 20,

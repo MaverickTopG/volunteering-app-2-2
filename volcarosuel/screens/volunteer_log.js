@@ -672,8 +672,8 @@ const styles = StyleSheet.create({
   },
   logHoursButton: {
     position: 'absolute',
-    bottom: verticalScale(85),
-    right: scale(20),
+    bottom: verticalScale(720),
+    right: scale(10),
     backgroundColor: BLACK,
     borderRadius: scale(20),
     paddingVertical: verticalScale(10),

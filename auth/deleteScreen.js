@@ -14,8 +14,8 @@ import {
 import { AuthContext } from './AuthContext'; // Adjust path to your AuthContext
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// Define baseline dimensions (iPhone 16 Pro Max as an example)
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
@@ -33,7 +33,7 @@ const DeleteScreen = () => {
   const handleDeleteAccount = async () => {
     try {
       const success = await deleteAccount(email, password);
-      // You can add further logic (like navigation) based on success/failure if desired
+      // Add any additional logic if needed based on success/failure.
     } catch (error) {
       console.error(error);
       Alert.alert('Delete Failed', 'Could not delete the account. Check credentials and try again.');
@@ -41,7 +41,7 @@ const DeleteScreen = () => {
   };
 
   const handleNavigateToLogin = () => {
-    navigation.navigate('Login'); // Navigate to the Login screen
+    navigation.navigate('Login'); // Navigate back to Login
   };
 
   const togglePasswordVisibility = () => {
@@ -51,7 +51,7 @@ const DeleteScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : null}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.contentContainer}
       >
         <View style={styles.headerContainer}>
@@ -71,7 +71,7 @@ const DeleteScreen = () => {
             keyboardAppearance="dark"
           />
 
-          {/* Password with toggle icon */}
+          {/* Password Field with Toggle Icon */}
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -91,14 +91,21 @@ const DeleteScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Delete Button */}
-          <TouchableOpacity style={styles.button} onPress={handleDeleteAccount}>
-            <Text style={styles.buttonText}>Delete Account</Text>
+          {/* Delete Button with Red Gradient */}
+          <TouchableOpacity onPress={handleDeleteAccount} activeOpacity={0.85}>
+            <LinearGradient
+              colors={['#ff3b3b', '#ff6b6b']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>Delete Account</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
-          {/* Cancel / Go back to Login */}
+          {/* Cancel / Go Back to Login */}
           <TouchableOpacity onPress={handleNavigateToLogin}>
-            <Text style={styles.loginText}>Cancel and go back to Login</Text>
+            <Text style={styles.linkText}>Cancel and go back to Login</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -111,7 +118,7 @@ export default DeleteScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7', // Matching the light cream color
+    backgroundColor: '#fff6e7', // Light cream background
   },
   contentContainer: {
     flex: 1,
@@ -130,10 +137,9 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginTop: verticalScale(20),
   },
-  /* Single-field styling for email */
   input: {
     height: verticalScale(50),
-    borderColor: '#333',
+    borderColor: '#e1c699',
     borderWidth: scale(1),
     borderRadius: scale(25),
     paddingHorizontal: scale(20),
@@ -142,11 +148,10 @@ const styles = StyleSheet.create({
     color: 'black',
     marginBottom: verticalScale(15),
   },
-  /* Container for password + icon */
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: '#333',
+    borderColor: '#e1c699',
     borderWidth: scale(1),
     borderRadius: scale(25),
     backgroundColor: '#fff6e7',
@@ -163,19 +168,24 @@ const styles = StyleSheet.create({
     padding: scale(5),
   },
   button: {
-    backgroundColor: 'red', // Red button to signify danger
-    padding: scale(15),
-    borderRadius: scale(25), // Rounded button
+    borderRadius: scale(25),
+    paddingVertical: scale(15),
+    paddingHorizontal: scale(30),
     alignItems: 'center',
     marginTop: verticalScale(10),
     marginBottom: verticalScale(20),
+    shadowColor: '#ff6b6b',
+    shadowOpacity: 0.6,
+    shadowRadius: scale(6),
+    shadowOffset: { width: 0, height: scale(4) },
+    elevation: 6,
   },
   buttonText: {
     color: '#fff6e7', // Cream-colored text for consistency
     fontSize: scale(16),
     fontWeight: 'bold',
   },
-  loginText: {
+  linkText: {
     color: '#333',
     textAlign: 'center',
     fontSize: scale(16),

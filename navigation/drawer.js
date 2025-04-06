@@ -10,7 +10,6 @@ import AccountScreen from '../volcarosuel/screens/AccountScreen';
 const Drawer = createDrawerNavigator();
 
 const guidelineBaseWidth = 428;
-const guidelineBaseHeight = 926;
 const { width } = Dimensions.get('window');
 const scale = (size) => (width / guidelineBaseWidth) * size;
 
@@ -22,7 +21,7 @@ const DrawerNavigator = () => {
         drawerContent={(props) => <CustomSideBarMenu {...props} />}
         screenOptions={{
           drawerType: 'front',
-          overlayColor: 'rgba(0,0,0,0.5)',
+          overlayColor: 'transparent',
           drawerStyle: {
             backgroundColor: 'transparent',
             width: scale(280),
@@ -43,7 +42,8 @@ const DrawerNavigator = () => {
           headerStyle: {
             backgroundColor: 'transparent',
           },
-          swipeEnabled: true,
+          swipeEnabled: false, // 👈 disables swipe to open
+          headerLeft: () => null, // 👈 hides hamburger menu
         }}
       >
         <Drawer.Screen

@@ -11,11 +11,11 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
-import { AuthContext } from './AuthContext'; // Adjust the path as needed
+import { AuthContext } from './AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// Define baseline dimensions (iPhone 16 Pro Max as an example)
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
@@ -25,17 +25,13 @@ const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 const RegisterScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // If firstName and lastName are required, add state for them.
-  // const [firstName, setFirstName] = useState('');
-  // const [lastName, setLastName] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-  const { signUp } = useContext(AuthContext); // Use signUp from AuthContext
+  const { signUp } = useContext(AuthContext);
   const navigation = useNavigation();
 
   const handleSignUp = async () => {
-    // Adjust signUp to handle first/last name if needed.
-    const success = await signUp(email, password /*, firstName, lastName*/);
+    const success = await signUp(email, password);
     if (success) {
       navigation.navigate('Login');
     }
@@ -56,15 +52,21 @@ const RegisterScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : null}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.contentContainer}
       >
-        <View style={styles.headerContainer}>
+        {/* Header with Warm Translucent Gradient */}
+        <LinearGradient
+          colors={['rgba(255,240,212,0.8)', 'rgba(255,232,201,0.8)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerContainer}
+        >
           <Text style={styles.headerText}>Create Account</Text>
-        </View>
+        </LinearGradient>
 
         <View style={styles.inputContainer}>
-          {/* Email */}
+          {/* Email Input */}
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.input}
@@ -78,7 +80,7 @@ const RegisterScreen = () => {
             />
           </View>
 
-          {/* Password with eye icon */}
+          {/* Password Input with Eye Icon */}
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
@@ -98,12 +100,19 @@ const RegisterScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Sign Up Button */}
-          <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-            <Text style={styles.buttonText}>Sign Up</Text>
+          {/* Sign Up Button with Warm Gradient */}
+          <TouchableOpacity onPress={handleSignUp} activeOpacity={0.85}>
+            <LinearGradient
+              colors={['#fff0d4', '#ffe8c9']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>Sign Up</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
-          {/* Links */}
+          {/* Navigation Links */}
           <TouchableOpacity onPress={handleNavigateToLogin}>
             <Text style={styles.linkText}>Already have an account? Log in</Text>
           </TouchableOpacity>
@@ -122,7 +131,7 @@ export default RegisterScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7', // Light cream background
+    backgroundColor: '#fff6e7',
   },
   contentContainer: {
     flex: 1,
@@ -131,7 +140,15 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginBottom: verticalScale(30),
+    paddingVertical: verticalScale(15),
+    paddingHorizontal: scale(20),
+    borderRadius: scale(25),
     alignItems: 'center',
+    shadowColor: '#ffe8c9',
+    shadowOffset: { width: 0, height: scale(4) },
+    shadowOpacity: 0.6,
+    shadowRadius: scale(6),
+    elevation: 6,
   },
   headerText: {
     fontSize: scale(28),
@@ -141,9 +158,8 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginTop: verticalScale(20),
   },
-  /* Wrapper for each text input to maintain consistent styling & spacing */
   inputWrapper: {
-    borderColor: '#333',
+    borderColor: '#e1c699',
     borderWidth: scale(1),
     borderRadius: scale(25),
     backgroundColor: '#fff6e7',
@@ -153,13 +169,12 @@ const styles = StyleSheet.create({
     height: verticalScale(50),
     paddingHorizontal: scale(20),
     fontSize: scale(16),
-    color: 'black',
+    color: '#333',
   },
-  /* Password container with icon on the right */
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: '#333',
+    borderColor: '#e1c699',
     borderWidth: scale(1),
     borderRadius: scale(25),
     backgroundColor: '#fff6e7',
@@ -170,21 +185,26 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     fontSize: scale(16),
-    color: 'black',
+    color: '#333',
   },
   eyeIcon: {
     padding: scale(5),
   },
   button: {
-    backgroundColor: '#000', // Black button
-    padding: scale(15),
     borderRadius: scale(25),
+    paddingVertical: scale(15),
+    paddingHorizontal: scale(30),
     alignItems: 'center',
     marginTop: verticalScale(10),
     marginBottom: verticalScale(20),
+    shadowColor: '#ffe8c9',
+    shadowOpacity: 0.6,
+    shadowRadius: scale(6),
+    shadowOffset: { width: 0, height: scale(4) },
+    elevation: 6,
   },
   buttonText: {
-    color: '#fff6e7', // Cream-colored text
+    color: '#333',
     fontSize: scale(16),
     fontWeight: 'bold',
   },
