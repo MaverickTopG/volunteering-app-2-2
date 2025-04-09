@@ -33,6 +33,9 @@ import DisplayScreen from "../displayer/ShowScreen";
 import MapScreen from "../screens/MapScreen";
 import SplashScreen from "../screens/Splashscreen";
 import DeleteScreen from "../../auth/deleteScreen";
+import LiveOps from "../screens/LiveOp";
+import ApiMode from "../screens/apiScreen";
+import DbMode from "../screens/firebaseScreen";
 
 // Imported extension screens
 import SuggestOrganizationScreen from "../screens/OrganizationScreen";
@@ -80,6 +83,10 @@ const TabStack = ({ route }) => {
       <Stack.Screen name="SearchScreen" component={SearchScreen} />
       <Stack.Screen name="Carousel" component={AnimalCarousel} initialParams={{ reference }} />
       <Stack.Screen name="DisplayScreen" component={DisplayScreen} />
+      <Stack.Screen name="LiveOps" component={LiveOps} />
+      <Stack.Screen name="api" component={ApiMode} />
+      <Stack.Screen name="db" component={DbMode} />
+
     </Stack.Navigator>
   );
 };

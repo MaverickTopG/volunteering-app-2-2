@@ -12,10 +12,13 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { AuthContext } from '../../auth/AuthContext';  // Adjust the path as needed
+import { AuthContext } from '../../auth/AuthContext'; // Adjust the path as needed
 import { db } from '../../auth/firebase';             // your firebase config/export
 import { collection, addDoc } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
+
+BACKGROUND = "#fff6e7";
 
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
@@ -25,6 +28,7 @@ const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 
 export default function SuggestOrganizationScreen({ navigation }) {
   const { user } = useContext(AuthContext);
+  const nav = useNavigation();
 
   // Form state
   const [form, setForm] = useState({
@@ -212,11 +216,21 @@ export default function SuggestOrganizationScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7',
+    backgroundColor: BACKGROUND,
   },
   scrollContainer: {
     padding: scale(20),
     alignItems: 'center',
+  },
+  notLoggedInContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notLoggedInText: {
+    fontSize: scale(18),
+    color: '#333',
+    textAlign: 'center',
   },
   title: {
     fontSize: scale(26),
@@ -235,19 +249,17 @@ const styles = StyleSheet.create({
   },
   formCard: {
     width: '100%',
-    backgroundColor: '#fff6e7',
+    backgroundColor: BACKGROUND,
     borderRadius: scale(12),
     padding: scale(20),
-    // Shadow for iOS
     shadowColor: '#ffe8c9',
     shadowOffset: { width: 0, height: verticalScale(2) },
     shadowOpacity: 0.3,
     shadowRadius: scale(4),
-    // Shadow for Android
     elevation: scale(4),
   },
   input: {
-    backgroundColor: '#fff6e7',
+    backgroundColor: BACKGROUND,
     borderWidth: scale(1),
     borderColor: '#ccc',
     borderRadius: scale(8),
@@ -269,7 +281,6 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(14),
     paddingHorizontal: scale(20),
     alignItems: 'center',
-    // Apply a warm gradient and shadow
     shadowColor: '#ffe8c9',
     shadowOpacity: 0.6,
     shadowRadius: scale(6),
@@ -284,7 +295,7 @@ const styles = StyleSheet.create({
   messageBox: {
     marginTop: verticalScale(16),
     padding: scale(12),
-    backgroundColor: '#fff6e7',
+    backgroundColor: BACKGROUND,
     borderRadius: scale(8),
     borderWidth: scale(1),
     borderColor: '#333',

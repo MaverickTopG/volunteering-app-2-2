@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     height: verticalScale(50),
     backgroundColor: '#fff6e7',
     color: '#333',
-    borderColor: '#333',
+    borderColor: '#decaae',
     borderWidth: 1,
     borderRadius: scale(25),
     paddingHorizontal: scale(20),

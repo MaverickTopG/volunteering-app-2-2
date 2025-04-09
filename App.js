@@ -54,6 +54,7 @@ const App = () => {
       <NavigationContainer >
       <DrawerNavigator/>
       </NavigationContainer>
+     
       {showAnimatedSplash && (
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
           <Image

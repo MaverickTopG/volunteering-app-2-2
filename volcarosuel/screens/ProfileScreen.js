@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Firebase (Web SDK) + Firestore
 import { db } from '../../auth/firebase';
@@ -536,7 +537,7 @@ const ChatGPT = () => {
     });
     const containerBackgroundColor = morphAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: ['black', '#fff6e7'],
+      outputRange: ['#ffe8c9', '#fff6e7'],
     });
     const askTextOpacity = morphAnim.interpolate({
       inputRange: [0, 0.5],
@@ -561,13 +562,17 @@ const ChatGPT = () => {
         ]}
       >
         {!isSearchActive && (
-          <TouchableOpacity
-            style={[styles.askButton, { opacity: askTextOpacity }]}
-            onPress={handleAskPress}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.askButtonText}>Ask</Text>
-          </TouchableOpacity>
+    <TouchableOpacity onPress={handleAskPress} activeOpacity={0.8} style={{ opacity: askTextOpacity }}>
+    <LinearGradient
+      colors={['#ffe8c9', '#ffe8c9']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.askButton}
+    >
+      <Text style={styles.askButtonText}>Ask</Text>
+    </LinearGradient>
+  </TouchableOpacity>
+  
         )}
         {isSearchActive && (
           <Animated.View style={[styles.searchSection, { opacity: searchContentOpacity }]}>
@@ -737,10 +742,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: scale(6),
     paddingVertical: verticalScale(4),
+    backgroundColor:'#fff6e7'
   },
   askButtonText: {
     textAlign: 'center',
-    color: '#fff',
+    color: 'black',
     fontSize: scale(14),
   },
   dbModeButton: {
