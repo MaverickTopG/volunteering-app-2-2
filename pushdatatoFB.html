@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Firebase Data Upload - Multiple Orgs</title>
+  <title>Firebase Data Clean-up - Delete Orgs Missing Contact Info</title>
   <!-- Import Firebase SDK modules from CDN -->
   <script type="module">
     // Import Firebase functions from the CDN
@@ -10,8 +10,8 @@
     import {
       getFirestore,
       collection,
-      doc,
-      setDoc
+      deleteDoc,
+      getDocs
     } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
     // Your Firebase configuration
@@ -28,94 +28,40 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-   
-// Array of updated organizations
-const orgs = 
-[
-  {
-    "title": "Alliance for Technology Access",
-    "address": "San Rafael, CA",
-    "county": "Marin County",
-    "date": "Updated: June 28, 2001",
-    "reference": "Tech",
-    "description": "The ATA is a national network of centers, developers, educators, and families dedicated to promoting access to technology for people with disabilities."
-  },
-  {
-    "title": "Computer & Technology Resource Center",
-    "address": "NOVATO, CA",
-    "county": "Marin County",
-    "date": "Updated: March 9, 2014",
-    "reference": "Tech",
-    "description": "CTRC recycles household electronics and provides free refurbished computers to help narrow the digital divide in the San Francisco Bay Area."
-  },
-  {
-    "title": "CoDA - Center for Digital Archaeology",
-    "address": "San Rafael, CA",
-    "county": "Marin County",
-    "date": "Updated: June 20, 2016",
-    "reference": "Tech",
-    "description": "Operating at the intersection of anthropology, archaeology, and digital technology, CoDA helps preserve cultural heritage by providing digital tools and collaborative solutions."
-  },
-  {
-    "title": "GRACESIGNS",
-    "address": "TIBURON, CA",
-    "county": "Marin County",
-    "date": "Updated: February 12, 2016",
-    "reference": "Tech",
-    "description": "GraceSigns develops educational apps for learning sign language and reading, aiming to enhance communication and disability awareness through innovative technology."
-  },
-  {
-    "title": "BUCK INSTITUTE FOR RESEARCH ON AGING",
-    "address": "NOVATO, CA",
-    "county": "Marin County",
-    "date": "Updated: April 3, 2018",
-    "reference": "Tech",
-    "description": "Organizes a year-long, volunteer-driven STEM event—North Bay Science Discovery Day—that brings together science, technology, engineering, and math to offer free educational experiences to families."
-  },
-  {
-    "title": "Digital Story Center",
-    "address": "San Anselmo, CA",
-    "county": "Marin County",
-    "date": "Updated: August 10, 2001",
-    "reference": "Tech",
-    "description": "Offers workshops with professional guidance and digital equipment to help individuals create short films and narratives, bridging the digital divide and enhancing communication skills."
-  }
-]
-
-
-
-;
-
-
-
-    async function uploadOrgs() {
-      // Reference to the 'volunteer_orgs' collection
+    async function cleanOrgs() {
+      // Reference to the 'volunteer_organizations' collection
       const collectionRef = collection(db, "volunteer_organizations");
 
-      for (const org of orgs) {
-        // Construct a doc ID combining reference + title
-        // e.g. "Education_ACADEMY FOR INTERNATIONAL CULTURE AND PROFESSIONAL EDUCATION"
-        const docId = `${org.reference}_${org.title}`;
-        const docRef = doc(collectionRef, docId);
-
-        try {
-          await setDoc(docRef, org);
-          console.log(`Uploaded: ${docId}`);
-        } catch (error) {
-          console.error(`Error uploading ${docId}:`, error);
-        }
+      try {
+        const querySnapshot = await getDocs(collectionRef);
+        // Iterate through each document in the collection
+        querySnapshot.forEach(async (docSnapshot) => {
+          const data = docSnapshot.data();
+          // Check: if neither website nor contactDetails is provided, delete the document.
+          if (!data.website && !data.contactDetails) {
+            try {
+              await deleteDoc(docSnapshot.ref);
+              console.log(`Deleted document "${docSnapshot.id}" due to missing website and contact details.`);
+            } catch (deleteError) {
+              console.error(`Error deleting document "${docSnapshot.id}":`, deleteError);
+            }
+          } else {
+            console.log(`Keeping document "${docSnapshot.id}".`);
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching documents:", error);
       }
-      console.log("All organizations have been uploaded!");
     }
 
-    // Automatically upload on page load
+    // Run the clean-up process when the page loads
     window.addEventListener("load", () => {
-      uploadOrgs();
+      cleanOrgs();
     });
   </script>
 </head>
 <body>
-  <h1>Firebase Data Upload - Multiple Volunteer Orgs</h1>
-  <p>Check your browser console for upload logs.</p>
+  <h1>Firebase Data Clean-up</h1>
+  <p>Processing deletion of organizations missing website and contact details. Check your browser console for logs.</p>
 </body>
 </html>

@@ -21,8 +21,10 @@
     "@react-navigation/stack": "^6.3.23",
     "@rnmapbox/maps": "^10.1.33",
     "@supabase/supabase-js": "^2.45.4",
-    "axios": "^1.7.9",
+    "axios": "^1.8.4",
     "compare-versions": "^6.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "expo": "^52.0.21",
     "expo-av": "~15.0.1",
     "expo-blur": "~14.0.3",
@@ -35,8 +37,11 @@
     "expo-speech": "~13.0.0",
     "expo-splash-screen": "~0.29.18",
     "expo-status-bar": "~2.0.0",
+    "express": "^5.1.0",
     "faker": "^5.5.3",
     "firebase": "^10.14.0",
+    "jsonwebtoken": "^9.0.2",
+    "memory-cache": "^0.2.0",
     "metro": "^0.81.0",
     "metro-config": "^0.81.0",
     "metro-resolver": "^0.81.0",
@@ -67,7 +72,7 @@
     "react-native-screens": "~4.1.0",
     "react-native-svg": "15.8.0",
     "react-native-vector-icons": "^10.2.0",
-    "react-native-webview": "^13.12.5"
+    "react-native-webview": "^13.13.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

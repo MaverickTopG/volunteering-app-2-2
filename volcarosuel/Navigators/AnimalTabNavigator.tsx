@@ -6,7 +6,7 @@ import {
   TouchableWithoutFeedback,
   StyleSheet,
   Dimensions,
-  
+  Image
 } from "react-native";
 import * as Animatable from "react-native-animatable";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -41,6 +41,8 @@ import DbMode from "../screens/firebaseScreen";
 import SuggestOrganizationScreen from "../screens/OrganizationScreen";
 import AccountStackNavigator from "../screens/AccountScreen";
 
+// Path for spaceship image in collapsed state
+const spaceshipImage = require("../../assets/spaceship.png");
 
 // ---------- Constants & Dimensions ----------
 const Colors = {
@@ -86,7 +88,6 @@ const TabStack = ({ route }) => {
       <Stack.Screen name="LiveOps" component={LiveOps} />
       <Stack.Screen name="api" component={ApiMode} />
       <Stack.Screen name="db" component={DbMode} />
-
     </Stack.Navigator>
   );
 };
@@ -344,7 +345,7 @@ const CustomTabBar = (props) => {
       <TouchableOpacity onPress={handlePress} activeOpacity={1}>
         <Animated.View style={[styles.tabBarContainer, rContainerStyle, { justifyContent: "center", alignItems: "center" }]}>
           <Animated.View style={rTouchIDStyle}>
-            <Ionicons name="finger-print" size={28} color={Colors.white} />
+            <Image source={spaceshipImage} style={{ width: 28, height: 28, resizeMode: "contain",tintColor:'#fff6e7' }} />
           </Animated.View>
         </Animated.View>
       </TouchableOpacity>
@@ -366,24 +367,22 @@ const TabNav = createBottomTabNavigator();
 
 function PillTabNavigator() {
   return (
-    
-      <TabNav.Navigator
-        screenOptions={{ headerShown: false, tabBarStyle: { height: TAB_BAR_HEIGHT } }}
-        tabBar={(props) => <CustomTabBar {...props} />}
-      >
-        {TabArr.map((item) => (
-          <TabNav.Screen
-            key={item.route}
-            name={item.route}
-            component={item.component}
-            options={{ title: item.label }}
-          />
-        ))}
-        {/* Extension routes */}
-        <TabNav.Screen name="Suggestions" component={SuggestOrganizationScreen} options={{ headerShown: false }} />
-        <TabNav.Screen name="Account" component={AccountStackNavigator} options={{ headerShown: false }} />
-      </TabNav.Navigator>
-  
+    <TabNav.Navigator
+      screenOptions={{ headerShown: false, tabBarStyle: { height: TAB_BAR_HEIGHT } }}
+      tabBar={(props) => <CustomTabBar {...props} />}
+    >
+      {TabArr.map((item) => (
+        <TabNav.Screen
+          key={item.route}
+          name={item.route}
+          component={item.component}
+          options={{ title: item.label }}
+        />
+      ))}
+      {/* Extension routes */}
+      <TabNav.Screen name="Suggestions" component={SuggestOrganizationScreen} options={{ headerShown: false }} />
+      <TabNav.Screen name="Account" component={AccountStackNavigator} options={{ headerShown: false }} />
+    </TabNav.Navigator>
   );
 }
 

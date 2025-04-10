@@ -68,6 +68,7 @@ const DrawerNavigator = () => {
             drawerLabel: 'Account',
           }}
         />
+       
       </Drawer.Navigator>
     </View>
   );

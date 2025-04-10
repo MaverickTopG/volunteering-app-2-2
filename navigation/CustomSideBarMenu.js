@@ -162,6 +162,19 @@ const CustomSideBarMenu = (props) => {
               accessibilityRole="button"
             />
           </View>
+
+          {/* Volunteer Map Card */}
+          <View style={styles.cardContainer}>
+            <DrawerItem
+              label="Volunteer Map"
+              labelStyle={styles.drawerItemLabel}
+              icon={() => <Ionicons name="map-outline" size={24} color="#333" />}
+              onPress={() => props.navigation.navigate('VolunteerMap')}
+              style={styles.drawerItem}
+              accessibilityLabel="Navigate to Volunteer Map"
+              accessibilityRole="button"
+            />
+          </View>
        
 
           {/* Black card for fun fact */}

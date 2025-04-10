@@ -79,7 +79,7 @@ const VolunteerScreen = () => {
     return unsubscribe;
   }, [navigation]);
 
-  // Function to handle opening the website with improved error handling
+  // Handle opening the website
   const handleWebsitePress = () => {
     if (item.website) {
       Linking.canOpenURL(item.website)
@@ -108,7 +108,7 @@ const VolunteerScreen = () => {
       <SafeAreaView />
       <ScrollView 
         contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false} // Hide the scroll bar
+        showsVerticalScrollIndicator={false}
       >
         {/* Title Section */}
         <View style={styles.titleContainer}>
@@ -180,7 +180,7 @@ export default VolunteerScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff6e7', // Light cream background
+    backgroundColor: '#fff6e7',
   },
   contentContainer: {
     flexGrow: 1,
