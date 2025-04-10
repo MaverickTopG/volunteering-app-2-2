@@ -2,19 +2,14 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Firebase Data Clean-up - Delete Orgs Missing Contact Info</title>
+  <title>Firebase Multiple Data Insertion - Push Orgs Data</title>
   <!-- Import Firebase SDK modules from CDN -->
   <script type="module">
     // Import Firebase functions from the CDN
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      deleteDoc,
-      getDocs
-    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-    // Your Firebase configuration
+    // Your Firebase configuration (replace with your actual config)
     const firebaseConfig = {
       apiKey: "AIzaSyC1kY4dlbg9v38ZkuYVPJGnSulMEouvw58",
       authDomain: "nexolink-b8eb5.firebaseapp.com",
@@ -28,40 +23,300 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    async function cleanOrgs() {
-      // Reference to the 'volunteer_organizations' collection
+    // Function to push multiple organization documents into Firestore
+    async function pushOrgs() {
+      // Reference to the "volunteer_organizations" collection
       const collectionRef = collection(db, "volunteer_organizations");
 
+      // Array of organization objects to push – add as many as you need
+      const orgsData = [
+  {
+    "title": "East Bay SPCA",
+    "website": "https://eastbayspca.org",
+    "email": "volunteer@eastbayspca.org",
+    "description": "East Bay SPCA is a nonprofit dedicated to transforming the lives of cats and dogs by enriching the human-animal bond&#8203;:contentReference[oaicite:0]{index=0}. Volunteers assist in various roles such as shelter care, animal fostering, and community outreach events to help care for pets and support their adoption into loving homes&#8203;:contentReference[oaicite:1]{index=1}.",
+    "county": "Alameda",
+    "address": "8323 Baldwin Street, Oakland, CA 94621",
+    "reference": "Animal"
+  },
+  {
+    "title": "Alameda Free Library",
+    "website": "https://www.alamedafree.org",
+    "email": "jhill@alamedaca.gov",
+    "description": "The Alameda Free Library serves those who live, work, play, and learn in Alameda by providing materials, services, and programs to advance their recreational, educational, and professional goals&#8203;:contentReference[oaicite:2]{index=2}. Volunteers assist with shelving books, supporting library events, literacy tutoring, and other tasks that enrich the community’s access to information&#8203;:contentReference[oaicite:3]{index=3}.",
+    "county": "Alameda",
+    "address": "1550 Oak St., Alameda, CA 94501",
+    "reference": "Library"
+  },
+  {
+    "title": "Alameda County Community Food Bank",
+    "website": "https://www.accfb.org",
+    "email": "volunteer@accfb.org",
+    "description": "Alameda County Community Food Bank is dedicated to fighting hunger by distributing millions of healthy meals every year, guided by the belief that food is a basic human right&#8203;:contentReference[oaicite:4]{index=4}. Volunteers sort and pack food, load delivery vehicles and assist with distributions to help ensure families in need receive nutritious groceries&#8203;:contentReference[oaicite:5]{index=5}.",
+    "county": "Alameda",
+    "address": "7900 Edgewater Drive, Oakland, CA 94621",
+    "reference": "Family"
+  },
+  {
+    "title": "Save The Bay",
+    "website": "https://www.savesfbay.org",
+    "email": "info@savesfbay.org",
+    "description": "Save The Bay is the largest regional organization working to protect and restore San Francisco Bay for people and wildlife&#8203;:contentReference[oaicite:6]{index=6}. Volunteers join restoration programs to transplant native seedlings, remove invasive species, and help preserve critical wetlands along the Bay shoreline&#8203;:contentReference[oaicite:7]{index=7}.",
+    "county": "Alameda",
+    "address": "560 14th Street #400, Oakland, CA 94612",
+    "reference": "Environment"
+  },
+  {
+    "title": "Mercy Brown Bag Program",
+    "website": "https://mercybrownbag.org",
+    "email": "jroberts@eldercarealliance.org",
+    "description": "The Mercy Brown Bag Program helps provide nutritious groceries to Alameda County seniors in need, distributing around 117,000 bags (about 2 million pounds of food) yearly&#8203;:contentReference[oaicite:8]{index=8}. The program engages hundreds of senior volunteers who sort, pack, and deliver food bags, ensuring that every local senior has enough to eat&#8203;:contentReference[oaicite:9]{index=9}.",
+    "county": "Alameda",
+    "address": "3431 Foothill Blvd., Oakland, CA 94601",
+    "reference": "Seniors"
+  },
+  {
+    "title": "Alpine Watershed Group",
+    "website": "https://www.alpinewatershedgroup.org",
+    "email": "alpinewatershed@gmail.com",
+    "description": "Alpine Watershed Group works to protect, conserve, and restore Alpine County’s watersheds through community-driven, science-based solutions&#8203;:contentReference[oaicite:10]{index=10}. Volunteers assist with water quality monitoring, habitat restoration projects like invasive weed removal, and educational outreach to preserve local rivers and streams&#8203;:contentReference[oaicite:11]{index=11}.",
+    "county": "Alpine",
+    "address": "PO Box 296, Markleeville, CA 96120",
+    "reference": "Environment"
+  },
+  {
+    "title": "Alpine County Library",
+    "website": "https://www.alpinecountyca.gov/146/Library-Archives",
+    "email": "",
+    "description": "The Alpine County Library (with branches in Markleeville and Bear Valley) provides residents with books, technology access, and community programs. Volunteers help by shelving books, running the bookmobile, assisting at library events, and providing literacy tutoring – essential support that keeps this small rural library running for the community&#8203;:contentReference[oaicite:12]{index=12}.",
+    "county": "Alpine",
+    "address": "270 Laramie St., Markleeville, CA 96120",
+    "reference": "Library"
+  },
+  {
+    "title": "Alpine County Search and Rescue",
+    "website": "https://alpinesar.org",
+    "email": "",
+    "description": "Alpine County Search and Rescue (SAR) is a volunteer team that assists law enforcement in finding lost or injured people in the county’s rugged backcountry&#8203;:contentReference[oaicite:13]{index=13}. Volunteers train year-round to conduct wilderness searches – from helping lost Pacific Crest Trail hikers to performing winter rescues for skiers and snowmobilers – all under the direction of the Alpine County Sheriff’s Office&#8203;:contentReference[oaicite:14]{index=14}&#8203;:contentReference[oaicite:15]{index=15}.",
+    "county": "Alpine",
+    "address": "PO Box 153, Markleeville, CA 96120",
+    "reference": "Family"
+  },
+  {
+    "title": "Alpine County Historical Society (Museum)",
+    "website": "https://alpinecountymuseum.org",
+    "email": "ACHSBoardofDirectors@gmail.com",
+    "description": "The Alpine County Historical Society operates the Alpine County Museum and preserves local history. Volunteers were instrumental in building the museum and now run its programs, contributing countless hours to maintain exhibits and share Alpine’s rich heritage&#8203;:contentReference[oaicite:16]{index=16}. They staff the museum, host events, and help educate visitors and students about Alpine County’s history and culture.",
+    "county": "Alpine",
+    "address": "135 School Street, Markleeville, CA 96120",
+    "reference": "Arts"
+  },
+  {
+    "title": "A-PAL Humane Society",
+    "website": "http://www.pawspartners.org/apal.html",
+    "email": "",
+    "description": "A-PAL Humane Society of Amador County is dedicated to ensuring the humane treatment of animals. This volunteer-driven organization runs the county animal shelter’s adoption and spay/neuter programs&#8203;:contentReference[oaicite:17]{index=17}. Volunteers foster kittens and puppies, socialize shelter pets, assist at the thrift store and mobile adoption events, and help place homeless animals into loving homes&#8203;:contentReference[oaicite:18]{index=18}.",
+    "county": "Amador",
+    "address": "12360 Trade Center Dr., Jackson, CA 95642",
+    "reference": "Animal"
+  },
+  {
+    "title": "Friends of the Amador County Library",
+    "website": "https://friendsofthealam​edafreelibrary.volunteerlocal.com",
+    "email": "friendsoftheaclibrary@gmail.com",
+    "description": "Friends of the Amador County Library (FACL) is a volunteer-run nonprofit formed in 1974 to support the county library system&#8203;:contentReference[oaicite:19]{index=19}. Volunteers raise funds through used-book sales, memberships, and events to provide new books, shelving, online resources, summer reading programs and more for the main Jackson Library and its branches&#8203;:contentReference[oaicite:20]{index=20}. Nearly 400 community members volunteer or donate as “Friends,” demonstrating their belief that good libraries define a community&#8203;:contentReference[oaicite:21]{index=21}.",
+    "county": "Amador",
+    "address": "PO Box 701, Jackson, CA 95642",
+    "reference": "Library"
+  },
+  {
+    "title": "Interfaith Food Bank of Amador County",
+    "website": "https://feedamador.org",
+    "email": "bstanton@feedamador.org",
+    "description": "Since 1998, the Interfaith Food Bank of Amador County has offered food assistance to thousands of local individuals and families in need&#8203;:contentReference[oaicite:22]{index=22}. Volunteers help collect, sort and distribute groceries at the main Sutter Creek warehouse and 15 satellite pantries, ensuring no one in the community goes hungry. They also assist with gleaning produce and staffing the Food Bank’s thrift store to raise funds for hunger relief&#8203;:contentReference[oaicite:23]{index=23}.",
+    "county": "Amador",
+    "address": "12181 Airport Road, Sutter Creek, CA 95685",
+    "reference": "Family"
+  },
+  {
+    "title": "Amador County Arts Council (AmadorArts)",
+    "website": "https://www.amadorarts.org",
+    "email": "info@amadorarts.org",
+    "description": "For over 40 years, Amador County Arts Council (AmadorArts) has worked to encourage, support, and promote the arts in local schools and communities&#8203;:contentReference[oaicite:24]{index=24}. Volunteers help bring free arts education into K-12 classrooms, organize gallery shows and summer concerts in the parks, and raise funds for classroom art grants and student scholarships&#8203;:contentReference[oaicite:25]{index=25}&#8203;:contentReference[oaicite:26]{index=26}. Their service helps make arts accessible across this rural county.",
+    "county": "Amador",
+    "address": "617 S. Hwy 49, Jackson, CA 95642",
+    "reference": "Arts"
+  },
+  {
+    "title": "Common Ground Senior Services",
+    "website": "https://www.commongroundseniorservices.org",
+    "email": "info@commongroundseniorservices.org",
+    "description": "Common Ground Senior Services is a local nonprofit founded in 2000 that serves seniors in Amador and Calaveras counties&#8203;:contentReference[oaicite:27]{index=27}. Its primary focus is ensuring homebound elders facing food insecurity or isolation can remain independent&#8203;:contentReference[oaicite:28]{index=28}. Volunteers deliver hot Meals on Wheels lunches to frail seniors, provide friendly visits, and drive seniors to medical appointments – critical support that reduces hunger and loneliness among the elderly.",
+    "county": "Amador",
+    "address": "80 Ridge Road, Suite A, Sutter Creek, CA 95685",
+    "reference": "Seniors"
+  },
+  {
+    "title": "Butte Humane Society",
+    "website": "https://buttehumane.org",
+    "email": "info@buttehumane.org",
+    "description": "Butte Humane Society in Chico is one of the oldest animal welfare organizations in the region, working since 1911 to care for homeless pets&#8203;:contentReference[oaicite:29]{index=29}. Volunteers are cherished for their gift of time – they walk dogs, socialize cats, assist veterinary staff, and greet visitors – truly making a difference in each animal’s day by providing comfort and helping pets find loving homes&#8203;:contentReference[oaicite:30]{index=30}&#8203;:contentReference[oaicite:31]{index=31}.",
+    "county": "Butte",
+    "address": "13391 Garner Lane, Chico, CA 95973",
+    "reference": "Animal"
+  },
+  {
+    "title": "Butte Environmental Council",
+    "website": "https://www.becnet.org",
+    "email": "staff@becnet.org",
+    "description": "Butte Environmental Council (BEC) protects and defends the land, air and water of Butte County through advocacy and education&#8203;:contentReference[oaicite:32]{index=32}. Volunteers are critical to BEC’s success – they plant trees, clean up creeks, staff recycling events, and educate the public about sustainability. These citizen stewards help BEC preserve open spaces, promote clean waterways, and build a healthy, sustainable community in Butte County&#8203;:contentReference[oaicite:33]{index=33}&#8203;:contentReference[oaicite:34]{index=34}.",
+    "county": "Butte",
+    "address": "313 Walnut Street, Suite 140, Chico, CA 95928",
+    "reference": "Environment"
+  },
+  {
+    "title": "Chico Friends of the Library",
+    "website": "https://www.chicolibrary.org",
+    "email": "cfolmail@chicolibrary.org",
+    "description": "Chico Friends of the Library is a volunteer-run nonprofit dedicated to supporting the Chico branch of the Butte County Library&#8203;:contentReference[oaicite:35]{index=35}. Its volunteers raise funds through book sales and memberships to purchase library materials, sponsor children’s programs, and advocate for library improvements. CFOL recognizes its volunteers for each 100 hours of service, highlighting their hard work and vital role in making the library a place where families can learn and grow&#8203;:contentReference[oaicite:36]{index=36}.",
+    "county": "Butte",
+    "address": "1108 Sherman Ave., Chico, CA 95926",
+    "reference": "Library"
+  },
+  {
+    "title": "Enloe Medical Center Volunteers",
+    "website": "https://www.enloe.org/make-a-difference/volunteer/",
+    "email": "",
+    "description": "Enloe Medical Center’s Volunteer Services program in Chico engages community members in meaningful opportunities that touch lives and brighten patients’ days&#8203;:contentReference[oaicite:37]{index=37}. Hospital volunteers greet and guide visitors, deliver comfort items to patients, and assist staff on nursing floors and in the gift shop. Their care and compassion help improve the hospital experience and exemplify Enloe’s mission to improve quality of life through health care service&#8203;:contentReference[oaicite:38]{index=38}.",
+    "county": "Butte",
+    "address": "1465 Esplanade, Chico, CA 95926",
+    "reference": "Hospital"
+  },
+  {
+    "title": "Catalyst Domestic Violence Services",
+    "website": "https://catalystdvsv.org",
+    "email": "",
+    "description": "Catalyst Domestic Violence Services provides a safe and confidential place for those affected by domestic and sexual violence in Butte County&#8203;:contentReference[oaicite:39]{index=39}. Volunteers (after training) become certified crisis counselors who staff the 24/7 hotline, advocate for survivors alongside law enforcement&#8203;:contentReference[oaicite:40]{index=40}, support clients at Catalyst’s emergency shelters, and help lead prevention workshops – all to empower survivors and promote a violence-free community.",
+    "county": "Butte",
+    "address": "330 Wall Street, Suite 50, Chico, CA 95928",
+    "reference": "Family"
+  },
+  {
+    "title": "Calaveras Humane Society",
+    "website": "https://calaverashumane.org",
+    "email": "",
+    "description": "Calaveras Humane Society (CHS) is a volunteer-powered nonprofit that works closely with the county shelter to save animal lives. Foster families, adoption center volunteers, and thrift store helpers are invaluable – their donated time allows CHS to provide quality care for pets in need&#8203;:contentReference[oaicite:41]{index=41}. Volunteers socialize cats, walk dogs, assist with low-cost spay/neuter clinics, and ensure every shelter pet gets a chance to find a loving home.",
+    "county": "Calaveras",
+    "address": "901 Jeff Tuttle Drive, San Andreas, CA 95249",
+    "reference": "Animal"
+  },
+  {
+    "title": "Calaveras County Arts Council",
+    "website": "https://calaverasarts.org",
+    "email": "",
+    "description": "Calaveras County Arts Council supports the arts in the Motherlode with free concerts, art shows, music programs, and community engagement&#8203;:contentReference[oaicite:42]{index=42}. We rely on volunteers to make it all happen – from setting up summer Music in the Parks concerts to staffing the gallery and fundraising events&#8203;:contentReference[oaicite:43]{index=43}. By volunteering, residents help “awaken the arts” in Calaveras County, building a vibrant, creative community.",
+    "county": "Calaveras",
+    "address": "22 N. Main Street, San Andreas, CA 95249",
+    "reference": "Arts"
+  },
+  {
+    "title": "Friends of the Calaveras County Library",
+    "website": "https://www.friendsofcclibrary.org",
+    "email": "",
+    "description": "Friends of the Calaveras County Library (FOTCCL) is an all-volunteer organization that supports each of the county’s 8 library branches. Members raise money for library improvements – from new books and technology to children’s reading programs – through used book sales and donations. By mobilizing community support, the Friends help ensure Calaveras libraries remain well-resourced centers for learning and literacy.",
+    "county": "Calaveras",
+    "address": "PO Box 262, San Andreas, CA 95249",
+    "reference": "Library"
+  },
+  {
+    "title": "The Resource Connection Food Bank",
+    "website": "https://trcac.org/the-food-bank-2/",
+    "email": "info@trcac.org",
+    "description": "The Resource Connection Food Bank provides emergency food supplies to low-income residents of Calaveras County, ensuring that no one has to face hunger&#8203;:contentReference[oaicite:44]{index=44}&#8203;:contentReference[oaicite:45]{index=45}. Volunteers are vital to its operation – every week they sort food donations, pack emergency grocery boxes, and assist with drive-through distributions. Each Monday, new volunteers join an orientation and then get to work helping feed the hungry in their community&#8203;:contentReference[oaicite:46]{index=46}.",
+    "county": "Calaveras",
+    "address": "206 George Reed Drive, San Andreas, CA 95249",
+    "reference": "Family"
+  },
+  {
+    "title": "Common Ground Senior Services (Meals on Wheels)",
+    "website": "https://www.commongroundseniorservices.org",
+    "email": "info@commongroundseniorservices.org",
+    "description": "Common Ground Senior Services helps Calaveras County’s homebound seniors maintain independence by delivering nutritious meals and providing transportation. Volunteers in Calaveras drive Meals on Wheels routes, bringing hot lunches and friendly check-ins to isolated older adults. They also serve as drivers in the Silver Streak program, giving rides to medical appointments. These services combat senior hunger and loneliness, improving quality of life for local elders&#8203;:contentReference[oaicite:47]{index=47}.",
+    "county": "Calaveras",
+    "address": "PO Box 1022, San Andreas, CA 95249",
+    "reference": "Seniors"
+  },
+  {
+    "title": "Colusa County Arts Council",
+    "website": "https://www.colusa-arts.org",
+    "email": "",
+    "description": "Colusa County Arts Council is a nonprofit that brings arts programs and events to this rural community. Volunteers are critical to the success of the Arts Council’s concerts, art shows, and classes&#8203;:contentReference[oaicite:48]{index=48}. From setting up gallery exhibits to managing summer concert crowds, arts volunteers in Colusa help create opportunities for residents of all ages to experience and participate in the arts.",
+    "county": "Colusa County",
+    "address": "430 Market Street, Colusa, CA 95932",
+    "reference": "Arts"
+  },
+  {
+    "title": "Colusa County Free Library Literacy Program",
+    "website": "https://library.colusa.org",
+    "email": "",
+    "description": "The Colusa County Free Library’s Literacy Program offers free tutoring to adults seeking to improve their reading and English skills. This program relies on trained volunteer tutors who meet one-on-one with learners in local library branches. By donating a few hours each week, literacy volunteers empower fellow community members with better reading, writing, and life skills – truly changing lives through literacy.",
+    "county": "Colusa County",
+    "address": "738 Market Street, Colusa, CA 95932",
+    "reference": "Education"
+  },
+  {
+    "title": "Colusa County Animal Services Volunteer Program",
+    "website": "https://www.countyofcolusaca.gov/AnimalServices",
+    "email": "",
+    "description": "Colusa County’s Animal Services division welcomes volunteers to help care for animals at the shelter. Volunteers assist by cleaning dog kennels and cat cages, feeding and grooming the pets, and providing much-needed exercise and playtime for the dogs&#8203;:contentReference[oaicite:49]{index=49}. By socializing animals and keeping the shelter clean, these volunteers greatly improve the quality of life for Colusa’s stray and abandoned pets while they await adoption.",
+    "county": "Colusa County",
+    "address": "929 Bridge Street, Colusa, CA 95932",
+    "reference": "Animal"
+  },
+  {
+    "title": "Colusa County 4-H Youth Development Program",
+    "website": "https://cecolusa.ucanr.edu/4-H_Program/",
+    "email": "",
+    "description": "Colusa County 4-H engages over 500 youth in hands-on learning clubs supported by more than 70 adult volunteers&#8203;:contentReference[oaicite:50]{index=50}. 4-H volunteers serve as club leaders and project mentors – teaching kids about raising animals, gardening, robotics, and more. Through their guidance, these volunteers help young people develop leadership, STEM, and life skills, fulfilling 4-H’s “learn by doing” mission in Colusa’s communities&#8203;:contentReference[oaicite:51]{index=51}.",
+    "county": "Colusa County",
+    "address": "100 Sunrise Blvd., Suite E, Colusa, CA 95932",
+    "reference": "Education"
+  },
+  {
+    "title": "Colusa County Citizen Volunteer Patrol",
+    "website": "https://www.countyofcolusaca.gov/SheriffVolunteer",
+    "email": "",
+    "description": "The Colusa County Volunteer Citizen Service Unit (VCSU) is a group of trained volunteers who support local law enforcement with non-emergency services. These volunteers conduct neighborhood patrols, perform traffic control at events, and assist with clerical tasks, freeing up sworn officers for critical duties&#8203;:contentReference[oaicite:52]{index=52}. By acting as extra “eyes and ears” in the community, VCSU volunteers enhance public safety and build goodwill between residents and law enforcement.",
+    "county": "Colusa County",
+    "address": "929 Bridge Street, Colusa, CA 95932",
+    "reference": "Family"
+  }
+]
+
+
+
+
+;
+
       try {
-        const querySnapshot = await getDocs(collectionRef);
-        // Iterate through each document in the collection
-        querySnapshot.forEach(async (docSnapshot) => {
-          const data = docSnapshot.data();
-          // Check: if neither website nor contactDetails is provided, delete the document.
-          if (!data.website && !data.contactDetails) {
-            try {
-              await deleteDoc(docSnapshot.ref);
-              console.log(`Deleted document "${docSnapshot.id}" due to missing website and contact details.`);
-            } catch (deleteError) {
-              console.error(`Error deleting document "${docSnapshot.id}":`, deleteError);
-            }
-          } else {
-            console.log(`Keeping document "${docSnapshot.id}".`);
-          }
-        });
+        // Iterate through the array and push each document
+        for (const org of orgsData) {
+          const docRef = await addDoc(collectionRef, org);
+          console.log(`Organization pushed with ID: ${docRef.id}`);
+        }
       } catch (error) {
-        console.error("Error fetching documents:", error);
+        console.error("Error pushing organizations:", error);
       }
     }
 
-    // Run the clean-up process when the page loads
+    // Run the push operation when the page loads
     window.addEventListener("load", () => {
-      cleanOrgs();
+      pushOrgs();
     });
   </script>
 </head>
 <body>
-  <h1>Firebase Data Clean-up</h1>
-  <p>Processing deletion of organizations missing website and contact details. Check your browser console for logs.</p>
+  <h1>Firebase Multiple Data Insertion</h1>
+  <p>Organization data is being pushed to Firebase Firestore. Check your browser console for results.</p>
 </body>
 </html>
