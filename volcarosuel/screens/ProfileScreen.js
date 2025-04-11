@@ -334,6 +334,7 @@ const MorphingSearchBar = memo(({ isSearchActive, setIsSearchActive, dbMode, set
               placeholder={dbMode ? 'Message Ordix with database mode' : 'Message Ordix'}
               placeholderTextColor="#aaa"
               value={textInput}
+              keyboardAppearance="dark"
               // Do not use autoFocus—focus is handled manually.
               onChangeText={setTextInput}
               returnKeyType="send"
