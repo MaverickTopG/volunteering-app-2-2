@@ -13,8 +13,7 @@ import {
   Platform,
   Dimensions,
   Keyboard,
-  // Uncomment the line below if you want to use TouchableWithoutFeedback for dismissing the keyboard on outside tap.
-  // TouchableWithoutFeedback,
+  TouchableWithoutFeedback, // <-- Added for dismissing keyboard on outside tap
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
@@ -583,60 +582,52 @@ const ChatGPT = () => {
   };
 
   return (
-    // -------------------------------------
-    // Uncomment the following block to enable dismissing the keyboard
-    // when clicking anywhere outside the input. Also, this block adjusts
-    // the position of the MorphingSearchBar down by 25% (from bottom: '35%' to '60%').
-    // You can modify the values below as needed.
-    //
-    // <TouchableWithoutFeedback
-    //   onPress={() => {
-    //     Keyboard.dismiss();
-    //     // Example: Manually adjust the position of the search bar.
-    //     // To change the position, you might update a state or directly modify the style.
-    //     // For instance, if you use state (e.g., searchBarPosition), you can do:
-    //     // setSearchBarPosition('60%');
-    //   }}
-    // >
-    //   <View style={{ flex: 1 }}>
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.contentContainer}
-      >
-        {data.length === 1 ? (
-          <IntroSection />
-        ) : (
-          <ChatSection
-            data={data}
-            isLoading={isLoading}
-            flatListRef={flatListRef}
-            inputFocused={inputFocused}
-            onSelectFallbackCategory={handleFallbackCategorySelect}
-          />
-        )}
-        {error ? (
-          <Animated.View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </Animated.View>
-        ) : null}
-      </KeyboardAvoidingView>
-      <MorphingSearchBar
-        isSearchActive={isSearchActive}
-        setIsSearchActive={setIsSearchActive}
-        dbMode={dbMode}
-        setDbMode={setDbMode}
-        textInput={textInput}
-        setTextInput={setTextInput}
-        handleSend={handleSend}
-        handleAskPress={handleAskPress}
-        morphAnim={morphAnim}
-        textInputRef={textInputRef}
-        keyboardAppearance="dark"
-      />
-    </SafeAreaView>
-    //   </View>
-    // </TouchableWithoutFeedback>
+    // Wrap everything in TouchableWithoutFeedback to dismiss the keyboard and hide the search bar when tapping outside
+    <TouchableWithoutFeedback
+      onPress={() => {
+        if (isSearchActive) {
+          Keyboard.dismiss();
+          setIsSearchActive(false);
+        }
+      }}
+    >
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.contentContainer}
+        >
+          {data.length === 1 ? (
+            <IntroSection />
+          ) : (
+            <ChatSection
+              data={data}
+              isLoading={isLoading}
+              flatListRef={flatListRef}
+              inputFocused={inputFocused}
+              onSelectFallbackCategory={handleFallbackCategorySelect}
+            />
+          )}
+          {error ? (
+            <Animated.View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </Animated.View>
+          ) : null}
+        </KeyboardAvoidingView>
+        <MorphingSearchBar
+          isSearchActive={isSearchActive}
+          setIsSearchActive={setIsSearchActive}
+          dbMode={dbMode}
+          setDbMode={setDbMode}
+          textInput={textInput}
+          setTextInput={setTextInput}
+          handleSend={handleSend}
+          handleAskPress={handleAskPress}
+          morphAnim={morphAnim}
+          textInputRef={textInputRef}
+          keyboardAppearance="dark"
+        />
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 };
 
