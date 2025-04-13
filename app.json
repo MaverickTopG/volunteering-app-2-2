@@ -19,7 +19,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ayanshsingh.nexolink"
+      "bundleIdentifier": "com.ayanshsingh.nexolink",
+      "buildNumber": "30",
+      "infoPlist": {
+        "NSUserNotificationUsageDescription": "This app uses notifications to remind you to volunteer and make a difference!"
+      }
+
     },
     "android": {
       "adaptiveIcon": {

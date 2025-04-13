@@ -13,6 +13,8 @@ import {
   Platform,
   Dimensions,
   Keyboard,
+  // Uncomment the line below if you want to use TouchableWithoutFeedback for dismissing the keyboard on outside tap.
+  // TouchableWithoutFeedback,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
@@ -581,6 +583,22 @@ const ChatGPT = () => {
   };
 
   return (
+    // -------------------------------------
+    // Uncomment the following block to enable dismissing the keyboard
+    // when clicking anywhere outside the input. Also, this block adjusts
+    // the position of the MorphingSearchBar down by 25% (from bottom: '35%' to '60%').
+    // You can modify the values below as needed.
+    //
+    // <TouchableWithoutFeedback
+    //   onPress={() => {
+    //     Keyboard.dismiss();
+    //     // Example: Manually adjust the position of the search bar.
+    //     // To change the position, you might update a state or directly modify the style.
+    //     // For instance, if you use state (e.g., searchBarPosition), you can do:
+    //     // setSearchBarPosition('60%');
+    //   }}
+    // >
+    //   <View style={{ flex: 1 }}>
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -615,9 +633,10 @@ const ChatGPT = () => {
         morphAnim={morphAnim}
         textInputRef={textInputRef}
         keyboardAppearance="dark"
-
       />
     </SafeAreaView>
+    //   </View>
+    // </TouchableWithoutFeedback>
   );
 };
 
@@ -717,6 +736,7 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(20),
     flexDirection: 'row',
     alignItems: 'center',
+    // This style positions the search bar. To move it down 25%, change the value below.
     bottom: '35%',
   },
   askButton: {
