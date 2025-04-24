@@ -1,5 +1,13 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { Alert, ActivityIndicator, View, StyleSheet, Text, Image, Dimensions } from 'react-native';
+import {
+  Alert,
+  ActivityIndicator,
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Dimensions,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Keychain from 'react-native-keychain';
 import { auth } from './firebase';
@@ -9,209 +17,210 @@ import {
   signOut,
   onAuthStateChanged,
   deleteUser,
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  updateProfile,
 } from 'firebase/auth';
 
 export const AuthContext = createContext();
 
+/* scaling helpers -------------------------------------------------- */
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
-const scale = (size) => (width / guidelineBaseWidth) * size;
-const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+const scale = (s) => (width / guidelineBaseWidth) * s;
+const vScale = (s) => (height / guidelineBaseHeight) * s;
 
+/* session length */
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export function AuthProvider({ children }) {
+  const [user, setUser]     = useState(null);
+  const [loading, setLoad]  = useState(true);
 
-  // Auto‑login on app startup using secure storage for credentials.
+  /* -------------------------------------------------------------- */
+  /* auto-login on startup                                          */
+  /* -------------------------------------------------------------- */
   useEffect(() => {
-    const autoLogin = async () => {
+    (async () => {
       try {
-        // Retrieve login time from AsyncStorage.
-        const loginTimeStr = await AsyncStorage.getItem('loginTime');
-        if (loginTimeStr) {
-          const loginTime = parseInt(loginTimeStr, 10);
-          if (Date.now() - loginTime <= ONE_WEEK_MS) {
-            // Retrieve credentials securely from Keychain.
-            const credentials = await Keychain.getGenericPassword();
-            if (credentials) {
-              const { username: storedEmail, password: storedPassword } = credentials;
-              const userCredential = await signInWithEmailAndPassword(auth, storedEmail, storedPassword);
-              setUser(userCredential.user);
-              return; // Successful auto‑login.
-            }
-          } else {
-            // If the session is expired, remove stored data.
-            await AsyncStorage.removeItem('loginTime');
-            await Keychain.resetGenericPassword();
-          }
+        const ts = await AsyncStorage.getItem('loginTime');
+        if (!ts) return;
+
+        if (Date.now() - parseInt(ts, 10) > ONE_WEEK_MS) {
+          await AsyncStorage.removeItem('loginTime');
+          await Keychain.resetGenericPassword();
+          return;
         }
-      } catch (error) {
-        console.error('Auto login error:', error);
+        const creds = await Keychain.getGenericPassword();
+        if (!creds) return;
+
+        const uc = await signInWithEmailAndPassword(
+          auth,
+          creds.username,
+          creds.password
+        );
+        if (uc.user.emailVerified) setUser(uc.user);
+      } catch (e) {
+        console.error('Auto-login', e);
       } finally {
-        setLoading(false);
+        setLoad(false);
       }
-    };
-
-    autoLogin();
+    })();
   }, []);
 
-  // Listen to auth state changes and check session expiration.
+  /* -------------------------------------------------------------- */
+  /* global auth listener                                           */
+  /* -------------------------------------------------------------- */
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        try {
-          const loginTimeStr = await AsyncStorage.getItem('loginTime');
-          if (loginTimeStr) {
-            const loginTime = parseInt(loginTimeStr, 10);
-            if (Date.now() - loginTime > ONE_WEEK_MS) {
-              await signOut(auth);
-              await AsyncStorage.removeItem('loginTime');
-              await Keychain.resetGenericPassword();
-              setUser(null);
-              Alert.alert('Session Expired', 'Your session has expired. Please log in again.');
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Error checking login time:', error);
-        }
-      }
-      setUser(currentUser);
+    const unsub = onAuthStateChanged(auth, (current) => {
+      setUser(current && current.emailVerified ? current : null);
     });
-
-    return () => unsubscribe();
+    return unsub;
   }, []);
 
-  // Periodic session check (every 60 seconds)
-  useEffect(() => {
-    const intervalId = setInterval(async () => {
-      if (auth.currentUser) {
-        try {
-          const loginTimeStr = await AsyncStorage.getItem('loginTime');
-          if (loginTimeStr) {
-            const loginTime = parseInt(loginTimeStr, 10);
-            if (Date.now() - loginTime > ONE_WEEK_MS) {
-              await signOut(auth);
-              await AsyncStorage.removeItem('loginTime');
-              await Keychain.resetGenericPassword();
-              setUser(null);
-              Alert.alert('Session Expired', 'Your session has expired. Please log in again.');
-            }
-          }
-        } catch (error) {
-          console.error('Error during periodic session check:', error);
-        }
-      }
-    }, 60000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Sign in: store login time in AsyncStorage and credentials in secure Keychain.
+  /* -------------------------------------------------------------- */
+  /* sign-in                                                        */
+  /* -------------------------------------------------------------- */
   const signIn = async (email, password) => {
     try {
-      setLoading(true);
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      setLoad(true);
+      const { user: u } = await signInWithEmailAndPassword(auth, email, password);
+
+      if (!u.emailVerified) {
+        await signOut(auth);
+        Alert.alert(
+          'Verify First',
+          'Please confirm your email before logging in.'
+        );
+        return;
+      }
+
       await AsyncStorage.setItem('loginTime', Date.now().toString());
       await Keychain.setGenericPassword(email, password);
-      setUser(userCredential.user);
-    } catch (error) {
-      Alert.alert('Login Error', error.message);
+      setUser(u);
+    } catch (e) {
+      Alert.alert('Login Error', e.message);
     } finally {
-      setLoading(false);
+      setLoad(false);
     }
   };
 
-  // Sign up: create account and securely store credentials.
-  const signUp = async (email, password) => {
+  /* -------------------------------------------------------------- */
+  /* sign-up                                                        */
+  /* -------------------------------------------------------------- */
+  const signUp = async ({ email, password, firstName, lastName }) => {
     try {
-      setLoading(true);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await AsyncStorage.setItem('loginTime', Date.now().toString());
-      await Keychain.setGenericPassword(email, password);
-      setUser(userCredential.user);
-      Alert.alert('Success', 'Account created successfully!');
+      setLoad(true);
+      const { user: u } = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      await updateProfile(u, { displayName: `${firstName} ${lastName}` });
+      await sendEmailVerification(u);
+
+      /* Don’t keep session alive until they verify */
+      await signOut(auth);
+      Alert.alert(
+        'Almost there…',
+        'We sent you a verification link. Please verify your email, then log in.'
+      );
       return true;
-    } catch (error) {
-      Alert.alert('Sign Up Error', error.message);
+    } catch (e) {
+      Alert.alert('Sign-Up Error', e.message);
       return false;
     } finally {
-      setLoading(false);
+      setLoad(false);
     }
   };
 
-  // Sign out: clear both AsyncStorage and secure Keychain.
+  /* -------------------------------------------------------------- */
+  /* reset password                                                 */
+  /* -------------------------------------------------------------- */
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return true;
+    } catch (e) {
+      Alert.alert('Reset Error', e.message);
+      return false;
+    }
+  };
+
+  /* -------------------------------------------------------------- */
+  /* sign-out / delete                                              */
+  /* -------------------------------------------------------------- */
   const signOutUser = async () => {
     try {
       await signOut(auth);
       setUser(null);
       await AsyncStorage.removeItem('loginTime');
       await Keychain.resetGenericPassword();
-    } catch (error) {
-      Alert.alert('Logout Error', error.message);
+    } catch (e) {
+      Alert.alert('Logout Error', e.message);
     }
   };
 
-  // Delete account: reauthenticate then delete account, and clear stored data.
   const deleteAccount = async (email, password) => {
     try {
-      setLoading(true);
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const currentUser = userCredential.user;
-      await deleteUser(currentUser);
+      setLoad(true);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      await deleteUser(cred.user);
       await AsyncStorage.removeItem('loginTime');
       await Keychain.resetGenericPassword();
-      Alert.alert('Success', 'Your account and its content have been deleted.');
-      return true;
-    } catch (error) {
-      Alert.alert('Error', error.message);
-      return false;
+      Alert.alert('Success', 'Account deleted.');
+    } catch (e) {
+      Alert.alert('Delete Error', e.message);
     } finally {
-      setLoading(false);
+      setLoad(false);
     }
   };
 
+  /* -------------------------------------------------------------- */
+  /* loading splash                                                 */
+  /* -------------------------------------------------------------- */
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.splash}>
         <Image
           source={require('../assets/spaceship.png')}
-          style={styles.logo}
+          style={{ width: scale(150), height: scale(150), marginBottom: vScale(20) }}
           resizeMode="contain"
         />
-        <Text style={styles.loadingText}>Preparing for launch...</Text>
+        <Text style={{ fontSize: scale(18), color: '#333', marginBottom: vScale(12) }}>
+          Preparing for launch…
+        </Text>
         <ActivityIndicator size="large" color="#333" />
       </View>
     );
   }
 
+  /* -------------------------------------------------------------- */
+  /* provider                                                       */
+  /* -------------------------------------------------------------- */
   return (
-    <AuthContext.Provider value={{ user, signIn, signUp, signOut: signOutUser, deleteAccount }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        signIn,
+        signUp,
+        resetPassword,
+        signOut: signOutUser,
+        deleteAccount,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
+/* styles ---------------------------------------------------------- */
 const styles = StyleSheet.create({
-  loadingContainer: {
+  splash: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff6e7',
   },
-  logo: {
-    width: scale(150),
-    height: scale(150),
-    marginBottom: verticalScale(20),
-  },
-  loadingText: {
-    fontSize: scale(18),
-    color: '#333',
-    marginBottom: verticalScale(10),
-  },
 });
-
-export default AuthProvider;

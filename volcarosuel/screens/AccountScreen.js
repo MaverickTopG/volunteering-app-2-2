@@ -105,6 +105,7 @@ export default function AccountStackNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AccountScreen" component={AccountScreen} />
       <Stack.Screen name="AboutNexolinkScreen" component={AboutNexolinkScreen} />
+      
     </Stack.Navigator>
   );
 }

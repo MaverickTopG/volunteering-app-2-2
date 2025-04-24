@@ -1,217 +1,205 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
-  TextInput,
   Text,
+  TextInput,
   TouchableOpacity,
-  StyleSheet,
   SafeAreaView,
   KeyboardAvoidingView,
-  Platform,
+  StyleSheet,
   Dimensions,
-  Alert,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { AuthContext } from './AuthContext';
-import { useNavigation } from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import { AuthContext } from './AuthContext';
 
+/* ---------- helpers ---------- */
+const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-const { width, height } = Dimensions.get('window');
-const scale = (size) => (width / guidelineBaseWidth) * size;
-const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+const scale  = (s) => (width  / guidelineBaseWidth)  * s;
+const vScale = (s) => (height / guidelineBaseHeight) * s;
 
-const RegisterScreen = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+/* ---------- component ---------- */
+export default function RegisterScreen() {
+  /* form */
+  const [firstName, setFirstName] = useState('');
+  const [lastName,  setLastName]  = useState('');
+  const [email,     setEmail]     = useState('');
+  const [password,  setPassword]  = useState('');
 
-  const { signUp } = useContext(AuthContext);
+  /* sheet stage & ref */
+  const [stage, setStage] = useState('confirm');   // confirm | loading | done
+  const sheetRef = useRef(null);
+
+  /* nav / ctx */
   const navigation = useNavigation();
+  const { signUp } = React.useContext(AuthContext);
 
-  const handleSignUp = async () => {
-    const success = await signUp(email, password);
-    if (success) {
-      navigation.navigate('Login');
-    }
+  /* open sheet */
+  const openConfirmSheet = () => {
+    setStage('confirm');
+    sheetRef.current?.snapToIndex(0);   // 0 == first snapPoint
   };
 
-  const handleNavigateToLogin = () => {
-    navigation.navigate('Login');
+  /* run sign-up */
+  const handleOk = async () => {
+    setStage('loading');
+    const ok = await signUp({ email, password, firstName, lastName });
+    setStage(ok ? 'done' : 'confirm');
   };
 
-  const handleNavigateToDelete = () => {
-    navigation.navigate('Delete');
-  };
+  /* close helper */
+  const closeSheet = () => sheetRef.current?.close();
 
-  const togglePasswordVisibility = () => {
-    setIsPasswordVisible(!isPasswordVisible);
-  };
+  /* snap points */
+  const snapPoints = ['45%'];
 
+  /* ----------------------------- */
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.contentContainer}
-      >
-        {/* Header with Warm Translucent Gradient */}
-        <LinearGradient
-          colors={['rgba(255,240,212,0.8)', 'rgba(255,232,201,0.8)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerContainer}
+    <GestureHandlerRootView style={{ flex:1 }}>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.inner}
         >
-          <Text style={styles.headerText}>Create Account</Text>
-        </LinearGradient>
+          {/* header */}
+          <LinearGradient
+            colors={['rgba(255,240,212,0.8)','rgba(255,232,201,0.8)']}
+            style={styles.header}
+          >
+            <Text style={styles.title}>Create Account</Text>
+          </LinearGradient>
 
-        <View style={styles.inputContainer}>
-          {/* Email Input */}
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#aaa"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              keyboardAppearance="dark"
-            />
-          </View>
+          {/* form */}
+          <View style={styles.form}>
+            {[
+              { v:firstName,s:setFirstName,p:'First Name' },
+              { v:lastName, s:setLastName, p:'Last Name'  },
+              { v:email,    s:setEmail,    p:'Email',    props:{ keyboardType:'email-address', autoCapitalize:'none' } },
+              { v:password, s:setPassword, p:'Password', props:{ secureTextEntry:true } },
+            ].map((f,i)=>(
+              <View key={i} style={styles.inputBox}>
+                <TextInput
+                  value={f.v}
+                  onChangeText={f.s}
+                  placeholder={f.p}
+                  placeholderTextColor="#aaa"
+                  style={styles.input}
+                  {...(f.props||{})}
+                />
+              </View>
+            ))}
 
-          {/* Password Input with Eye Icon */}
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              placeholder="Password"
-              placeholderTextColor="#aaa"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!isPasswordVisible}
-              keyboardAppearance="dark"
-            />
-            <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIcon}>
-              <Ionicons
-                name={isPasswordVisible ? 'eye' : 'eye-off'}
-                size={scale(20)}
-                color="#aaa"
-              />
+            <TouchableOpacity activeOpacity={0.85} onPress={openConfirmSheet}>
+              <LinearGradient colors={['#fff0d4','#ffe8c9']} style={styles.mainBtn}>
+                <Text style={styles.mainBtnText}>Sign Up</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.link}>Already have an account? Log in</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate('Delete')}>
+              <Text style={styles.link}>Delete Account</Text>
             </TouchableOpacity>
           </View>
+        </KeyboardAvoidingView>
 
-          {/* Sign Up Button with Warm Gradient */}
-          <TouchableOpacity onPress={handleSignUp} activeOpacity={0.85}>
-            <LinearGradient
-              colors={['#fff0d4', '#ffe8c9']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.button}
-            >
-              <Text style={styles.buttonText}>Sign Up</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+        {/* ---------------- BottomSheet ---------------- */}
+        <BottomSheet
+          ref={sheetRef}
+          index={-1}                    /* start closed */
+          snapPoints={snapPoints}
+          enablePanDownToClose={stage !== 'loading'}
+          backgroundStyle={styles.sheetBackground}
+          handleIndicatorStyle={{ backgroundColor:'#ccc' }}
+        >
+          <BottomSheetView style={styles.sheetContent}>
+          
 
-          {/* Navigation Links */}
-          <TouchableOpacity onPress={handleNavigateToLogin}>
-            <Text style={styles.linkText}>Already have an account? Log in</Text>
-          </TouchableOpacity>
+            {/* confirm */}
+            {stage === 'confirm' && (
+              <>
+                <Text style={styles.sheetTitle}>
+                  {`Hi ${firstName || 'there'}!`}
+                </Text>
+                <Text style={styles.sheetMsg}>
+                  Press OK to create your account. We’ll send a verification e-mail to&nbsp;
+                  <Text style={{ fontWeight:'600' }}>{email}</Text>.
+                </Text>
+                <TouchableOpacity style={styles.blackBtn} onPress={handleOk}>
+                  <Text style={[styles.mainBtnText,{ color:'#fff' }]}>OK</Text>
+                </TouchableOpacity>
+              </>
+            )}
 
-          <TouchableOpacity onPress={handleNavigateToDelete}>
-            <Text style={styles.linkText}>Delete Account</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            {/* loading */}
+            {stage === 'loading' && (
+              <View style={{ alignItems:'center' }}>
+                <ActivityIndicator size="large" color="#000" />
+                <Text style={[styles.sheetMsg,{ marginTop:vScale(18) }]}>
+                  Creating your account…
+                </Text>
+              </View>
+            )}
+
+            {/* done */}
+            {stage === 'done' && (
+              <>
+                <Text style={styles.sheetTitle}>All Set!</Text>
+                <Text style={styles.sheetMsg}>
+                  We’ve emailed&nbsp;
+                  <Text style={{ fontWeight:'600' }}>{email}</Text>. Confirm it to begin!
+                </Text>
+                <TouchableOpacity style={styles.mainBtn} onPress={closeSheet}>
+                  <Text style={styles.mainBtnText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </BottomSheetView>
+        </BottomSheet>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
-};
+}
 
-export default RegisterScreen;
-
+/* ---------- styles ---------- */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
+  container:{ flex:1, backgroundColor:'#fff6e7' },
+  inner:{ flex:1, justifyContent:'center', paddingHorizontal:scale(20) },
+
+  header:{
+    marginBottom:vScale(30), paddingVertical:vScale(15), paddingHorizontal:scale(20),
+    alignItems:'center', borderRadius:scale(25),
   },
-  contentContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: scale(20),
+  title:{ fontSize:scale(28), fontWeight:'bold', color:'#333' },
+
+  form:{ marginTop:vScale(20) },
+  inputBox:{
+    borderColor:'#e1c699', borderWidth:scale(1), borderRadius:scale(25),
+    backgroundColor:'#fff6e7', marginBottom:vScale(15),
   },
-  headerContainer: {
-    marginBottom: verticalScale(30),
-    paddingVertical: verticalScale(15),
-    paddingHorizontal: scale(20),
-    borderRadius: scale(25),
-    alignItems: 'center',
-    shadowColor: '#ffe8c9',
-    shadowOffset: { width: 0, height: scale(4) },
-    shadowOpacity: 0.6,
-    shadowRadius: scale(6),
-    elevation: 6,
+  input:{ height:vScale(50), paddingHorizontal:scale(20), fontSize:scale(16), color:'#333' },
+
+  mainBtn:{
+    backgroundColor:'#ffe8c9', borderRadius:scale(25), paddingVertical:scale(15),
+    alignItems:'center', shadowOffset:{ width:0, height:vScale(4) }, shadowOpacity:0.6, elevation:6,
   },
-  headerText: {
-    fontSize: scale(28),
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  inputContainer: {
-    marginTop: verticalScale(20),
-  },
-  inputWrapper: {
-    borderColor: '#e1c699',
-    borderWidth: scale(1),
-    borderRadius: scale(25),
-    backgroundColor: '#fff6e7',
-    marginBottom: verticalScale(15),
-  },
-  input: {
-    height: verticalScale(50),
-    paddingHorizontal: scale(20),
-    fontSize: scale(16),
-    color: '#333',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: '#e1c699',
-    borderWidth: scale(1),
-    borderRadius: scale(25),
-    backgroundColor: '#fff6e7',
-    marginBottom: verticalScale(15),
-    height: verticalScale(50),
-    paddingHorizontal: scale(20),
-  },
-  passwordInput: {
-    flex: 1,
-    fontSize: scale(16),
-    color: '#333',
-  },
-  eyeIcon: {
-    padding: scale(5),
-  },
-  button: {
-    borderRadius: scale(25),
-    paddingVertical: scale(15),
-    paddingHorizontal: scale(30),
-    alignItems: 'center',
-    marginTop: verticalScale(10),
-    marginBottom: verticalScale(20),
-    shadowColor: '#ffe8c9',
-    shadowOpacity: 0.6,
-    shadowRadius: scale(6),
-    shadowOffset: { width: 0, height: scale(4) },
-    elevation: 6,
-  },
-  buttonText: {
-    color: '#333',
-    fontSize: scale(16),
-    fontWeight: 'bold',
-  },
-  linkText: {
-    color: '#333',
-    textAlign: 'center',
-    fontSize: scale(16),
-    marginTop: verticalScale(10),
-  },
+  mainBtnText:{ fontSize:scale(16), fontWeight:'bold', color:'#333' },
+  blackBtn:{ backgroundColor:'#000', borderRadius:scale(25), paddingVertical:scale(15), alignItems:'center', marginTop:vScale(24) },
+  link:{ color:'#333', textAlign:'center', fontSize:scale(16), marginTop:vScale(10) },
+
+  /* sheet */
+  sheetBackground:{ backgroundColor:'#ffe8c9' },
+  sheetContent:{ flex:1, paddingHorizontal:scale(24), paddingTop:vScale(32) },
+  closeIcon:{ position:'absolute', top:8, left:8, zIndex:10 },
+  sheetTitle:{ fontSize:scale(24), fontWeight:'bold', marginBottom:vScale(12), color:'#333' },
+  sheetMsg:{ fontSize:scale(16), lineHeight:vScale(22), color:'#333' },
 });
