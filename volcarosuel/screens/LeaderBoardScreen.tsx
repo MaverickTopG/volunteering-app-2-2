@@ -16,11 +16,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /* ── palette ─────────────────────────────────────── */
 const BG     = '#fff6e7';
-const CARD   = '#ffe8c9';
+const CARD   = '#fff6e7';
 const ROWBG  = '#fff0d4';
-const BORDER = '#8b6f57';
-const ACCENT = '#B8F263';
-const crown  = require('../../assets/spaceship.png');
+const BORDER = 'black';
+const ACCENT = '#fff6e7';
 
 /* podium token */
 const CHIP = 28;
@@ -77,11 +76,7 @@ export default function LeaderboardScreen() {
       ]}>
         <Ionicons name={pickIcon(p.uid)} size={size*0.65} color="#fff"/>
       </View>
-      {rank===1 && (
-        <Image source={crown} style={{
-          position:'absolute',top:-CHIP*0.8,width:CHIP,height:CHIP,tintColor:ACCENT,
-        }}/>
-      )}
+    
       <View style={styles.chip}>
         <Text style={styles.chipTxt}>{rank}</Text>
       </View>
@@ -110,7 +105,7 @@ export default function LeaderboardScreen() {
           <Ionicons
             name="trophy-outline"
             size={16}
-            color={mine?'#000':ACCENT}
+            color={mine?'#000':"black"}
             style={{marginRight:4}}
           />
           <Text style={[
@@ -134,7 +129,7 @@ export default function LeaderboardScreen() {
 
   return(
     <View style={styles.container}>
-      <Text style={[styles.title,{marginTop:insets.top+4}]}>Leaderboard</Text>
+      <Text style={[styles.title,{marginTop:insets.top-60}]}>Leaderboard</Text>
 
   {/* podium — force 1st place in the middle, 2nd left, 3rd right */}
 <View style={styles.podium}>
@@ -187,7 +182,7 @@ export default function LeaderboardScreen() {
 /* styles */
 const styles = StyleSheet.create({
   container:{ flex:1, backgroundColor:BG, paddingHorizontal:20 },
-  title:{ textAlign:'center', fontSize:24, fontWeight:'700', color:'#000', marginBottom:32 },
+  title:{ textAlign:'center', fontSize:24, fontWeight:'700', color:'#000', marginBottom:30 },
 
   /* podium */
   podium:{ flexDirection:'row', justifyContent:'space-between', marginBottom:24 },
@@ -210,7 +205,7 @@ const styles = StyleSheet.create({
   card:{
     flex:1, backgroundColor:CARD, borderRadius:20,
     paddingVertical:8, paddingHorizontal:12,
-    borderWidth:2, borderColor:BORDER,
+    borderWidth:0, borderColor:BORDER,
   },
   row:{
     flexDirection:'row', alignItems:'center',
