@@ -47,6 +47,7 @@ import MapScreen from "../screens/MapScreen";
 import SplashScreen from "../screens/Splashscreen";
 import LiveOps from "../screens/LiveOp";
 import ApiMode from "../screens/apiScreen";
+import ShopScreen from "../screens/shop";
 
 import SuggestOrganizationScreen from "../screens/OrganizationScreen";
 import AccountStackNavigator from "../screens/AccountScreen";
@@ -213,73 +214,57 @@ const TabButton = ({ item, onPress, accessibilityState }) => {
 };
 
 // ---------- extension FAB ----------
-const ExtensionButtons = ({
-  leftStyle,
-  topStyle,
-  rightStyle,
-  onSelectExtension,
-}) => (
-  <>
-    {/* suggestions (left) */}
-    <Animated.View style={[extStyles.button, leftStyle]}>
-      <TouchableOpacity onPress={() => onSelectExtension("Suggestions")}>
-        <Ionicons name="bulb-outline" size={22} color="#fff" />
-      </TouchableOpacity>
-    </Animated.View>
+/* ---------- extension FAB (updated) ---------- */
 
-    {/* leaderboard (up) */}
-    <Animated.View style={[extStyles.button, topStyle]}>
-      <TouchableOpacity onPress={() => onSelectExtension("Leaderboard")}>
-        <Ionicons name="trophy" size={22} color="#fff" />
-      </TouchableOpacity>
-    </Animated.View>
-
-    {/* account (right) */}
-    <Animated.View style={[extStyles.button, rightStyle]}>
-      <TouchableOpacity onPress={() => onSelectExtension("Account")}>
-        <Ionicons name="person-outline" size={22} color="#fff" />
-      </TouchableOpacity>
-    </Animated.View>
-  </>
-);
+// Replace your ExtensionButtons and ExtensionBar with this:
 
 const ExtensionBar = ({ onSelectExtension }) => {
   const open = useSharedValue(0);
-  const toggle = () =>
-    (open.value = withTiming(open.value ? 0 : 1, { duration: 300 }));
+  const toggle = () => {
+    open.value = withTiming(open.value ? 0 : 1, { duration: 300 });
+  };
 
-  const distance = 60;
-  const leftStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(open.value, [0, 1], [0, -distance]) }],
-    opacity: open.value,
-  }));
-  const topStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(open.value, [0, 1], [0, -distance]) }],
-    opacity: open.value,
-  }));
-  const rightStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(open.value, [0, 1], [0, distance]) }],
-    opacity: open.value,
-  }));
+  // Four angles: 180° (left), 120° (up-left), 60° (up-right), 0° (right)
+  const RADIUS = 60;
+  const items = [
+    { angle: 120, icon: 'person-outline', route: 'Account'     },
+    { angle: 180, icon: 'bulb-outline',  route: 'Suggestions' },
+    { angle:  60, icon: 'trophy-outline', route: 'Leaderboard'  },
+    { angle:   0, icon: 'cart-outline',   route: 'S'         },
+  ];
 
   return (
     <View style={extStyles.container}>
-      <ExtensionButtons
-        leftStyle={leftStyle}
-        topStyle={topStyle}
-        rightStyle={rightStyle}
-        onSelectExtension={onSelectExtension}
-      />
+      {items.map(({ angle, icon, route }, i) => {
+        const rad = (angle * Math.PI) / 180;
+        const x   = RADIUS * Math.cos(rad);
+        const y   = -RADIUS * Math.sin(rad);
+
+        const style = useAnimatedStyle(() => ({
+          transform: [
+            { translateX: interpolate(open.value, [0,1], [0, x]) },
+            { translateY: interpolate(open.value, [0,1], [0, y]) },
+          ],
+          opacity: open.value,
+        }));
+
+        return (
+          <Animated.View key={i} style={[extStyles.button, style]}>
+            <TouchableOpacity onPress={() => onSelectExtension(route)}>
+              <Ionicons name={icon} size={22} color="#fff" />
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      })}
+
       <TouchableOpacity onPress={toggle} style={extStyles.mainButton}>
-        <Ionicons
-          name={open.value > 0.5 ? "close" : "add"}
-          size={24}
-          color="#fff"
-        />
+        <Ionicons name={open.value > 0.5 ? 'close' : 'add'} size={24} color="#fff" />
       </TouchableOpacity>
     </View>
   );
 };
+
+// Styles (unchanged):
 
 // ---------- custom tab bar ----------
 const CustomTabBar = (props) => {
@@ -399,6 +384,10 @@ function PillTabNavigator() {
       <TabNav.Screen name="Suggestions" component={SuggestOrganizationScreen} />
       <TabNav.Screen name="Account" component={AccountStackNavigator} />
       <TabNav.Screen name="Leaderboard" component={LeaderboardScreen} />
+      <TabNav.Screen name="S" component={ShopScreen} />  
+
+
+
     </TabNav.Navigator>
   );
 }
