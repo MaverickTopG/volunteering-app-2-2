@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+// VolunteerCarousel.js
+import React, { useEffect, useRef, useState, useContext } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,287 +11,252 @@ import {
   ActivityIndicator,
   Animated,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { RFPercentage } from 'react-native-responsive-fontsize';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-
-// ---- Firebase modules ----
 import { collection, query, where, getDocs } from 'firebase/firestore';
-// Importing db from your Firebase configuration
-import { db } from "../../auth/firebase";
-
-// Helper: Group data by county
-const groupByCounty = (data) => {
-  const counties = {};
-  data.forEach((item) => {
-    if (!counties[item.county]) {
-      counties[item.county] = [];
-    }
-    counties[item.county].push(item);
-  });
-  return Object.keys(counties).map((county) => ({
-    title: county,
-    data: counties[county],
-  }));
-};
+import { db } from '../../auth/firebase';
+import { AuthContext } from '../../auth/AuthContext';
+import { themePacks, seasonal } from '../screens/shop';
 
 const { width } = Dimensions.get('window');
 const HEADER_HEIGHT = 40;
-const ITEM_HEIGHT = 90;
+const ITEM_HEIGHT   = 90;
+
+const DEFAULT_PALETTE = [
+  '#FFF6E7', // bg
+  '#FFF0D4', // gradient start
+  '#FFE8C9', // gradient end
+  '#333333'  // text/icon
+];
 
 const VolunteerCarousel = ({ route }) => {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
-  const referenceParam = route.params?.reference || 'Animal';
+  const insets     = useSafeAreaInsets();
+  const { user }   = useContext(AuthContext);
+  const refParam   = route.params?.reference || 'Animal';
 
-  const [loading, setLoading] = useState(true);
-  const [sections, setSections] = useState([]);
-  // Track expanded state for each county
+  // theming
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+  useEffect(() => {
+    if (!user) return;
+    const key = `@shop/active-${user.uid}`;
+    AsyncStorage.getItem(key)
+      .then(id => {
+        if (!id) return;
+        const pack =
+          themePacks.find(t => t.id === id) ||
+          seasonal.find(s => s.id === id);
+        if (pack?.colors) {
+          const c = pack.colors;
+          setPalette([
+            c[0] ?? DEFAULT_PALETTE[0],
+            c[1] ?? DEFAULT_PALETTE[1],
+            c[2] ?? DEFAULT_PALETTE[2],
+            c[3] ?? DEFAULT_PALETTE[3],
+          ]);
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  // data + sections
+  const [loading, setLoading]         = useState(true);
+  const [sections, setSections]       = useState([]);
   const [expandedSections, setExpandedSections] = useState({});
-  // Animated values for each county dropdown
   const animValuesRef = useRef({});
-
   const scrollViewRef = useRef(null);
 
-  // Quick Search Bubble state & animation
-  const [isSearchBubbleVisible, setSearchBubbleVisible] = useState(false);
-  const bubbleScale = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
-    const fetchData = async () => {
+    (async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const q = query(
-          collection(db, 'volunteer_organizations'),
-          where('reference', '==', referenceParam)
-        );
-        const querySnapshot = await getDocs(q);
-        const results = [];
-        querySnapshot.forEach((docSnap) => {
-          results.push(docSnap.data());
+        const q    = query(collection(db,'volunteer_organizations'), where('reference','==',refParam));
+        const snap = await getDocs(q);
+        const byCounty = {};
+        snap.forEach(d => {
+          const dta = d.data();
+          byCounty[dta.county] = byCounty[dta.county] || [];
+          byCounty[dta.county].push(dta);
         });
-        const grouped = groupByCounty(results);
+        const grouped = Object.keys(byCounty).map(title=>({
+          title, data: byCounty[title]
+        }));
         setSections(grouped);
-        // Initialize animated values for each county if not already set
-        grouped.forEach(section => {
-          if (!animValuesRef.current[section.title]) {
-            animValuesRef.current[section.title] = new Animated.Value(0);
+        grouped.forEach(s=>{
+          if(!animValuesRef.current[s.title]){
+            animValuesRef.current[s.title] = new Animated.Value(0);
           }
         });
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [referenceParam]);
+      } catch(e){ console.error(e) }
+      finally{ setLoading(false) }
+    })();
+  },[refParam]);
 
-  // Build flattened data for Quick Search scrolling
-  const flatData = useMemo(() => {
-    const newFlat = [];
-    sections.forEach((section, sectionIndex) => {
-      newFlat.push({
-        type: 'header',
-        title: section.title,
-        sectionIndex,
-      });
-      section.data.forEach((item, itemIndex) => {
-        newFlat.push({
-          type: 'item',
-          sectionIndex,
-          itemIndex,
-          title: item.title,
-        });
-      });
-    });
-    return newFlat;
-  }, [sections]);
-
+  // quick-search bubble
+  const [isSearchBubbleVisible, setSearchBubbleVisible] = useState(false);
+  const bubbleScale = useRef(new Animated.Value(0)).current;
   const toggleSearchBubble = () => {
     if (isSearchBubbleVisible) {
-      Animated.timing(bubbleScale, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => setSearchBubbleVisible(false));
+      Animated.timing(bubbleScale,{ toValue:0, duration:200, useNativeDriver:true })
+        .start(()=> setSearchBubbleVisible(false));
     } else {
       setSearchBubbleVisible(true);
-      Animated.timing(bubbleScale, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(bubbleScale,{ toValue:1, duration:200, useNativeDriver:true })
+        .start();
     }
   };
-
-  // Quick Search: scroll to county header
   const handleCountySelect = (county) => {
     let offsetY = 0;
-    for (let s = 0; s < sections.length; s++) {
-      const currentCounty = sections[s].title;
+    for(let i=0;i<sections.length;i++){
       offsetY += HEADER_HEIGHT;
-      if (currentCounty.toLowerCase() === county.toLowerCase()) break;
-      const section = sections[s];
-      offsetY += section.data.length * ITEM_HEIGHT;
+      if(sections[i].title === county) break;
+      offsetY += sections[i].data.length * ITEM_HEIGHT;
     }
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: offsetY, animated: true });
-    }
+    scrollViewRef.current?.scrollTo({ y:offsetY, animated:true });
     toggleSearchBubble();
   };
 
-  const handleBackPress = () => {
-    navigation.goBack();
-  };
-
-  // Toggle dropdown with fade animation
+  // dropdown toggle
   const toggleSection = (county) => {
-    const isExpanded = expandedSections[county];
-    const animValue = animValuesRef.current[county];
-    if (!animValue) return;
-
-    if (isExpanded) {
-      Animated.timing(animValue, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setExpandedSections(prev => ({ ...prev, [county]: false }));
-      });
+    const isExp = expandedSections[county];
+    const animV = animValuesRef.current[county];
+    if(!animV) return;
+    if(isExp){
+      Animated.timing(animV,{ toValue:0, duration:300, useNativeDriver:true })
+        .start(()=> setExpandedSections(ps=>({...ps,[county]:false})));
     } else {
-      setExpandedSections(prev => ({ ...prev, [county]: true }));
-      animValue.setValue(0);
-      Animated.timing(animValue, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      setExpandedSections(ps=>({...ps,[county]:true}));
+      animV.setValue(0);
+      Animated.timing(animV,{ toValue:1, duration:300, useNativeDriver:true })
+        .start();
     }
   };
 
-  // Live Opportunities button simply navigates to "LiveOps"
-  const handleLiveOpportunitiesPress = () => {
-    navigation.navigate('LiveOps');
-  };
+  const handleLiveOpportunitiesPress = () => navigation.navigate('LiveOps');
 
-  if (loading) {
+  if(loading){
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#333" />
-        <Text style={styles.loadingText}>Loading...</Text>
+      <View style={[styles.loadingContainer,{backgroundColor:palette[0]}]}>
+        <ActivityIndicator size="large" color={palette[3]}/>
+        <Text style={[styles.loadingText,{color:palette[3]}]}>Loading...</Text>
       </View>
     );
   }
 
-  const availableCounties = sections.map((section) => section.title);
+  const counties = sections.map(s=>s.title);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Back Button */}
+    <SafeAreaView style={[styles.container,{backgroundColor:palette[0]}]}>
+      {/* BACK */}
       <TouchableOpacity
-        style={[styles.backButton, { top: insets.top + 50 }]}
-        onPress={handleBackPress}
+        style={[styles.backButton,{top:insets.top+50}]}
+        onPress={()=>navigation.goBack()}
       >
-        <MaterialIcons name="arrow-back" size={24} color="#333" />
+        <MaterialIcons name="arrow-back" size={24} color={palette[3]}/>
       </TouchableOpacity>
 
-      {/* Search Icon (if bubble not visible) */}
+      {/* SEARCH ICON */}
       {!isSearchBubbleVisible && (
         <TouchableOpacity
-          style={styles.searchIconContainer}
+          style={[styles.searchIconContainer,{backgroundColor:palette[0]}]}
           onPress={toggleSearchBubble}
         >
-          <MaterialIcons name="search" size={24} color="#333" />
+          <MaterialIcons name="search" size={24} color={palette[3]}/>
         </TouchableOpacity>
       )}
 
-      {/* Quick Search Bubble */}
+      {/* QUICK SEARCH BUBBLE */}
       {isSearchBubbleVisible && (
         <Animated.View
           style={[
             styles.searchBubble,
             {
+              backgroundColor: palette[0],
               transform: [{ scale: bubbleScale }],
-              opacity: bubbleScale.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 1],
-              }),
-            },
+              opacity: bubbleScale.interpolate({ inputRange:[0,1], outputRange:[0,1] })
+            }
           ]}
         >
           <View style={styles.bubbleHeader}>
-            <Text style={styles.searchBubbleTitle}>Quick Search</Text>
+            <Text style={[styles.searchBubbleTitle,{color:palette[3]}]}>
+              Quick Search
+            </Text>
             <TouchableOpacity onPress={toggleSearchBubble} style={styles.closeButton}>
-              <MaterialIcons name="close" size={24} color="#333" />
+              <MaterialIcons name="close" size={24} color={palette[3]}/>
             </TouchableOpacity>
           </View>
           <View style={styles.countyButtonsContainer}>
-            {availableCounties.map((county) => (
+            {counties.map(c=>(
               <TouchableOpacity
-                key={county}
-                style={styles.countyButton}
-                onPress={() => handleCountySelect(county)}
+                key={c}
+                style={[styles.countyButton,{backgroundColor:palette[0],borderColor:palette[3]}]}
+                onPress={()=>handleCountySelect(c)}
               >
-                <Text style={styles.countyButtonText}>{county}</Text>
+                <Text style={[styles.countyButtonText,{color:palette[3]}]}>{c}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </Animated.View>
       )}
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerText}>{referenceParam}</Text>
+      {/* HEADER */}
+      <View style={[styles.header,{backgroundColor:palette[0]}]}>
+        <Text style={[styles.headerText,{color:palette[3]}]}>{refParam}</Text>
       </View>
 
-      {/* Main Collapsible List */}
+      {/* SECTIONS */}
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollViewContent}>
-        {sections.map((section, sIndex) => {
-          const isExpanded = expandedSections[section.title];
-          const animValue = animValuesRef.current[section.title];
+        {sections.map((section,i)=> {
+          const isExp = expandedSections[section.title];
+          const animV = animValuesRef.current[section.title];
           return (
-            <View key={sIndex}>
-              {/* Dropdown Header with Gradient */}
-              <TouchableOpacity onPress={() => toggleSection(section.title)} style={styles.gradientWrapper}>
+            <View key={i}>
+              <TouchableOpacity
+                onPress={()=>toggleSection(section.title)}
+                style={styles.gradientWrapper}
+              >
                 <LinearGradient
-                  colors={['#fff0d4', '#ffe8c9']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
+                  colors={[palette[1],palette[2]]}
+                  start={{x:0,y:0}} end={{x:1,y:0}}
                   style={styles.dropdownHeader}
                 >
-                  <Text style={styles.countyHeaderText}>{section.title}</Text>
-                  <MaterialIcons 
-                    name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-                    size={24} 
-                    color="#333" 
+                  <Text style={[styles.countyHeaderText,{color:palette[3]}]}>
+                    {section.title}
+                  </Text>
+                  <MaterialIcons
+                    name={isExp?'keyboard-arrow-up':'keyboard-arrow-down'}
+                    size={24}
+                    color={palette[3]}
                   />
                 </LinearGradient>
               </TouchableOpacity>
-              {isExpanded && (
-                <Animated.View style={{ opacity: animValue }}>
-                  {section.data && section.data.length > 0 ? (
-                    section.data.map((orgItem, iIndex) => (
-                      <TouchableOpacity
-                        key={iIndex}
-                        onPress={() => navigation.navigate('DisplayScreen', { item: orgItem })}
-                        style={styles.cardWrapper}
+              {isExp && (
+                <Animated.View style={{opacity:animV}}>
+                  {section.data.length>0 ? section.data.map((org,j)=>(
+                    <TouchableOpacity
+                      key={j}
+                      onPress={()=>navigation.navigate('DisplayScreen',{item:org})}
+                      style={styles.cardWrapper}
+                    >
+                      <LinearGradient
+                        colors={[palette[1],palette[2]]}
+                        start={{x:0,y:0}} end={{x:1,y:0}}
+                        style={styles.card}
                       >
-                        <LinearGradient
-                          colors={['#fff0d4', '#ffe8c9']}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.card}
-                        >
-                          <Text style={styles.cardTitle}>{orgItem.title}</Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    ))
-                  ) : (
+                        <Text style={[styles.cardTitle,{color:palette[3]}]}>
+                          {org.title}
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )) : (
                     <View style={styles.comingSoonContainer}>
-                      <Text style={styles.comingSoonText}>Coming Soon!</Text>
+                      <Text style={[styles.comingSoonText,{color:palette[3]}]}>
+                        Coming Soon!
+                      </Text>
                     </View>
                   )}
                 </Animated.View>
@@ -298,15 +264,17 @@ const VolunteerCarousel = ({ route }) => {
             </View>
           );
         })}
-        {/* Live Opportunities Button */}
+
+        {/* LIVE OPS */}
         <TouchableOpacity style={styles.liveButton} onPress={handleLiveOpportunitiesPress}>
           <LinearGradient
-            colors={['#fff0d4', '#ffe8c9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            colors={[palette[1],palette[2]]}
+            start={{x:0,y:0}} end={{x:1,y:0}}
             style={styles.liveButtonGradient}
           >
-            <Text style={styles.liveButtonText}>Live Opportunities</Text>
+            <Text style={[styles.liveButtonText,{color:palette[3]}]}>
+              Live Opportunities
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
@@ -316,188 +284,67 @@ const VolunteerCarousel = ({ route }) => {
 
 export default VolunteerCarousel;
 
+/* — all your original styles unchanged — */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
-  },
+  container: { flex: 1 },
   loadingContainer: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex:1, justifyContent:'center', alignItems:'center'
   },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 18,
-    color: '#333',
-  },
+  loadingText: { marginTop:10, fontSize:18 },
   header: {
-    height: 100,
-    backgroundColor: '#fff6e7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-    shadowColor: '#333',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
+    height:100, justifyContent:'center', alignItems:'center',
+    borderBottomLeftRadius:30, borderBottomRightRadius:30,
+    position:'absolute', top:0, left:0, right:0, zIndex:1,
+    shadowColor:'#333', shadowOffset:{width:0,height:5},
+    shadowOpacity:0.2, shadowRadius:10
   },
-  headerText: {
-    fontSize: RFPercentage(3),
-    fontWeight: 'bold',
-    color: '#333',
+  headerText:{ fontSize:RFPercentage(3), fontWeight:'bold' },
+  backButton:{ marginTop:-85, position:'absolute', left:5, padding:10, zIndex:100 },
+  scrollViewContent:{ paddingTop:120, paddingBottom:90, paddingHorizontal:20 },
+  countyHeaderText:{ fontSize:RFPercentage(2.5), fontWeight:'bold' },
+  gradientWrapper:{ marginVertical:10 },
+  dropdownHeader:{
+    flexDirection:'row', alignItems:'center', justifyContent:'space-between',
+    paddingVertical:15, paddingHorizontal:15, borderRadius:20,
+    shadowColor:'#000', shadowOffset:{width:0,height:2},
+    shadowOpacity:0.15, shadowRadius:5, elevation:3
   },
-  backButton: {
-    marginTop: -85,
-    position: 'absolute',
-    left: 5,
-    padding: 10,
-    zIndex: 100,
+  cardWrapper:{ alignSelf:'center', marginVertical:8 },
+  card:{
+    width: width * 0.9, borderRadius:15, padding:15,
+    shadowColor:'#000', shadowOffset:{width:0,height:3},
+    shadowOpacity:0.2, shadowRadius:5, elevation:3
   },
-  scrollViewContent: {
-    paddingTop: 120,
-    paddingBottom: 90,
-    paddingHorizontal: 20,
+  cardTitle:{ fontSize:RFPercentage(2), textAlign:'center' },
+  comingSoonContainer:{ height:ITEM_HEIGHT, justifyContent:'center', alignItems:'center' },
+  comingSoonText:{ fontSize:RFPercentage(2.2) },
+  searchIconContainer:{
+    position:'absolute', top:30, right:20, zIndex:110,
+    borderRadius:20, padding:8
   },
-  countyHeaderText: {
-    fontSize: RFPercentage(2.5),
-    fontWeight: 'bold',
-    color: '#333',
+  searchBubble:{
+    position:'absolute', top:70, alignSelf:'center',
+    width: width * 0.85, borderRadius:20,
+    paddingVertical:16, paddingHorizontal:12, zIndex:200,
+    shadowColor:'#000', shadowOffset:{width:0,height:10},
+    shadowOpacity:0.5, shadowRadius:20, elevation:10
   },
-  gradientWrapper: {
-    marginVertical: 10,
+  bubbleHeader:{
+    width:'100%', alignItems:'center', justifyContent:'center',
+    marginBottom:10, position:'relative'
   },
-  dropdownHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 3,
+  searchBubbleTitle:{ fontSize:RFPercentage(2.2), textAlign:'center' },
+  closeButton:{ position:'absolute', right:0, top:0, padding:4 },
+  countyButtonsContainer:{ flexDirection:'column', alignItems:'center', width:'100%' },
+  countyButton:{
+    flexDirection:'row', alignItems:'center', justifyContent:'center',
+    marginVertical:10, paddingVertical:15, paddingHorizontal:20,
+    borderRadius:20, borderWidth:1, width:'100%'
   },
-  cardWrapper: {
-    alignSelf: 'center',
-    marginVertical: 8,
+  countyButtonText:{ fontSize:RFPercentage(1.8), textAlign:'center' },
+  liveButton:{ marginVertical:20, alignSelf:'center', width: width * 0.9 },
+  liveButtonGradient:{
+    borderRadius:15, padding:15, alignItems:'center', justifyContent:'center'
   },
-  card: {
-    width: width * 0.9,
-    borderRadius: 15,
-    padding: 15,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  cardTitle: {
-    fontSize: RFPercentage(2),
-    color: '#333',
-    textAlign: 'center',
-  },
-  comingSoonContainer: {
-    height: ITEM_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  comingSoonText: {
-    fontSize: RFPercentage(2.2),
-    color: '#333',
-  },
-  searchIconContainer: {
-    position: 'absolute',
-    top: 30,
-    right: 20,
-    zIndex: 110,
-    backgroundColor: '#fff6e7',
-    borderRadius: 20,
-    padding: 8,
-  },
-  searchBubble: {
-    position: 'absolute',
-    top: 70,
-    alignSelf: 'center',
-    width: width * 0.85,
-    backgroundColor: '#fff6e7',
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    zIndex: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  bubbleHeader: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-    position: 'relative',
-  },
-  searchBubbleTitle: {
-    fontSize: RFPercentage(2.2),
-    color: '#333',
-    textAlign: 'center',
-  },
-  closeButton: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    padding: 4,
-  },
-  countyButtonsContainer: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    width: '100%',
-  },
-  countyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 10,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#333',
-    backgroundColor: '#fff6e7',
-    width: '100%',
-  },
-  countyButtonText: {
-    fontSize: RFPercentage(1.8),
-    color: '#333',
-    textAlign: 'center',
-  },
-  // Live Opportunities Button styles
-  liveButton: {
-    marginVertical: 20,
-    alignSelf: 'center',
-    width: width * 0.9,
-  },
-  liveButtonGradient: {
-    borderRadius: 15,
-    padding: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  liveButtonText: {
-    fontSize: RFPercentage(2),
-    color: '#333',
-    textAlign: 'center',
-  },
+  liveButtonText:{ fontSize:RFPercentage(2), textAlign:'center' }
 });

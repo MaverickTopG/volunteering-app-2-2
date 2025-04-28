@@ -1,4 +1,5 @@
-import React, { useRef, useState, useEffect } from 'react';
+// GoFundMeScreen.js
+import React, { useRef, useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -9,74 +10,101 @@ import {
   Image,
   SafeAreaView,
   ScrollView,
+  ActivityIndicator,
   Linking,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthContext } from '../../auth/AuthContext';
+import { themePacks, seasonal } from '../screens/shop';
 
-// Use the iPhone 16 Pro Max as the design baseline.
+const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-const { width, height } = Dimensions.get('window');
+const scale = (s) => (width  / guidelineBaseWidth)  * s;
+const verticalScale = (s) => (height / guidelineBaseHeight) * s;
 
-const scale = (size) => (width / guidelineBaseWidth) * size;
-const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+export default function GoFundMeScreen() {
+  const { user } = useContext(AuthContext);
 
-const GoFundMeScreen = () => {
-  // Animations for logo & text opacity.
-  const logoScale = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
+  // 4-color palette: [bg, gradStart, gradEnd, text]
+  const DEFAULT = ['#FFF6E7','#FFF0D4','#FFE8C9','#333'];
+  const [palette, setPalette] = useState(DEFAULT);
+  const [loading, setLoading] = useState(true);
 
-  // Typed text effect.
-  const [typedText, setTypedText] = useState('');
-  const indexRef = useRef(0);
-  const fullText = 'Empowering volunteers!';
-
+  // load active theme from AsyncStorage
   useEffect(() => {
-    logoScale.setValue(0);
-    textOpacity.setValue(0);
-
-    Animated.spring(logoScale, {
-      toValue: 1,
-      friction: 5,
-      useNativeDriver: true,
-    }).start();
-
-    Animated.timing(textOpacity, {
-      toValue: 1,
-      duration: 800,
-      delay: 500,
-      useNativeDriver: true,
-    }).start();
-
-    // Typed text effect.
-    setTypedText('');
-    indexRef.current = 0;
-    const typeTimeout = setTimeout(() => {
-      const typeText = () => {
-        if (indexRef.current < fullText.length) {
-          setTypedText((prev) => prev + fullText[indexRef.current]);
-          indexRef.current++;
-          setTimeout(typeText, 100);
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    const key = `@shop/active-${user.uid}`;
+    AsyncStorage.getItem(key)
+      .then(id => {
+        if (!id) return;
+        const pack =
+          themePacks.find(t=>t.id===id) ||
+          seasonal.find(s=>s.id===id);
+        if (pack?.colors) {
+          const c = pack.colors;
+          setPalette([
+            c[0]||DEFAULT[0],
+            c[1]||DEFAULT[1],
+            c[2]||DEFAULT[2],
+            c[3]||DEFAULT[3],
+          ]);
         }
-      };
-      typeText();
-    }, 1000);
+      })
+      .catch(console.warn)
+      .finally(()=>setLoading(false));
+  },[user]);
 
-    return () => clearTimeout(typeTimeout);
-  }, [logoScale, textOpacity]);
+  // Animations
+  const logoScale   = useRef(new Animated.Value(0)).current;
+  const textOpacity = useRef(new Animated.Value(0)).current;
+  const [typedText,setTypedText] = useState('');
+  const indexRef    = useRef(0);
+  const fullText    = 'Empowering volunteers!';
+
+  useEffect(()=>{
+    if(loading) return;
+    // logo spring
+    Animated.spring(logoScale,{ toValue:1, friction:5, useNativeDriver:true }).start();
+    // text fade
+    Animated.timing(textOpacity,{ toValue:1, duration:800, delay:500, useNativeDriver:true }).start();
+    // typing effect
+    setTypedText('');
+    indexRef.current=0;
+    const tick = () => {
+      if(indexRef.current<fullText.length){
+        setTypedText(prev=>prev+fullText[indexRef.current]);
+        indexRef.current++;
+        setTimeout(tick,100);
+      }
+    };
+    setTimeout(tick,1000);
+  },[loading]);
+
+  if(loading){
+    return (
+      <SafeAreaView style={[styles.container,{backgroundColor:DEFAULT[0]}]}>
+        <ActivityIndicator size="large" color={DEFAULT[3]} />
+      </SafeAreaView>
+    );
+  }
 
   const goFundMeUrl =
     'https://www.gofundme.com/f/empower-volunteers-and-transform-communities-with-nexolink';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container,{ backgroundColor: palette[0] }]}>
       <ScrollView
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {/* Logo */}
-        <Animated.View style={[styles.logoContainer, { transform: [{ scale: logoScale }] }]}>
+        <Animated.View style={[styles.logoContainer, { transform:[{scale:logoScale}] }]}>
           <Image
             source={require('../../assets/spaceship.png')}
             style={styles.logo}
@@ -85,40 +113,46 @@ const GoFundMeScreen = () => {
         </Animated.View>
 
         {/* Title */}
-        <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
-          <Text style={styles.title}>NexoLink Fundraiser</Text>
+        <Animated.View style={[styles.textContainer,{opacity:textOpacity}]}>
+          <Text style={[styles.title,{ color: palette[3] }]}>
+            NexoLink Fundraiser
+          </Text>
         </Animated.View>
 
         {/* Typed Text */}
-        <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
-          <Text style={styles.typingText}>{typedText}</Text>
+        <Animated.View style={[styles.textContainer,{opacity:textOpacity}]}>
+          <Text style={[styles.typingText,{ color: palette[3] }]}>
+            {typedText}
+          </Text>
         </Animated.View>
 
-        {/* Gradient "Donate Now" Button */}
+        {/* Donate Now Button */}
         <TouchableOpacity
-          onPress={() => Linking.openURL(goFundMeUrl)}
+          onPress={()=> Linking.openURL(goFundMeUrl)}
           activeOpacity={0.85}
-          style={{ marginTop: verticalScale(20) }}
+          style={{marginTop:verticalScale(20)}}
         >
           <LinearGradient
-            colors={['#fff0d4', '#ffe8c9']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            colors={[palette[1],palette[2]]}
+            start={{x:0,y:0}} end={{x:1,y:0}}
             style={styles.gradientButton}
           >
-            <Text style={styles.gradientButtonText}>Donate Now</Text>
+            <Text style={[styles.gradientButtonText,{ color: palette[3] }]}>
+              Donate Now
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Info Section with Warm Gradient */}
+        {/* Info Section */}
         <LinearGradient
-          colors={['#fff0d4', '#ffe8c9']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
+          colors={[palette[1],palette[2]]}
+          start={{x:0,y:0}} end={{x:1,y:0}}
           style={styles.infoSection}
         >
-          <Text style={styles.infoTitle}>Why We Need Your Help</Text>
-          <Text style={styles.infoText}>
+          <Text style={[styles.infoTitle, { color: palette[3] }]}>
+            Why We Need Your Help
+          </Text>
+          <Text style={[styles.infoText, { color: palette[3] }]}>
             We're raising funds to keep NexoLink as a nonprofit and to purchase subscriptions
             that will enhance the app’s features. Your support helps us improve volunteering
             accessibility and impact more lives.
@@ -127,82 +161,64 @@ const GoFundMeScreen = () => {
       </ScrollView>
     </SafeAreaView>
   );
-};
-
-export default GoFundMeScreen;
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
+  container:{ flex:1 },
+  contentContainer:{
+    flexGrow:1,
+    padding:scale(20),
+    alignItems:'center',
+    justifyContent:'center',
   },
-  contentContainer: {
-    flexGrow: 1,
-    padding: scale(20),
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoContainer:{ marginBottom:verticalScale(20) },
+  logo:{ width:scale(128), height:scale(128) },
+  textContainer:{ alignItems:'center', marginBottom:verticalScale(15) },
+  title:{
+    fontSize:scale(28),
+    fontWeight:'bold',
   },
-  logoContainer: {
-    marginBottom: verticalScale(20),
+  typingText:{
+    fontSize:scale(20),
+    marginTop:verticalScale(5),
   },
-  logo: {
-    width: scale(128),
-    height: scale(128),
+  gradientButton:{
+    borderRadius:scale(10),
+    paddingVertical:verticalScale(12),
+    paddingHorizontal:scale(40),
+    shadowColor:'#000',
+    shadowOpacity:0.1,
+    shadowRadius:scale(6),
+    shadowOffset:{width:0,height:verticalScale(3)},
+    elevation:6,
   },
-  textContainer: {
-    alignItems: 'center',
-    marginBottom: verticalScale(15),
+  gradientButtonText:{
+    fontSize:scale(18),
+    fontWeight:'700',
+    textAlign:'center',
   },
-  title: {
-    fontSize: scale(28),
-    fontWeight: 'bold',
-    color: '#333',
+  infoSection:{
+    marginTop:verticalScale(30),
+    width:'100%',
+    borderRadius:scale(12),
+    paddingHorizontal:scale(20),
+    paddingVertical:verticalScale(15),
+    shadowColor:'#000',
+    shadowOpacity:0.1,
+    shadowRadius:scale(6),
+    shadowOffset:{width:0,height:verticalScale(3)},
+    elevation:4,
+    alignItems:'center',
   },
-  typingText: {
-    fontSize: scale(20),
-    color: '#333',
-    marginTop: verticalScale(5),
+  infoTitle:{
+    fontSize:scale(20),
+    fontWeight:'bold',
+    marginBottom:verticalScale(10),
+    textAlign:'center',
   },
-  gradientButton: {
-    borderRadius: scale(10),
-    paddingVertical: verticalScale(12),
-    paddingHorizontal: scale(40),
-    shadowColor: '#ffe8c9',
-    shadowOpacity: 0.6,
-    shadowRadius: scale(6),
-    shadowOffset: { width: 0, height: scale(3) },
-    elevation: 6,
-  },
-  gradientButtonText: {
-    color: '#333',
-    fontSize: scale(18),
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  infoSection: {
-    marginTop: verticalScale(30),
-    width: '100%',
-    borderRadius: scale(12),
-    paddingHorizontal: scale(20),
-    paddingVertical: verticalScale(15),
-    shadowColor: '#ffe8c9',
-    shadowOpacity: 0.3,
-    shadowRadius: scale(6),
-    shadowOffset: { width: 0, height: verticalScale(3) },
-    elevation: 4,
-    alignItems: 'center',
-  },
-  infoTitle: {
-    fontSize: scale(20),
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: verticalScale(10),
-    textAlign: 'center',
-  },
-  infoText: {
-    fontSize: scale(16),
-    color: '#333',
-    textAlign: 'center',
-    lineHeight: verticalScale(22),
+  infoText:{
+    fontSize:scale(16),
+    textAlign:'center',
+    lineHeight:verticalScale(22),
   },
 });

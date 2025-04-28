@@ -1,3 +1,4 @@
+// CustomSideBarMenu.js
 import React, { useEffect, useRef, useContext, useState } from 'react';
 import { 
   View, 
@@ -10,271 +11,260 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-import { AuthContext } from '../auth/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth, db } from '../auth/firebase'; // Ensure db is exported
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDrawerStatus } from '@react-navigation/drawer';
+import { AuthContext } from '../auth/AuthContext';
+import { auth, db } from '../auth/firebase';
+import { signOut } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
+import { themePacks, seasonal } from '../volcarosuel/screens/shop';
 
-// Baseline (iPhone 16 Pro Max)
+const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-const { width, height } = Dimensions.get('window');
-const scale = (size) => (width / guidelineBaseWidth) * size;
-const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+const scale = s => (width / guidelineBaseWidth) * s;
+const verticalScale = s => (height / guidelineBaseHeight) * s;
 
-const CustomSideBarMenu = (props) => {
+export default function CustomSideBarMenu(props) {
+  const navigation = props.navigation;
   const { user, setUser } = useContext(AuthContext);
+
+  // ---- Theme palette ----
+  // [ background, gradStart, gradEnd, text/icon ]
+  const DEFAULT = ['#fff6e7','#fff0d4','#ffe8c9','#333'];
+  const [palette, setPalette] = useState(DEFAULT);
+  const [themeLoading, setThemeLoading] = useState(true);
+
+  // ---- Animation ----
   const rotation = useRef(new Animated.Value(0)).current;
-  const isDrawerOpen = useDrawerStatus() === 'open';
   const animationRef = useRef(null);
 
-  // State to store a random volunteer fact from Firestore
-  const [randomFact, setRandomFact] = useState("");
+  // ---- Drawer status ----
+  const isDrawerOpen = useDrawerStatus() === 'open';
 
-  // Fetch a new volunteer fun fact every time the drawer opens
+  // ---- Fun fact ----
+  const [randomFact, setRandomFact] = useState('');
+
+  // ---- Load theme ----
   useEffect(() => {
-    if (isDrawerOpen) {
-      fetchRandomFact();
+    if (!user) {
+      setThemeLoading(false);
+      return;
     }
-  }, [isDrawerOpen]);
-
-  const fetchRandomFact = async () => {
-    try {
-      const snapshot = await getDocs(collection(db, 'volunteer_funfacts'));
-      const allFacts = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.fun_fact) {
-          allFacts.push(data.fun_fact);
+    const key = `@shop/active-${user.uid}`;
+    AsyncStorage.getItem(key)
+      .then(id => {
+        if (!id) return;
+        const pack = themePacks.find(t => t.id === id) || seasonal.find(s => s.id === id);
+        if (pack?.colors) {
+          const c = pack.colors;
+          setPalette([
+            c[0] || DEFAULT[0],
+            c[1] || DEFAULT[1],
+            c[2] || DEFAULT[2],
+            c[3] || DEFAULT[3],
+          ]);
         }
-      });
-      if (allFacts.length > 0) {
-        const index = Math.floor(Math.random() * allFacts.length);
-        setRandomFact(allFacts[index]);
-      } else {
-        setRandomFact("Volunteering Fact: [No facts found in Firestore!]");
-      }
-    } catch (err) {
-      console.error("Error fetching fun facts:", err);
-      setRandomFact("Volunteering Fact: [Error fetching facts!]");
-    }
-  };
+      })
+      .catch(console.warn)
+      .finally(() => setThemeLoading(false));
+  }, [user]);
 
+  // ---- Fetch fun fact on open ----
+  useEffect(() => {
+    if (isDrawerOpen && !themeLoading) {
+      (async () => {
+        try {
+          const snap = await getDocs(collection(db, 'volunteer_funfacts'));
+          const facts = [];
+          snap.forEach(d => {
+            if (d.data().fun_fact) facts.push(d.data().fun_fact);
+          });
+          setRandomFact(facts.length
+            ? facts[Math.floor(Math.random()*facts.length)]
+            : 'No facts found.');
+        } catch {
+          setRandomFact('Error fetching facts.');
+        }
+      })();
+    }
+  }, [isDrawerOpen, themeLoading]);
+
+  // ---- Rotate spaceship when open ----
   useEffect(() => {
     if (isDrawerOpen) {
-      startRotationAnimation();
+      rotation.setValue(0);
+      animationRef.current = Animated.loop(
+        Animated.timing(rotation, {
+          toValue: 1,
+          duration: 4000,
+          useNativeDriver: true,
+        })
+      );
+      animationRef.current.start();
     } else {
-      stopRotationAnimation();
-    }
-    return () => {
-      stopRotationAnimation();
-    };
-  }, [isDrawerOpen]);
-
-  const startRotationAnimation = () => {
-    rotation.setValue(0);
-    animationRef.current = Animated.loop(
-      Animated.timing(rotation, {
-        toValue: 1,
-        duration: 4000,
-        useNativeDriver: true,
-      })
-    );
-    animationRef.current.start();
-  };
-
-  const stopRotationAnimation = () => {
-    if (animationRef.current) {
-      animationRef.current.stop();
+      animationRef.current?.stop();
       rotation.setValue(0);
     }
-  };
+    return () => animationRef.current?.stop();
+  }, [isDrawerOpen]);
 
+  // ---- Logout ----
   const handleLogout = async () => {
     try {
       await signOut(auth);
       setUser(null);
-      props.navigation.navigate('Login');
-    } catch (error) {
-      Alert.alert('Error', error.message);
+      navigation.navigate('Login');
+    } catch (e) {
+      Alert.alert('Error', e.message);
     }
   };
 
+  // ---- Show email ----
   const handleSpaceshipPress = () => {
-    if (user && user.email) {
-      Alert.alert('Registered Email', user.email);
-    } else {
-      Alert.alert('No Email Found', 'You are not logged in.');
-    }
+    Alert.alert(
+      'Your Email',
+      user?.email || 'Not logged in.'
+    );
   };
 
-  // Rotation interpolation
-  const rotateInterpolate = rotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
+  // ---- Rotation interpolate ----
+  const rotate = rotation.interpolate({
+    inputRange: [0,1],
+    outputRange: ['0deg','360deg']
   });
 
+  if (themeLoading) {
+    // blank until theme loads
+    return null;
+  }
+
   return (
-    // Transparent container to let the dark overlay show behind it
     <View style={styles.container}>
-      <DrawerContentScrollView 
-        {...props} 
-        contentContainerStyle={styles.drawerContent}
-      >
-        {/* Card items, same style as before, aligned left with spaceship */}
+      <DrawerContentScrollView {...props} contentContainerStyle={styles.drawerContent}>
         <View style={styles.navSection}>
-          {/* HOME Card */}
-          <View style={styles.cardContainer}>
+          {/** HOME */}
+          <View style={[styles.cardContainer,{ backgroundColor: palette[0], borderColor: palette[3] }]}>
             <DrawerItem
               label="Home"
-              labelStyle={styles.drawerItemLabel}
+              labelStyle={[styles.drawerItemLabel,{ color: palette[3] }]}
               icon={() => null}
-              onPress={() => props.navigation.navigate('NexoLink')}
+              onPress={() => navigation.navigate('NexoLink')}
               style={styles.drawerItem}
-              accessibilityLabel="Navigate to Home"
-              accessibilityRole="button"
-            />   
+            />
           </View>
-
-          {/* ADD AN ORG Card */}
-          <View style={styles.cardContainer}>
+          {/** ADD ORG */}
+          <View style={[styles.cardContainer,{ backgroundColor: palette[0], borderColor: palette[3] }]}>
             <DrawerItem
               label="Add an Org"
-              labelStyle={styles.drawerItemLabel}
+              labelStyle={[styles.drawerItemLabel,{ color: palette[3] }]}
               icon={() => null}
-              onPress={() => props.navigation.navigate('Organizations')}
+              onPress={() => navigation.navigate('Organizations')}
               style={styles.drawerItem}
-              accessibilityLabel="Navigate to Organizations"
-              accessibilityRole="button"
-            />   
+            />
           </View>
-
-          {/* ACCOUNT Card */}
-          <View style={styles.cardContainer}>
+          {/** ACCOUNT */}
+          <View style={[styles.cardContainer,{ backgroundColor: palette[0], borderColor: palette[3] }]}>
             <DrawerItem
               label="Account"
-              labelStyle={styles.drawerItemLabel}
+              labelStyle={[styles.drawerItemLabel,{ color: palette[3] }]}
               icon={() => null}
-              onPress={() => props.navigation.navigate('Account')}
+              onPress={() => navigation.navigate('Account')}
               style={styles.drawerItem}
-              accessibilityLabel="Navigate to Account"
-              accessibilityRole="button"
             />
           </View>
-
-          {/* Volunteer Map Card */}
-          <View style={styles.cardContainer}>
+          {/** MAP */}
+          <View style={[styles.cardContainer,{ backgroundColor: palette[0], borderColor: palette[3] }]}>
             <DrawerItem
               label="Volunteer Map"
-              labelStyle={styles.drawerItemLabel}
-              icon={() => <Ionicons name="map-outline" size={24} color="#333" />}
-              onPress={() => props.navigation.navigate('VolunteerMap')}
+              labelStyle={[styles.drawerItemLabel,{ color: palette[3] }]}
+              icon={() => <Ionicons name="map-outline" size={24} color={palette[3]} />}
+              onPress={() => navigation.navigate('VolunteerMap')}
               style={styles.drawerItem}
-              accessibilityLabel="Navigate to Volunteer Map"
-              accessibilityRole="button"
             />
           </View>
-       
 
-          {/* Black card for fun fact */}
-          <View style={styles.blackCard}>
-            <Ionicons name="planet" size={scale(80)} color="#fff6e7" />
-            <Text style={styles.someCoolText}>
+          {/** Fun Fact Card */}
+          <View style={[styles.funCard,{ backgroundColor: palette[3] }]}>
+            <Ionicons name="planet" size={scale(80)} color={palette[0]} />
+            <Text style={[styles.funText,{ color: palette[0] }]}>
               Explore the Universe of Volunteering!
             </Text>
-            <Text style={styles.funFact}>
+            <Text style={[styles.funFact,{ color: palette[0] }]}>
               {randomFact}
             </Text>
           </View>
         </View>
       </DrawerContentScrollView>
 
-      {/* Rotating Spaceship with circle behind it */}
-      <TouchableOpacity 
-        style={styles.spaceshipContainer} 
-        onPress={handleSpaceshipPress}
-      >
-        <View style={styles.spaceshipCircle} />
+      {/** Spaceship button */}
+      <TouchableOpacity style={styles.spaceshipContainer} onPress={handleSpaceshipPress}>
+        <View style={[styles.spaceshipCircle,{ backgroundColor: palette[0] }]} />
         <Animated.Image
           source={require('../assets/spaceship.png')}
           style={[
             styles.spaceship,
-            { transform: [{ rotate: rotateInterpolate }] },
+            { transform: [{ rotate }] }
           ]}
         />
       </TouchableOpacity>
     </View>
   );
-};
-
-export default CustomSideBarMenu;
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent', // Transparent to show dark overlay
+    backgroundColor: 'transparent',
   },
   drawerContent: {
-    // Move everything down by ~10% of screen height
     paddingTop: verticalScale(0.15 * height),
   },
   navSection: {
-    // Align left with the spaceship
     marginLeft: scale(30),
   },
   cardContainer: {
-    backgroundColor: '#fff6e7',
     borderRadius: scale(12),
     marginBottom: verticalScale(12),
-    // iOS shadow
+    borderWidth: scale(1),
+    // shadows
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOffset: { width:0, height:verticalScale(2) },
     shadowOpacity: 0.1,
     shadowRadius: scale(4),
-    // Android elevation
     elevation: 3,
-    borderWidth: scale(1),
-    borderColor: '#ccc',
   },
   drawerItem: {
     paddingVertical: verticalScale(10),
     paddingHorizontal: scale(10),
   },
   drawerItemLabel: {
-    color: '#000',
     fontSize: scale(16),
   },
-  /* Black card for the fun fact */
-  blackCard: {
-    backgroundColor: '#000',
+  funCard: {
     borderRadius: scale(12),
     marginTop: verticalScale(30),
     padding: scale(15),
-    // Shadow
+    alignItems: 'center',
+    minHeight: verticalScale(120),
+    justifyContent: 'center',
+    // shadow
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOffset: { width:0, height:verticalScale(2) },
     shadowOpacity: 0.2,
     shadowRadius: scale(4),
     elevation: 4,
-    alignItems: 'center',
-    // Increase minHeight so longer facts fit
-    minHeight: verticalScale(120),
-    justifyContent: 'center',
   },
-  someCoolText: {
+  funText: {
     marginTop: verticalScale(10),
-    color: '#fff6e7',
     fontSize: scale(18),
     textAlign: 'center',
   },
   funFact: {
     marginTop: verticalScale(10),
-    color: '#fff6e7',
     fontSize: scale(14),
     textAlign: 'center',
   },
-  /* Circle + spaceship */
   spaceshipContainer: {
     position: 'absolute',
     bottom: verticalScale(30),
@@ -289,7 +279,6 @@ const styles = StyleSheet.create({
     width: scale(60),
     height: scale(60),
     borderRadius: scale(30),
-    backgroundColor: '#fff6e7',
     zIndex: -1,
   },
   spaceship: {

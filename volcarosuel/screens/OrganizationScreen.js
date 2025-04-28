@@ -1,4 +1,5 @@
-import React, { useState, useContext } from 'react';
+// SuggestOrganizationScreen.js
+import React, { useState, useContext, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,44 +13,69 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { AuthContext } from '../../auth/AuthContext'; // Adjust the path as needed
-import { db } from '../../auth/firebase';             // your firebase config/export
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthContext } from '../../auth/AuthContext';
+import { db } from '../../auth/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { themePacks, seasonal } from '../screens/shop';
 
-BACKGROUND = "#fff6e7";
-
+const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-const { width, height } = Dimensions.get('window');
-const scale = (size) => (width / guidelineBaseWidth) * size;
-const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+const scale = size => (width  / guidelineBaseWidth)  * size;
+const verticalScale = size => (height / guidelineBaseHeight) * size;
 
-export default function SuggestOrganizationScreen({ navigation }) {
+// Default palette: [bg, header-start, header-end, text/icon]
+const DEFAULT_PALETTE = ['#FFF6E7', '#FFF0D4', '#FFE8C9', '#333333'];
+
+export default function SuggestOrganizationScreen() {
   const { user } = useContext(AuthContext);
-  const nav = useNavigation();
+  const navigation = useNavigation();
 
-  // Form state
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
   const [form, setForm] = useState({
-    name: '',
-    description: '',
-    location: '',
-    requirements: '',
-    contact: '',
-    website: '',
-    county: '',
-    reference: '',
+    name: '', description: '', location: '',
+    requirements: '', contact: '', website: '',
+    county: '', reference: '',
   });
-
-  // Success message state
   const [submissionMessage, setSubmissionMessage] = useState('');
+
+  // Reload theme on focus
+  useFocusEffect(useCallback(() => {
+    if (!user) {
+      setPalette(DEFAULT_PALETTE);
+      return;
+    }
+    const key = `@shop/active-${user.uid}`;
+    AsyncStorage.getItem(key)
+      .then(id => {
+        if (!id) {
+          setPalette(DEFAULT_PALETTE);
+          return;
+        }
+        const pack =
+          themePacks.find(t => t.id === id) ||
+          seasonal.find(s => s.id === id);
+        if (pack?.colors) {
+          const c = pack.colors;
+          setPalette([
+            c[0] ?? DEFAULT_PALETTE[0],
+            c[1] ?? DEFAULT_PALETTE[1],
+            c[2] ?? DEFAULT_PALETTE[2],
+            c[3] ?? DEFAULT_PALETTE[3],
+          ]);
+        }
+      })
+      .catch(() => setPalette(DEFAULT_PALETTE));
+  }, [user]));
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: palette[0] }]}>
         <View style={styles.notLoggedInContainer}>
-          <Text style={styles.notLoggedInText}>
+          <Text style={[styles.notLoggedInText, { color: palette[3] }]}>
             You must be logged in to suggest an organization.
           </Text>
         </View>
@@ -58,151 +84,121 @@ export default function SuggestOrganizationScreen({ navigation }) {
   }
 
   const handleSubmit = async () => {
-    const { name, location, contact, description, requirements, website, county, reference } = form;
-
-    // Only Name, Location, and Contact are mandatory
+    const { name, location, contact, website } = form;
     if (!name || !location || !contact) {
       Alert.alert('Validation Error', 'Please fill in Name, Location, and Contact Information.');
       return;
     }
-
-    // Basic website URL validation if provided
-    if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
-      Alert.alert('Validation Error', 'Please provide a valid website URL (starting with http:// or https://).');
+    if (website && !/^https?:\/\//.test(website)) {
+      Alert.alert('Validation Error', 'Please provide a valid website URL.');
       return;
     }
-
     try {
       await addDoc(collection(db, 'suggested_orgs'), {
         ...form,
         createdBy: user.uid,
         createdAt: new Date().toISOString(),
       });
-
-      setForm({
-        name: '',
-        description: '',
-        location: '',
-        requirements: '',
-        contact: '',
-        website: '',
-        county: '',
-        reference: '',
-      });
-
+      setForm({ name:'',description:'',location:'',requirements:'',
+                contact:'',website:'',county:'',reference:'' });
       setSubmissionMessage(
-        'Thank you! Your suggestion has been submitted. Once added to the main database, it will appear in the app.'
+        'Thank you! Your suggestion has been submitted. It will appear once approved.'
       );
-
-      setTimeout(() => {
-        setSubmissionMessage('');
-      }, 5000);
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to submit the organization.');
+      setTimeout(() => setSubmissionMessage(''), 5000);
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Failed to submit.');
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: palette[0] }]}>
       <KeyboardAvoidingView
-        style={{ flex: 1, width: '100%' }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex:1, width:'100%' }}
+        behavior={Platform.OS==='ios'?'padding':'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Text style={styles.title}>Suggest an Organization</Text>
-          <Text style={styles.subtitle}>
-            Help us expand our database! Fill out the form below to suggest a new organization.
+          <Text style={[styles.title, { color: palette[3] }]}>
+            Suggest an Organization
+          </Text>
+          <Text style={[styles.subtitle, { color: palette[3] }]}>
+            Help us expand our database! Fill out the form below.
           </Text>
 
-          <View style={styles.formCard}>
+          <View style={[styles.formCard, { backgroundColor: palette[0] }]}>
             <TextInput
               style={styles.input}
               placeholder="Organization Name *"
-              placeholderTextColor="#555"
+              placeholderTextColor={palette[3] + '80'}
               value={form.name}
-              onChangeText={(text) => setForm({ ...form, name: text })}
-              keyboardAppearance="dark"
+              onChangeText={t=>setForm(f=>({ ...f, name:t }))}
             />
-
             <TextInput
               style={[styles.input, styles.multiline]}
               placeholder="Description"
-              placeholderTextColor="#555"
-              multiline
-              value={form.description}
-              onChangeText={(text) => setForm({ ...form, description: text })}
-              keyboardAppearance="dark"
+              placeholderTextColor={palette[3] + '80'}
+              multiline value={form.description}
+              onChangeText={t=>setForm(f=>({ ...f, description:t }))}
             />
-
             <TextInput
               style={styles.input}
               placeholder="Location *"
-              placeholderTextColor="#555"
+              placeholderTextColor={palette[3] + '80'}
               value={form.location}
-              onChangeText={(text) => setForm({ ...form, location: text })}
-              keyboardAppearance="dark"
+              onChangeText={t=>setForm(f=>({ ...f, location:t }))}
             />
-
             <TextInput
               style={styles.input}
               placeholder="Requirements"
-              placeholderTextColor="#555"
+              placeholderTextColor={palette[3] + '80'}
               value={form.requirements}
-              onChangeText={(text) => setForm({ ...form, requirements: text })}
-              keyboardAppearance="dark"
+              onChangeText={t=>setForm(f=>({ ...f, requirements:t }))}
             />
-
             <TextInput
               style={styles.input}
-              placeholder="Contact Information *"
-              placeholderTextColor="#555"
+              placeholder="Contact Info *"
+              placeholderTextColor={palette[3] + '80'}
               value={form.contact}
-              onChangeText={(text) => setForm({ ...form, contact: text })}
-              keyboardAppearance="dark"
+              onChangeText={t=>setForm(f=>({ ...f, contact:t }))}
             />
-
             <TextInput
               style={styles.input}
               placeholder="Website"
-              placeholderTextColor="#555"
+              placeholderTextColor={palette[3] + '80'}
               value={form.website}
-              onChangeText={(text) => setForm({ ...form, website: text })}
-              keyboardAppearance="dark"
+              onChangeText={t=>setForm(f=>({ ...f, website:t }))}
             />
-
             <TextInput
               style={styles.input}
               placeholder="County"
-              placeholderTextColor="#555"
+              placeholderTextColor={palette[3] + '80'}
               value={form.county}
-              onChangeText={(text) => setForm({ ...form, county: text })}
-              keyboardAppearance="dark"
+              onChangeText={t=>setForm(f=>({ ...f, county:t }))}
             />
-
             <TextInput
               style={styles.input}
-              placeholder="Which Category"
-              placeholderTextColor="#555"
+              placeholder="Category"
+              placeholderTextColor={palette[3] + '80'}
               value={form.reference}
-              onChangeText={(text) => setForm({ ...form, reference: text })}
-              keyboardAppearance="dark"
+              onChangeText={t=>setForm(f=>({ ...f, reference:t }))}
             />
 
-            {/* Gradient Submit Button */}
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
               <LinearGradient
-                colors={['#fff0d4', '#ffe8c9']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+                colors={[palette[1], palette[2]]}
+                start={{ x:0,y:0 }} end={{ x:1,y:0 }}
                 style={styles.gradientButton}
               >
-                <Text style={styles.submitButtonText}>Submit Organization</Text>
+                <Text style={[styles.submitButtonText, { color: palette[3] }]}>
+                  Submit Organization
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
 
             {submissionMessage ? (
-              <View style={styles.messageBox}>
-                <Text style={styles.messageText}>{submissionMessage}</Text>
+              <View style={[styles.messageBox, { backgroundColor: palette[0], borderColor: palette[3] }]}>
+                <Text style={[styles.messageText, { color: palette[3] }]}>
+                  {submissionMessage}
+                </Text>
               </View>
             ) : null}
           </View>
@@ -212,97 +208,27 @@ export default function SuggestOrganizationScreen({ navigation }) {
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BACKGROUND,
-  },
-  scrollContainer: {
-    padding: scale(20),
-    alignItems: 'center',
-  },
-  notLoggedInContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notLoggedInText: {
-    fontSize: scale(18),
-    color: '#333',
-    textAlign: 'center',
-  },
-  title: {
-    fontSize: scale(26),
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: verticalScale(20),
-    marginBottom: verticalScale(10),
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: scale(16),
-    color: '#444',
-    marginBottom: verticalScale(20),
-    textAlign: 'center',
-    paddingHorizontal: scale(20),
-  },
-  formCard: {
-    width: '100%',
-    backgroundColor: BACKGROUND,
-    borderRadius: scale(12),
-    padding: scale(20),
-    shadowColor: '#ffe8c9',
-    shadowOffset: { width: 0, height: verticalScale(2) },
-    shadowOpacity: 0.3,
-    shadowRadius: scale(4),
-    elevation: scale(4),
-  },
-  input: {
-    backgroundColor: BACKGROUND,
-    borderWidth: scale(1),
-    borderColor: '#ccc',
-    borderRadius: scale(8),
-    color: '#333',
-    fontSize: scale(15),
-    padding: scale(12),
-    marginBottom: verticalScale(12),
-    width: '100%',
-  },
-  multiline: {
-    height: verticalScale(80),
-    textAlignVertical: 'top',
-  },
-  submitButton: {
-    marginTop: verticalScale(8),
-  },
-  gradientButton: {
-    borderRadius: scale(8),
-    paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(20),
-    alignItems: 'center',
-    shadowColor: '#ffe8c9',
-    shadowOpacity: 0.6,
-    shadowRadius: scale(6),
-    shadowOffset: { width: 0, height: verticalScale(3) },
-    elevation: 6,
-  },
-  submitButtonText: {
-    color: '#333',
-    fontSize: scale(16),
-    fontWeight: 'bold',
-  },
-  messageBox: {
-    marginTop: verticalScale(16),
-    padding: scale(12),
-    backgroundColor: BACKGROUND,
-    borderRadius: scale(8),
-    borderWidth: scale(1),
-    borderColor: '#333',
-  },
-  messageText: {
-    color: '#333',
-    fontSize: scale(15),
-    textAlign: 'center',
-  },
+  container:        { flex:1 },
+  scrollContainer:  { padding: scale(20), alignItems:'center' },
+  notLoggedInContainer:{ flex:1,justifyContent:'center',alignItems:'center' },
+  notLoggedInText:  { fontSize:scale(18), textAlign:'center' },
+
+  title:            { fontSize:scale(26), fontWeight:'bold', marginTop:verticalScale(20), marginBottom:verticalScale(10), textAlign:'center' },
+  subtitle:         { fontSize:scale(16), marginBottom:verticalScale(20), textAlign:'center', paddingHorizontal:scale(20) },
+
+  formCard:         { width:'100%', borderRadius:scale(12), padding:scale(20),
+                      shadowColor:'#000', shadowOffset:{width:0,height:verticalScale(2)},
+                      shadowOpacity:0.1, shadowRadius:scale(4), elevation:4 },
+
+  input:            { borderWidth:scale(1), borderColor:'#ccc', borderRadius:scale(8),
+                      fontSize:scale(15), padding:scale(12), marginBottom:verticalScale(12), width:'100%' },
+  multiline:        { height:verticalScale(80), textAlignVertical:'top' },
+
+  submitButton:     { marginTop:verticalScale(8) },
+  gradientButton:   { borderRadius:scale(8), paddingVertical:verticalScale(14), alignItems:'center', elevation:3 },
+  submitButtonText:{ fontSize:scale(16), fontWeight:'bold' },
+
+  messageBox:       { marginTop:verticalScale(16), padding:scale(12), borderRadius:scale(8), borderWidth:scale(1) },
+  messageText:      { fontSize:scale(15), textAlign:'center' },
 });

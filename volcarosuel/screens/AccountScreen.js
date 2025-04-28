@@ -1,85 +1,167 @@
-import React from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  SafeAreaView, 
-  ScrollView, 
-  Linking, 
-  Dimensions 
+// AccountScreen.js
+import React, { useState, useEffect, useContext } from 'react';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  Dimensions,
+  Linking,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 
-// Define baseline dimensions (iPhone 16 Pro Max as an example)
+import { AuthContext } from '../../auth/AuthContext';
+// Make sure your shop file exports these two arrays:
+import { themePacks, seasonal } from './shop';
+
+const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-const { width, height } = Dimensions.get('window');
-const scale = (size) => (width / guidelineBaseWidth) * size;
-const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+const scale = s => (width  / guidelineBaseWidth)  * s;
+const vScale= s => (height / guidelineBaseHeight) * s;
 
-/* ===================== AccountScreen Component ===================== */
-function AccountScreen({ navigation }) {
-  // For this example, we assume user is logged in.
-  // In your actual code, you would get the user from AuthContext.
-  const user = { uid: 'example' };
+// Your original default light/pink palette:
+const DEFAULT_PALETTE = [
+  '#FFF6E7', // background
+  '#FFF0D4', // header gradient start
+  '#FFE8C9', // header gradient end
+  '#333333'  // text/icons
+];
 
+function AccountScreen() {
+  const { user } = useContext(AuthContext);
+  const nav      = useNavigation();
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+  const [loading, setLoading] = useState(true);
+
+  const loadActiveTheme = async () => {
+    if (!user) {
+      setPalette(DEFAULT_PALETTE);
+      setLoading(false);
+      return;
+    }
+    try {
+      const key = `@shop/active-${user.uid}`;
+      const id  = await AsyncStorage.getItem(key);
+      if (id) {
+        const pack =
+          themePacks.find(t => t.id === id) ||
+          seasonal.find(s => s.id === id);
+        if (pack?.colors) {
+          const c = pack.colors;
+          // fill out exactly 4 slots
+          setPalette([
+            c[0] ?? DEFAULT_PALETTE[0],
+            c[1] ?? DEFAULT_PALETTE[1],
+            c[2] ?? DEFAULT_PALETTE[2],
+            c[3] ?? DEFAULT_PALETTE[3],
+          ]);
+          return;
+        }
+      }
+      // no active theme found
+      setPalette(DEFAULT_PALETTE);
+    } catch (e) {
+      console.warn('Failed loading active theme', e);
+      setPalette(DEFAULT_PALETTE);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // run on mount...
+  useEffect(() => { loadActiveTheme(); }, [user]);
+  // ...and every time screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadActiveTheme();
+    }, [user])
+  );
+
+  // not logged in
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.notLoggedInContainer}>
-          <Text style={styles.notLoggedInText}>
-            You must be logged in to view your account.
-          </Text>
-        </View>
+      <SafeAreaView style={styles.locked}>
+        <Text style={styles.lockedTxt}>
+          You must be logged in to view your account.
+        </Text>
       </SafeAreaView>
     );
   }
-  
+
+  // still waiting on AsyncStorage
+  if (loading) {
+    return (
+      <View style={[styles.loading, { backgroundColor: palette[0] }]}>
+        <ActivityIndicator size="large" color={palette[3]} />
+      </View>
+    );
+  }
+
+  // finally: render with dynamic palette
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header with Gradient */}
+    <SafeAreaView style={[styles.container, { backgroundColor: palette[0] }]}>
+      {/* pill header */}
+      <View style={styles.headerWrapper}>
         <LinearGradient
-          colors={['#fff0d4', '#ffe8c9']}
+          colors={[palette[1], palette[2]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.headerContainer}
+          style={styles.headerPill}
         >
-          <Text style={styles.headerText}>About</Text>
+          <Text style={[styles.headerTitle, { color: palette[3] }]}>
+            Account
+          </Text>
         </LinearGradient>
+      </View>
 
-        {/* About Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => Linking.openURL('https://mavericktopg.github.io/privacy_policy.html')}
-          >
-            <Text style={styles.rowText}>Privacy Policy</Text>
-            <Ionicons name="chevron-forward" size={scale(20)} color="#333" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => navigation.navigate('AboutNexolinkScreen')}
-          >
-            <Text style={styles.rowText}>About Nexolink</Text>
-            <Ionicons name="chevron-forward" size={scale(20)} color="#333" />
-          </TouchableOpacity>
-        </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <TouchableOpacity
+          style={[styles.row, { backgroundColor: palette[1] }]}
+          onPress={() =>
+            Linking.openURL('https://mavericktopg.github.io/privacy_policy.html')
+          }
+        >
+          <Text style={[styles.rowText, { color: palette[3] }]}>
+            Privacy Policy
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={scale(20)}
+            color={palette[3]}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.row, { backgroundColor: palette[1] }]}
+          onPress={() => nav.navigate('AboutNexolink')}
+        >
+          <Text style={[styles.rowText, { color: palette[3] }]}>
+            About Nexolink
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={scale(20)}
+            color={palette[3]}
+          />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/* ===================== AboutNexolinkScreen Component ===================== */
 function AboutNexolinkScreen({ navigation }) {
   return (
     <SafeAreaView style={aboutStyles.container}>
-      <TouchableOpacity 
-        style={aboutStyles.backButton} 
+      <TouchableOpacity
+        style={aboutStyles.backButton}
         onPress={() => navigation.goBack()}
       >
         <Ionicons name="arrow-back" size={scale(24)} color="#333" />
@@ -87,126 +169,82 @@ function AboutNexolinkScreen({ navigation }) {
       <ScrollView contentContainerStyle={aboutStyles.scrollContent}>
         <Text style={aboutStyles.header}>About Nexolink</Text>
         <Text style={aboutStyles.bodyText}>
-          Welcome to Nexolink! We believe that volunteering is the heart of community connection.
-          Nexolink is dedicated to bridging passionate volunteers with organizations that need them
-          most. Our mission is to create a vibrant network where every act of kindness makes a difference.
-          Thank you for joining us in making the world a better place.
+          Welcome to Nexolink! We believe that volunteering is the heart of
+          community connection. Nexolink is dedicated to bridging passionate
+          volunteers with organizations that need them most. Our mission is to
+          create a vibrant network where every act of kindness makes a
+          difference. Thank you for joining us in making the world a better
+          place.
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/* ===================== Stack Navigator ===================== */
 const Stack = createStackNavigator();
-
 export default function AccountStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="AccountScreen" component={AccountScreen} />
-      <Stack.Screen name="AboutNexolinkScreen" component={AboutNexolinkScreen} />
-      
+      <Stack.Screen name="Account"       component={AccountScreen} />
+      <Stack.Screen name="AboutNexolink" component={AboutNexolinkScreen} />
     </Stack.Navigator>
   );
 }
 
-/* ===================== Styles for AccountScreen ===================== */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
+  container:     { flex: 1 },
+  loading:       { flex:1,justifyContent:'center',alignItems:'center' },
+  locked:        {
+    flex:1,justifyContent:'center',alignItems:'center',
+    backgroundColor:'#FFF6E7'
   },
-  scrollContent: {
-    padding: scale(16),
+  lockedTxt:     { fontSize:scale(18),color:'#333' },
+
+  headerWrapper: {
+    alignItems:'center',
+    marginTop:vScale(20),
+    marginBottom:vScale(10)
   },
-  notLoggedInContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerPill:    {
+    width:'90%',
+    paddingVertical:vScale(14),
+    borderRadius:scale(50),
+    alignItems:'center'
   },
-  notLoggedInText: {
-    fontSize: scale(18),
-    color: '#333',
-    textAlign: 'center',
+  headerTitle:   {
+    fontSize:scale(22),
+    fontWeight:'700'
   },
-  headerContainer: {
-    marginBottom: verticalScale(20),
-    paddingVertical: verticalScale(15),
-    paddingHorizontal: scale(20),
-    borderRadius: scale(25),
-    alignItems: 'center',
-    // Soft shadow matching the gradient
-    shadowColor: '#ffe8c9',
-    shadowOffset: { width: 0, height: scale(4) },
-    shadowOpacity: 0.6,
-    shadowRadius: scale(6),
-    elevation: 6,
+
+  scrollContent: { paddingHorizontal:scale(16) },
+  row:           {
+    flexDirection:'row',
+    justifyContent:'space-between',
+    alignItems:'center',
+    borderRadius:scale(12),
+    padding:scale(12),
+    marginBottom:vScale(12)
   },
-  headerText: {
-    fontSize: scale(28),
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  section: {
-    marginBottom: verticalScale(20),
-  },
-  sectionTitle: {
-    fontSize: scale(16),
-    color: '#333',
-    marginBottom: verticalScale(10),
-    fontWeight: 'bold',
-  },
-  row: {
-    backgroundColor: '#fff6e7',
-    padding: scale(12),
-    borderRadius: scale(8),
-    marginBottom: verticalScale(8),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: scale(1),
-    borderColor: '#ccc',
-    // Subtle shadow for depth
-    shadowColor: '#ccc',
-    shadowOffset: { width: 0, height: scale(2) },
-    shadowOpacity: 0.3,
-    shadowRadius: scale(4),
-    elevation: 2,
-  },
-  rowText: {
-    fontSize: scale(14),
-    color: '#333',
-  },
+  rowText:       { fontSize:scale(14),fontWeight:'500' },
 });
 
-/* ===================== Styles for AboutNexolinkScreen ===================== */
 const aboutStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
-  },
-  backButton: {
-    position: 'absolute',
-    top: verticalScale(10),
-    left: scale(10),
-    zIndex: 1,
-    padding: scale(10),
+  container:     { flex:1, backgroundColor:'#fff6e7' },
+  backButton:    {
+    position:'absolute',top:vScale(10),left:scale(10),
+    zIndex:1,padding:scale(10)
   },
   scrollContent: {
-    padding: scale(20),
-    paddingTop: verticalScale(60), // Space for back button
+    padding:scale(20),
+    paddingTop:vScale(60)
   },
-  header: {
-    fontSize: scale(26),
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: verticalScale(20),
-    textAlign: 'center',
+  header:        {
+    fontSize:scale(26),fontWeight:'bold',
+    color:'#333',marginBottom:vScale(20),
+    textAlign:'center'
   },
-  bodyText: {
-    fontSize: scale(16),
-    color: '#333',
-    lineHeight: scale(24),
-    textAlign: 'center',
+  bodyText:      {
+    fontSize:scale(16),color:'#333',
+    lineHeight:scale(24),textAlign:'center'
   },
 });

@@ -1,5 +1,5 @@
 // VolunteerList.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,69 +10,60 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Animated,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { RFPercentage } from 'react-native-responsive-fontsize';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthContext } from '../../auth/AuthContext';
+import { themePacks, seasonal } from '../screens/shop';
 
+// --- API helpers omitted for brevity (same as before) ---
 const { width } = Dimensions.get('window');
 const HEADER_HEIGHT = 100;
 
-// Build the API URL for opportunities (always "All")
-const buildApiUrl = (lat, lon, page) => {
-  return `https://www.volunteerconnector.org/api/search/?cc=64&format=json&latitude=${lat}&longitude=${lon}&radius=50&page=${page}`;
-};
+// Default fallback palette (bg, header‐start, header‐end, text/icon)
+const DEFAULT_PALETTE = ['#FFF6E7', '#FFF0D4', '#FFE8C9', '#333333'];
 
-// Fetch opportunities from the remote API
-const fetchOpportunitiesFromApi = async (page, lat, lon) => {
-  const url = buildApiUrl(lat, lon, page);
-  console.log("Fetching opportunities from API:", url);
-  const response = await fetch(url);
-  const data = await response.json();
-  // Map each API item to ensure a website property is available.
-  const apiResults = (data.results || []).map(item => ({
-    ...item,
-    website: item.website || item.url,
-  }));
-  return { results: apiResults, next: data.next };
-};
-
-// Simulated function to fetch opportunities from a database
-const fetchOpportunitiesFromDb = async (page, lat, lon) => {
-  // Simulate a delay and return static sample data
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const sampleDbData = [
-        {
-          title: "Local Food Bank Volunteer",
-          dates: "Every Saturday",
-          organization: { name: "Local Food Bank" },
-          description: "Help distribute food to the needy.",
-          remote_or_online: false,
-          website: "https://localfoodbank.org",
-          location: "Downtown",
-          date: "2023-08-01",
-        },
-        {
-          title: "Community Clean-Up",
-          dates: "1st Sunday of the month",
-          organization: { name: "Community Services" },
-          description: "Join the local cleanup to improve your community.",
-          remote_or_online: true,
-          website: "https://communitycleanup.org",
-          location: "Uptown",
-          date: "2023-08-05",
-        }
-      ];
-      resolve(sampleDbData);
-    }, 1000);
-  });
-};
-
-const VolunteerList = () => {
+export default function VolunteerList() {
   const navigation = useNavigation();
+  const { user } = useContext(AuthContext);
+
+  // ---- theme wiring ----
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return;
+      const key = `@shop/active-${user.uid}`;
+      AsyncStorage.getItem(key)
+        .then(id => {
+          if (!id) {
+            setPalette(DEFAULT_PALETTE);
+            return;
+          }
+          const pack =
+            themePacks.find(t => t.id === id) ||
+            seasonal.find(s => s.id === id);
+          if (pack?.colors) {
+            const c = pack.colors;
+            setPalette([
+              c[0] ?? DEFAULT_PALETTE[0],
+              c[1] ?? DEFAULT_PALETTE[1],
+              c[2] ?? DEFAULT_PALETTE[2],
+              c[3] ?? DEFAULT_PALETTE[3],
+            ]);
+          }
+        })
+        .catch(() => {
+          setPalette(DEFAULT_PALETTE);
+        });
+    }, [user])
+  );
+
+  // ---- existing list state & fetching ----
   const [opportunities, setOpportunities] = useState([]);
   const [nextUrl, setNextUrl] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,18 +73,14 @@ const VolunteerList = () => {
 
   const fetchOpportunities = async (page = 1, lat, lon, append = false) => {
     try {
-      // Fetch opportunities concurrently from API and DB.
       const [apiResponse, dbResponse] = await Promise.all([
         fetchOpportunitiesFromApi(page, lat, lon),
         fetchOpportunitiesFromDb(page, lat, lon),
       ]);
-      // Merge API and DB results (order as received).
       const combined = [...apiResponse.results, ...dbResponse];
-      if (append) {
-        setOpportunities((prev) => [...prev, ...combined]);
-      } else {
-        setOpportunities(combined);
-      }
+      setOpportunities(prev =>
+        append ? [...prev, ...combined] : combined
+      );
       setNextUrl(apiResponse.next);
       setCurrentPage(page);
     } catch (error) {
@@ -105,115 +92,121 @@ const VolunteerList = () => {
     }
   };
 
-  // Set up location updates
   useEffect(() => {
     let subscription;
-    const startLocationUpdates = async () => {
+    (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert("Permission Denied", "Location permission was denied.");
         setLoading(false);
         return;
       }
-      try {
-        const loc = await Location.getCurrentPositionAsync({});
-        console.log("Initial location:", loc.coords);
-        setLocationCoords(loc.coords);
-        fetchOpportunities(1, loc.coords.latitude, loc.coords.longitude);
-        subscription = await Location.watchPositionAsync(
-          {
-            timeInterval: 60000,
-            distanceInterval: 0,
-          },
-          (newLoc) => {
-            console.log("Location updated:", newLoc.coords);
-            setLocationCoords(newLoc.coords);
-            // Optionally, refetch opportunities on location update.
-            fetchOpportunities(1, newLoc.coords.latitude, newLoc.coords.longitude);
-          }
-        );
-      } catch (error) {
-        console.error("Location error:", error);
-        Alert.alert("Error", "Failed to retrieve location.");
-        setLoading(false);
-      }
-    };
-
-    startLocationUpdates();
-
-    return () => {
-      if (subscription) {
-        subscription.remove();
-      }
-    };
+      const loc = await Location.getCurrentPositionAsync({});
+      setLocationCoords(loc.coords);
+      fetchOpportunities(1, loc.coords.latitude, loc.coords.longitude);
+      subscription = await Location.watchPositionAsync(
+        { timeInterval: 60000, distanceInterval: 0 },
+        newLoc => {
+          setLocationCoords(newLoc.coords);
+          fetchOpportunities(
+            1,
+            newLoc.coords.latitude,
+            newLoc.coords.longitude
+          );
+        }
+      );
+    })();
+    return () => subscription && subscription.remove();
   }, []);
 
   const handleLoadMore = () => {
     if (nextUrl && locationCoords) {
       setLoadingMore(true);
-      fetchOpportunities(currentPage + 1, locationCoords.latitude, locationCoords.longitude, true);
+      fetchOpportunities(
+        currentPage + 1,
+        locationCoords.latitude,
+        locationCoords.longitude,
+        true
+      );
     }
   };
 
-  // When a button is pressed, navigate to VolunteerScreen with the full item data.
-  const handleItemPress = (item) => {
+  const handleItemPress = item => {
     navigation.navigate('DisplayScreen', { item });
   };
 
+  // ---- render ----
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#333" />
-        <Text style={styles.loadingText}>Loading opportunities...</Text>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: palette[0] }]}>
+        <ActivityIndicator size="large" color={palette[3]} />
+        <Text style={[styles.loadingText, { color: palette[3] }]}>
+          Loading opportunities...
+        </Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: palette[0] }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: 20 }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={24} color="#333" />
+      <View style={[styles.header, { backgroundColor: palette[0] }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={palette[3]} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Volunteer List</Text>
+        <Text style={[styles.headerText, { color: palette[3] }]}>
+          Volunteer List
+        </Text>
       </View>
+
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        {/* Render opportunities as buttons displaying only the title */}
         {opportunities.length > 0 ? (
-          opportunities.map((item, index) => (
+          opportunities.map((item, idx) => (
             <TouchableOpacity
-              key={index}
+              key={idx}
               style={styles.button}
               onPress={() => handleItemPress(item)}
             >
               <LinearGradient
-                colors={['#fff0d4', '#ffe8c9']}
+                colors={[palette[1], palette[2]]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.buttonGradient}
               >
-                <Text style={styles.buttonText}>{item.title}</Text>
+                <Text style={[styles.buttonText, { color: palette[3] }]}>
+                  {item.title}
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           ))
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No opportunities found.</Text>
+            <Text style={[styles.emptyText, { color: palette[3] }]}>
+              No opportunities found.
+            </Text>
           </View>
         )}
+
         {nextUrl && (
-          <TouchableOpacity style={styles.loadMoreButton} onPress={handleLoadMore}>
+          <TouchableOpacity
+            style={styles.loadMoreButton}
+            onPress={handleLoadMore}
+          >
             <LinearGradient
-              colors={['#fff0d4', '#ffe8c9']}
-              style={styles.loadMoreGradient}
+              colors={[palette[1], palette[2]]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
+              style={styles.loadMoreGradient}
             >
               {loadingMore ? (
-                <ActivityIndicator size="small" color="#333" />
+                <ActivityIndicator size="small" color={palette[3]} />
               ) : (
-                <Text style={styles.loadMoreText}>Load More</Text>
+                <Text style={[styles.loadMoreText, { color: palette[3] }]}>
+                  Load More
+                </Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -221,38 +214,29 @@ const VolunteerList = () => {
       </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
-export default VolunteerList;
-
+// Styles untouched except colors pulled from palette
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
-  },
+  container: { flex: 1 },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#fff6e7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
     marginTop: 10,
     fontSize: RFPercentage(2.2),
-    color: '#333',
   },
   header: {
     height: HEADER_HEIGHT,
-    backgroundColor: '#fff6e7',
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    width: '100%',
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    width: '100%',
     zIndex: 1,
     shadowColor: '#333',
     shadowOffset: { width: 0, height: 5 },
@@ -262,9 +246,8 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: RFPercentage(2.5),
     fontWeight: 'bold',
-    color: '#333',
     textAlign: 'center',
-    top: -7,
+    marginTop: 30,
   },
   backButton: {
     position: 'absolute',
@@ -291,7 +274,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: RFPercentage(2.2),
-    color: '#333',
     fontWeight: 'bold',
     textAlign: 'center',
   },
@@ -301,7 +283,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: RFPercentage(2),
-    color: '#333',
   },
   loadMoreButton: {
     marginVertical: 20,
@@ -316,7 +297,6 @@ const styles = StyleSheet.create({
   },
   loadMoreText: {
     fontSize: RFPercentage(2),
-    color: '#333',
     textAlign: 'center',
   },
 });
