@@ -22,6 +22,7 @@ import { AuthContext } from '../../auth/AuthContext';
 import { db } from '../../auth/firebase';
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
 // <-- pull from your shop file -->
 import { themePacks, seasonal } from '../screens/shop';
@@ -60,35 +61,57 @@ export default function VolunteerLogs() {
   const { user, signOut } = useContext(AuthContext);
   const navigation = useNavigation();
 
-  // ─── THEME LOADER ───────────────────────────────────────────
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
-  useEffect(() => {
-    if (!user) return;
-    const key = `@shop/active-${user.uid}`;
-    AsyncStorage.getItem(key)
-      .then(id => {
-        if (!id) return;
+  const [loading, setLoading] = useState(true);
+
+  const loadActiveTheme = async () => {
+    if (!user) {
+      setPalette(DEFAULT_PALETTE);
+      setLoading(false);
+      return;
+    }
+    try {
+      const key = `@shop/active-${user.uid}`;
+      const id  = await AsyncStorage.getItem(key);
+      if (id) {
         const pack =
           themePacks.find(t => t.id === id) ||
           seasonal.find(s => s.id === id);
         if (pack?.colors) {
           const c = pack.colors;
+          // fill out exactly 4 slots
           setPalette([
             c[0] ?? DEFAULT_PALETTE[0],
             c[1] ?? DEFAULT_PALETTE[1],
             c[2] ?? DEFAULT_PALETTE[2],
             c[3] ?? DEFAULT_PALETTE[3],
           ]);
+          return;
         }
-      })
-      .catch(console.warn);
-  }, [user]);
+      }
+      // no active theme found
+      setPalette(DEFAULT_PALETTE);
+    } catch (e) {
+      console.warn('Failed loading active theme', e);
+      setPalette(DEFAULT_PALETTE);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // run on mount...
+  useEffect(() => { loadActiveTheme(); }, [user]);
+  // ...and every time screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadActiveTheme();
+    }, [user])
+  );
   // ────────────────────────────────────────────────────────────
 
   // Data & loading
   const [logs,       setLogs]       = useState([]);
   const [totalHours, setTotalHours] = useState(0);
-  const [loading,    setLoading]    = useState(true);
 
   // Weekly goal state
   const [weeklyGoal,  setWeeklyGoal]  = useState(10);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, memo, useCallback,useContext} from 'react';
 import {
   View,
   TextInput,
@@ -13,11 +13,14 @@ import {
   Platform,
   Dimensions,
   Keyboard,
-  TouchableWithoutFeedback, // <-- Added for dismissing keyboard on outside tap
+  TouchableWithoutFeedback,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { themePacks, seasonal } from '../screens/shop';  // adjust path
+import { AuthContext } from '../../auth/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
 // Firebase (Web SDK) + Firestore
 import { db } from '../../auth/firebase';
 import { collection, query, limit, getDocs, where } from 'firebase/firestore';
@@ -27,6 +30,9 @@ const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
 const scale = (size) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size) => (height / guidelineBaseHeight) * size;
+
+const DEFAULT_PALETTE = ['#FFF6E7', '#FFF0D4', '#FFF6E7', '#000'];
+
 
 // Categories for fallback volunteer sections
 const categories = [
@@ -75,6 +81,65 @@ const generateUniqueId = () =>
 // -------------------------------------
 // VolunteerBox: Display organization info as non-clickable text
 // -------------------------------------
+
+
+// -------------------------------------
+// ChatGPT (Main Component)
+// -------------------------------------
+const ChatGPT = () => {
+  const textInputRef = useRef(null);
+  const flatListRef = useRef(null);
+  const morphAnim = useRef(new Animated.Value(0)).current;
+  const revertTimerRef = useRef(null);
+
+
+  const { user } = useContext(AuthContext);
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+  const [loading, setLoading] = useState(true);
+
+  const loadActiveTheme = async () => {
+    if (!user) {
+      setPalette(DEFAULT_PALETTE);
+      setLoading(false);
+      return;
+    }
+    try {
+      const key = `@shop/active-${user.uid}`;
+      const id  = await AsyncStorage.getItem(key);
+      if (id) {
+        const pack =
+          themePacks.find(t => t.id === id) ||
+          seasonal.find(s => s.id === id);
+        if (pack?.colors) {
+          const c = pack.colors;
+          // fill out exactly 4 slots
+          setPalette([
+            c[0] ?? DEFAULT_PALETTE[0],
+            c[1] ?? DEFAULT_PALETTE[1],
+            c[2] ?? DEFAULT_PALETTE[2],
+            c[3] ?? DEFAULT_PALETTE[3],
+          ]);
+          return;
+        }
+      }
+      // no active theme found
+      setPalette(DEFAULT_PALETTE);
+    } catch (e) {
+      console.warn('Failed loading active theme', e);
+      setPalette(DEFAULT_PALETTE);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // run on mount...
+  useEffect(() => { loadActiveTheme(); }, [user]);
+  // ...and every time screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadActiveTheme();
+    }, [user])
+  );
 const VolunteerBox = ({ org }) => (
   <View style={styles.volunteerBox}>
     <Text style={styles.volunteerBoxTitle}>{org.name}</Text>
@@ -354,15 +419,6 @@ const MorphingSearchBar = memo(({ isSearchActive, setIsSearchActive, dbMode, set
   );
 });
 
-// -------------------------------------
-// ChatGPT (Main Component)
-// -------------------------------------
-const ChatGPT = () => {
-  const textInputRef = useRef(null);
-  const flatListRef = useRef(null);
-  const morphAnim = useRef(new Animated.Value(0)).current;
-  const revertTimerRef = useRef(null);
-
   const [data, setData] = useState([
     {
       id: 'init',
@@ -580,6 +636,232 @@ const ChatGPT = () => {
       textInputRef.current?.focus();
     });
   };
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: palette[0],               // was '#fff6e7'
+    },
+    contentContainer: {
+      flex: 1,
+    },
+    centerIntroContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    logoStyle: {
+      width: scale(80),
+      height: scale(80),
+      marginBottom: verticalScale(20),
+    },
+    introTitle: {
+      fontSize: scale(22),
+      fontWeight: '600',
+      color: palette[3],                         // was '#333'
+      marginBottom: verticalScale(6),
+    },
+    introSubtitle: {
+      fontSize: scale(16),
+      color: palette[3],                         // was '#555'
+    },
+    chatContainer: {
+      flex: 1,
+    },
+    flatListContent: {
+      paddingTop: verticalScale(10),
+      paddingHorizontal: scale(10),
+      paddingBottom: verticalScale(80),
+      flexGrow: 1,
+      minHeight: '100%',
+    },
+    userMessageContainer: {
+      alignSelf: 'flex-end',
+      backgroundColor: palette[0],               // bubble bg same as screen bg
+      borderRadius: scale(15),
+      marginVertical: verticalScale(5),
+      padding: scale(10),
+      maxWidth: '70%',
+      borderWidth: scale(1),
+      borderColor: palette[3],                   // text/icon color
+    },
+    botMessageContainer: {
+      alignSelf: 'flex-start',
+      backgroundColor: palette[0],
+      borderRadius: scale(15),
+      marginVertical: verticalScale(5),
+      padding: scale(10),
+      maxWidth: '70%',
+    },
+    messageText: {
+      fontSize: scale(16),
+      color: palette[3],                         // text color
+    },
+    typingIndicatorContainer: {
+      flexDirection: 'row',
+      paddingHorizontal: scale(10),
+      paddingBottom: verticalScale(10),
+    },
+    typingDot: {
+      fontSize: scale(24),
+      color: palette[3],
+      marginHorizontal: scale(2),
+    },
+    errorContainer: {
+      position: 'absolute',
+      top: '25%',
+      left: '10%',
+      right: '10%',
+      backgroundColor: palette[0],
+      borderRadius: scale(10),
+      padding: scale(15),
+      alignItems: 'center',
+    },
+    errorText: {
+      color: palette[3],
+      fontSize: scale(16),
+    },
+    morphContainer: {
+      paddingHorizontal: scale(10),
+      paddingVertical: verticalScale(8),
+      alignSelf: 'center',
+      marginBottom: verticalScale(20),
+      flexDirection: 'row',
+      alignItems: 'center',
+      bottom: '35%',
+    },
+    askButton: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: palette[4],               // was '#ffe8c9'
+      paddingHorizontal: scale(6),
+      paddingVertical: verticalScale(4),
+      borderRadius: scale(30),
+    },
+    askButtonText: {
+      textAlign: 'center',
+      color: palette[3],
+      fontSize: scale(14),
+    },
+    dbModeButton: {
+      flexDirection: 'row',
+      marginRight: scale(8),
+      backgroundColor: palette[0],
+      padding: scale(8),
+      borderRadius: scale(20),
+      borderColor: palette[3],
+      borderWidth: scale(1),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    searchSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    textInput: {
+      flex: 1,
+      height: verticalScale(40),
+      borderRadius: scale(20),
+      paddingHorizontal: scale(15),
+      fontSize: scale(16),
+      backgroundColor: palette[0],
+      borderColor: palette[3],
+      borderWidth: scale(1),
+      color: palette[3],
+      marginRight: scale(8),
+    },
+    sendButton: {
+      backgroundColor: palette[0],
+      borderRadius: scale(20),
+      padding: scale(10),
+      borderColor: palette[3],
+      borderWidth: scale(1),
+    },
+    volunteerResourcesContainer: {
+      backgroundColor: palette[0],
+      borderRadius: scale(15),
+      padding: scale(10),
+      marginVertical: verticalScale(5),
+      maxWidth: '70%',
+    },
+    volunteerHeaderText: {
+      fontSize: scale(16),
+      fontWeight: '600',
+      color: palette[3],
+      marginBottom: verticalScale(5),
+    },
+    volunteerBox: {
+      backgroundColor: palette[0],
+      borderRadius: scale(10),
+      padding: scale(8),
+      marginVertical: verticalScale(3),
+      borderWidth: scale(1),
+      borderColor: palette[3],
+    },
+    volunteerBoxTitle: {
+      fontSize: scale(14),
+      fontWeight: '600',
+      color: palette[3],
+    },
+    volunteerBoxDetail: {
+      fontSize: scale(12),
+      color: palette[3],
+      marginTop: verticalScale(2),
+    },
+    noResultsText: {
+      fontSize: scale(14),
+      color: 'red',
+    },
+    fallbackContainer: {
+      padding: scale(10),
+      backgroundColor: palette[0],
+      borderRadius: scale(10),
+      marginVertical: verticalScale(10),
+      alignItems: 'center',
+    },
+    fallbackTitle: {
+      fontSize: scale(14),
+      fontWeight: '600',
+      color: palette[3],
+      marginBottom: verticalScale(5),
+    },
+    fallbackButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: palette[0],
+      padding: scale(8),
+      marginHorizontal: scale(4),
+      borderRadius: scale(10),
+      borderWidth: scale(1),
+      borderColor: palette[3],
+    },
+    fallbackButtonText: {
+      fontSize: scale(14),
+      color: palette[3],
+    },
+    categoryContainer: {
+      flexDirection: 'row',
+      marginBottom: verticalScale(8),
+    },
+    categoryButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: palette[0],
+      padding: scale(8),
+      marginRight: scale(8),
+      borderRadius: scale(10),
+      borderWidth: scale(1),
+      borderColor: palette[3],
+    },
+    categoryButtonSelected: {
+      backgroundColor: palette[2],
+    },
+    categoryButtonText: {
+      fontSize: scale(14),
+      color: palette[3],
+    },
+  });
+  
 
   return (
     // Wrap everything in TouchableWithoutFeedback to dismiss the keyboard and hide the search bar when tapping outside
@@ -629,6 +911,7 @@ const ChatGPT = () => {
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
+  
 };
 
 export default ChatGPT;
@@ -636,229 +919,4 @@ export default ChatGPT;
 // -------------------------------------
 // STYLES
 // -------------------------------------
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
-  },
-  contentContainer: {
-    flex: 1,
-  },
-  centerIntroContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoStyle: {
-    width: scale(80),
-    height: scale(80),
-    marginBottom: verticalScale(20),
-  },
-  introTitle: {
-    fontSize: scale(22),
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: verticalScale(6),
-  },
-  introSubtitle: {
-    fontSize: scale(16),
-    color: '#555',
-  },
-  chatContainer: {
-    flex: 1,
-  },
-  flatListContent: {
-    paddingTop: verticalScale(10),
-    paddingHorizontal: scale(10),
-    paddingBottom: verticalScale(80),
-    flexGrow: 1,
-    minHeight: '100%',
-  },
-  userMessageContainer: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#fff6e7',
-    borderRadius: scale(15),
-    marginVertical: verticalScale(5),
-    padding: scale(10),
-    maxWidth: '70%',
-    borderWidth: scale(1),
-    borderColor: 'black',
-  },
-  botMessageContainer: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#fff6e7',
-    borderRadius: scale(15),
-    marginVertical: verticalScale(5),
-    padding: scale(10),
-    maxWidth: '70%',
-  },
-  messageText: {
-    fontSize: scale(16),
-    color: '#333',
-  },
-  typingIndicatorContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: scale(10),
-    paddingBottom: verticalScale(10),
-  },
-  typingDot: {
-    fontSize: scale(24),
-    color: '#333',
-    marginHorizontal: scale(2),
-  },
-  errorContainer: {
-    position: 'absolute',
-    top: '25%',
-    left: '10%',
-    right: '10%',
-    backgroundColor: '#fff6e7',
-    borderRadius: scale(10),
-    padding: scale(15),
-    alignItems: 'center',
-  },
-  errorText: {
-    color: '#fff',
-    fontSize: scale(16),
-  },
-  morphContainer: {
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(8),
-    alignSelf: 'center',
-    marginBottom: verticalScale(20),
-    flexDirection: 'row',
-    alignItems: 'center',
-    // This style positions the search bar. To move it down 25%, change the value below.
-    bottom: '35%',
-  },
-  askButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffe8c9', // Restored previous color
-    paddingHorizontal: scale(6),
-    paddingVertical: verticalScale(4),
-    borderRadius: scale(30),
-  },
-  askButtonText: {
-    textAlign: 'center',
-    color: 'black',
-    fontSize: scale(14),
-  },
-  dbModeButton: {
-    flexDirection: 'row',
-    marginRight: scale(8),
-    backgroundColor: '#fff6e7',
-    padding: scale(8),
-    borderRadius: scale(20),
-    borderColor: 'black',
-    borderWidth: scale(1),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  textInput: {
-    flex: 1,
-    height: verticalScale(40),
-    borderRadius: scale(20),
-    paddingHorizontal: scale(15),
-    fontSize: scale(16),
-    backgroundColor: '#fff6e7',
-    borderColor: 'black',
-    borderWidth: scale(1),
-    color: '#333',
-    marginRight: scale(8),
-  },
-  sendButton: {
-    backgroundColor: '#fff6e7',
-    borderRadius: scale(20),
-    padding: scale(10),
-    borderColor: 'black',
-    borderWidth: scale(1),
-  },
-  volunteerResourcesContainer: {
-    backgroundColor: '#fff6e7',
-    borderRadius: scale(15),
-    padding: scale(10),
-    marginVertical: verticalScale(5),
-    maxWidth: '70%',
-  },
-  volunteerHeaderText: {
-    fontSize: scale(16),
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: verticalScale(5),
-  },
-  volunteerBox: {
-    backgroundColor: '#fff6e7',
-    borderRadius: scale(10),
-    padding: scale(8),
-    marginVertical: verticalScale(3),
-    borderWidth: scale(1),
-    borderColor: 'black',
-  },
-  volunteerBoxTitle: {
-    fontSize: scale(14),
-    fontWeight: '600',
-    color: '#333',
-  },
-  volunteerBoxDetail: {
-    fontSize: scale(12),
-    color: 'black',
-    marginTop: verticalScale(2),
-  },
-  noResultsText: {
-    fontSize: scale(14),
-    color: 'red',
-  },
-  fallbackContainer: {
-    padding: scale(10),
-    backgroundColor: '#fff6e7',
-    borderRadius: scale(10),
-    marginVertical: verticalScale(10),
-    alignItems: 'center',
-  },
-  fallbackTitle: {
-    fontSize: scale(14),
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: verticalScale(5),
-  },
-  fallbackButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff6e7',
-    padding: scale(8),
-    marginHorizontal: scale(4),
-    borderRadius: scale(10),
-    borderWidth: scale(1),
-    borderColor: 'black',
-  },
-  fallbackButtonText: {
-    fontSize: scale(14),
-    color: '#333',
-  },
-  categoryContainer: {
-    flexDirection: 'row',
-    marginBottom: verticalScale(8),
-  },
-  categoryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff6e7',
-    padding: scale(8),
-    marginRight: scale(8),
-    borderRadius: scale(10),
-    borderWidth: scale(1),
-    borderColor: 'black',
-  },
-  categoryButtonSelected: {
-    backgroundColor: '#e0e0e0',
-  },
-  categoryButtonText: {
-    fontSize: scale(14),
-    color: '#333',
-  },
-});
+// inside ChatGPT(), after you’ve loaded palette from AsyncStorage:

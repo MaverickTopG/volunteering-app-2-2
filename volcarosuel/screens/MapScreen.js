@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect,useContext  } from 'react';
 import {
   View,
   TextInput,
@@ -15,10 +15,22 @@ import MapboxGL from '@rnmapbox/maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import Geolocation from 'react-native-geolocation-service';
+import { themePacks, seasonal } from '../screens/shop'; // adjust path
+import { AuthContext } from '../../auth/AuthContext';      // where you get user.uid
+import { collection, query, getDocs } from 'firebase/firestore';
+import { db } from '../../auth/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 MapboxGL.setAccessToken(
   'sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA'
 );
+const DEFAULT_PALETTE = [
+  '#fff6e7',
+  '#fff0d4',
+  '#ffe8c9',
+  '#333333',
+];
 
 // Define baseline dimensions (iPhone 16 Pro Max as an example)
 const guidelineBaseWidth = 428;
@@ -57,28 +69,11 @@ const fetchCoordsForAddress = async (addr) => {
   }
 };
 
-// Volunteer sites data (nested array)
-const VOLUNTEER_SITES = [
-  {
-    id: "1",
-    name: "WILDCARE",
-    address: "220 S Garrard Blvd, Point Richmond, CA 94801",
-  },
-  {
-    id: "2",
-    name: "Hooves for Harmony",
-    address: "Morning Star Farm, Novato, CA 94948",
-  },
-  // ... (remaining sites omitted for brevity)
-  {
-    id: "43",
-    name: "Marin County Public Library",
-    address: "250 Civic Center Dr, San Rafael, CA 94901",
-  }
-];
 
 const MapScreen = () => {
   // ====== State ======
+  const [volunteerSites, setVolunteerSites] = useState([]);  
+  const [volunteerSitesWithCoords, setVolunteerSitesWithCoords] = useState([]);
   const [address, setAddress] = useState('');
   const [userLocation, setUserLocation] = useState(null);
   const [geoLocationFailed, setGeoLocationFailed] = useState(false);
@@ -91,9 +86,299 @@ const MapScreen = () => {
   const [steps, setSteps] = useState([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [navigationMode, setNavigationMode] = useState(false);
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+const [loading, setLoading] = useState(true);
+const {user} = useContext(AuthContext);
+
+useEffect(() => {
+  async function loadVolunteerOrgs() {
+    try {
+      const q = query(collection(db, 'volunteer_organizations'));
+      const snap = await getDocs(q);
+
+      // 1) Map each doc to a site object
+      const sites = snap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.title || data.name,
+          address: data.address,
+        };
+      });
+
+      // 2) Deduplicate by `id`
+      const uniqueSitesById = Array.from(
+        sites.reduce((map, site) => {
+          if (!map.has(site.id)) {
+            map.set(site.id, site);
+          }
+          return map;
+        }, new Map())
+      );
+
+      // 3) Update state with the unique array
+      setVolunteerSites(uniqueSitesById);
+    } catch (err) {
+      console.warn('Error loading volunteer orgs:', err);
+    }
+  }
+
+  loadVolunteerOrgs();
+}, []);
+
+
+
+const loadActiveTheme = async () => {
+  if (!user) {
+    setPalette(DEFAULT_PALETTE);
+    setLoading(false);
+    return;
+  }
+  try {
+    const key = `@shop/active-${user.uid}`;
+    const id  = await AsyncStorage.getItem(key);
+    if (id) {
+      const pack =
+        themePacks.find(t => t.id === id) ||
+        seasonal.find(s => s.id === id);
+      if (pack?.colors) {
+        const c = pack.colors;
+        // fill out exactly 4 slots
+        setPalette([
+          c[0] ?? DEFAULT_PALETTE[0],
+          c[1] ?? DEFAULT_PALETTE[1],
+          c[2] ?? DEFAULT_PALETTE[2],
+          c[3] ?? DEFAULT_PALETTE[3],
+        ]);
+        return;
+      }
+    }
+    // no active theme found
+    setPalette(DEFAULT_PALETTE);
+  } catch (e) {
+    console.warn('Failed loading active theme', e);
+    setPalette(DEFAULT_PALETTE);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// run on mount...
+useEffect(() => { loadActiveTheme(); }, [user]);
+// ...and every time screen regains focus
+useFocusEffect(
+  React.useCallback(() => {
+    loadActiveTheme();
+  }, [user])
+);
+
+
+
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  map: { flex: 1, bottom: verticalScale(-60) },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette[0],
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(20),
+    borderBottomLeftRadius: scale(30),
+    borderBottomRightRadius: scale(30),
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: verticalScale(50),
+    backgroundColor: palette[0],
+    color: palette[3],
+    borderColor: palette[3],
+    borderWidth: 1,
+    borderRadius: scale(25),
+    paddingHorizontal: scale(20),
+    fontSize: scale(16),
+  },
+  searchButton: {
+    marginLeft: scale(10),
+    padding: scale(10),
+  },
+  searchIcon: {
+    color: palette[3],
+  },
+  blackMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  redMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blueDot: {
+    width: scale(18),
+    height: scale(18),
+    borderRadius: scale(9),
+    backgroundColor: '#007AFF',
+    borderWidth: scale(2),
+    borderColor: 'white',
+  },
+  routeDetailsContainer: {
+    position: 'absolute',
+    bottom: verticalScale(120),
+    left: scale(20),
+    right: scale(20),
+    backgroundColor: palette[0],
+    borderRadius: scale(8),
+    padding: scale(16),
+    borderWidth: 1,
+    borderColor: 'black',
+    zIndex: 10,
+  },
+  routeHeader: {
+    fontSize: scale(18),
+    fontWeight: '700',
+    color: palette[3],
+    marginBottom: verticalScale(8),
+  },
+  routeText: {
+    fontSize: scale(16),
+    color: palette[3],
+  },
+  startNavBtn: {
+    marginTop: verticalScale(12),
+    backgroundColor: palette[3],
+    borderRadius: scale(8),
+    paddingVertical: verticalScale(10),
+    alignItems: 'center',
+  },
+  startNavBtnText: {
+    color: palette[1],
+    fontWeight: '600',
+    fontSize: scale(16),
+  },
+  locateButton: {
+    position: 'absolute',
+    bottom: verticalScale(665),
+    right: scale(10),
+    width: scale(50),
+    height: scale(50),
+    borderRadius: scale(25),
+    backgroundColor: palette[3],
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  setLocationButton: {
+    position: 'absolute',
+    bottom: verticalScale(440),
+    right: 0,
+    backgroundColor: palette[3],
+    borderRadius: scale(8),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(10),
+    zIndex: 1000,
+  },
+  setLocationText: {
+    color: palette[3],
+    fontWeight: '600',
+    fontSize: scale(14),
+  },
+  instructionsBar: {
+    position: 'absolute',
+    bottom: verticalScale(660),
+    left: scale(10),
+    right: scale(70),
+    backgroundColor: palette[0],
+    borderBottomWidth: 1,
+    borderColor: palette[3],
+    flexDirection: 'row',
+    padding: scale(12),
+    zIndex: 20,
+    alignItems: 'center',
+    borderRadius: scale(20),
+  },
+  instrDistance: {
+    fontSize: scale(18),
+    fontWeight: '600',
+    color: palette[3],
+  },
+  instrText: {
+    fontSize: scale(16),
+    color: '#000',
+  },
+  endNavButton: {
+    marginLeft: scale(10),
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: palette[3],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '85%',
+    backgroundColor: palette[0],
+    borderRadius: scale(12),
+    padding: scale(20),
+    borderWidth: 1,
+    borderColor: 'black',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: scale(10),
+    right: scale(10),
+  },
+  modalTitle: {
+    fontSize: scale(18),
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: verticalScale(15),
+    textAlign: 'center',
+  },
+  modalInput: {
+    width: '100%',
+    height: verticalScale(45),
+    backgroundColor: palette[0],
+    borderColor: '#333',
+    borderWidth: 1,
+    borderRadius: scale(10),
+    paddingHorizontal: scale(15),
+    marginBottom: verticalScale(20),
+    fontSize: scale(16),
+    color: '#333',
+  },
+  modalSaveBtn: {
+    backgroundColor: palette[3],
+    borderRadius: scale(8),
+    paddingVertical: verticalScale(10),
+    alignItems: 'center',
+  },
+  modalSaveBtnText: {
+    color: palette[1],
+    fontSize: scale(16),
+    fontWeight: '600',
+  },
+  // Fallback screen when geolocation is declined
+  fallbackContainer: {
+    flex: 1,
+    backgroundColor: palette[0],
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: scale(20),
+  },
+  fallbackText: {
+    fontSize: scale(18),
+    color: '#333',
+    textAlign: 'center',
+  },
+});
+
 
   // Volunteer sites with coordinates will be updated incrementally
-  const [volunteerSitesWithCoords, setVolunteerSitesWithCoords] = useState([]);
 
   // Animations & Refs
   const instructionAnim = useRef(new Animated.Value(0)).current;
@@ -114,17 +399,20 @@ const MapScreen = () => {
 
   // Geocode volunteer sites sequentially
   useEffect(() => {
-    async function geocodeVolunteerSites() {
-      const sitesArray = VOLUNTEER_SITES.flat();
-      for (let i = 0; i < sitesArray.length; i++) {
-        const site = sitesArray[i];
+    async function geocodeSites() {
+      for (let site of volunteerSites) {
         const coords = await fetchCoordsForAddress(site.address);
-        setVolunteerSitesWithCoords((prev) => [...prev, { ...site, coords }]);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        setVolunteerSitesWithCoords(prev => [...prev, { ...site, coords }]);
+        // small delay to avoid hammering Nominatim
+        await new Promise(res => setTimeout(res, 500));
       }
     }
-    geocodeVolunteerSites();
-  }, []);
+    if (volunteerSites.length) {
+      setVolunteerSitesWithCoords([]);    // reset if needed
+      geocodeSites();
+    }
+  }, [volunteerSites]);
+  
 
   useEffect(() => {
     Animated.timing(instructionAnim, {
@@ -421,13 +709,13 @@ const MapScreen = () => {
         <TextInput
           style={styles.searchInput}
           placeholder="Enter address"
-          placeholderTextColor="black"
+          placeholderTextColor={palette[3]}
           value={address}
           onChangeText={setAddress}
           keyboardAppearance="dark"
         />
         <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-          <Ionicons name="search" size={scale(24)} color="black" />
+          <Ionicons name="search" size={scale(24)} color={palette[3]} />
         </TouchableOpacity>
       </View>
 
@@ -577,201 +865,3 @@ const MapScreen = () => {
 };
 
 export default MapScreen;
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { flex: 1, bottom: verticalScale(-60) },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff6e7',
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(20),
-    borderBottomLeftRadius: scale(30),
-    borderBottomRightRadius: scale(30),
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-  },
-  searchInput: {
-    flex: 1,
-    height: verticalScale(50),
-    backgroundColor: '#fff6e7',
-    color: '#333',
-    borderColor: '#decaae',
-    borderWidth: 1,
-    borderRadius: scale(25),
-    paddingHorizontal: scale(20),
-    fontSize: scale(16),
-  },
-  searchButton: {
-    marginLeft: scale(10),
-    padding: scale(10),
-  },
-  blackMarker: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  redMarker: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  blueDot: {
-    width: scale(18),
-    height: scale(18),
-    borderRadius: scale(9),
-    backgroundColor: '#007AFF',
-    borderWidth: scale(2),
-    borderColor: 'white',
-  },
-  routeDetailsContainer: {
-    position: 'absolute',
-    bottom: verticalScale(120),
-    left: scale(20),
-    right: scale(20),
-    backgroundColor: '#fff6e7',
-    borderRadius: scale(8),
-    padding: scale(16),
-    borderWidth: 1,
-    borderColor: 'black',
-    zIndex: 10,
-  },
-  routeHeader: {
-    fontSize: scale(18),
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: verticalScale(8),
-  },
-  routeText: {
-    fontSize: scale(16),
-    color: '#333',
-  },
-  startNavBtn: {
-    marginTop: verticalScale(12),
-    backgroundColor: '#333',
-    borderRadius: scale(8),
-    paddingVertical: verticalScale(10),
-    alignItems: 'center',
-  },
-  startNavBtnText: {
-    color: '#fff6e7',
-    fontWeight: '600',
-    fontSize: scale(16),
-  },
-  locateButton: {
-    position: 'absolute',
-    bottom: verticalScale(665),
-    right: scale(10),
-    width: scale(50),
-    height: scale(50),
-    borderRadius: scale(25),
-    backgroundColor: 'black',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  setLocationButton: {
-    position: 'absolute',
-    bottom: verticalScale(440),
-    right: 0,
-    backgroundColor: 'black',
-    borderRadius: scale(8),
-    paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(10),
-    zIndex: 1000,
-  },
-  setLocationText: {
-    color: '#fff6e7',
-    fontWeight: '600',
-    fontSize: scale(14),
-  },
-  instructionsBar: {
-    position: 'absolute',
-    bottom: verticalScale(660),
-    left: scale(10),
-    right: scale(70),
-    backgroundColor: '#fff6e7',
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-    flexDirection: 'row',
-    padding: scale(12),
-    zIndex: 20,
-    alignItems: 'center',
-    borderRadius: scale(20),
-  },
-  instrDistance: {
-    fontSize: scale(18),
-    fontWeight: '600',
-    color: '#000',
-  },
-  instrText: {
-    fontSize: scale(16),
-    color: '#000',
-  },
-  endNavButton: {
-    marginLeft: scale(10),
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: '85%',
-    backgroundColor: '#fff6e7',
-    borderRadius: scale(12),
-    padding: scale(20),
-    borderWidth: 1,
-    borderColor: 'black',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: scale(10),
-    right: scale(10),
-  },
-  modalTitle: {
-    fontSize: scale(18),
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: verticalScale(15),
-    textAlign: 'center',
-  },
-  modalInput: {
-    width: '100%',
-    height: verticalScale(45),
-    backgroundColor: '#fff6e7',
-    borderColor: '#333',
-    borderWidth: 1,
-    borderRadius: scale(10),
-    paddingHorizontal: scale(15),
-    marginBottom: verticalScale(20),
-    fontSize: scale(16),
-    color: '#333',
-  },
-  modalSaveBtn: {
-    backgroundColor: 'black',
-    borderRadius: scale(8),
-    paddingVertical: verticalScale(10),
-    alignItems: 'center',
-  },
-  modalSaveBtnText: {
-    color: '#fff6e7',
-    fontSize: scale(16),
-    fontWeight: '600',
-  },
-  // Fallback screen when geolocation is declined
-  fallbackContainer: {
-    flex: 1,
-    backgroundColor: '#fff6e7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: scale(20),
-  },
-  fallbackText: {
-    fontSize: scale(18),
-    color: '#333',
-    textAlign: 'center',
-  },
-});

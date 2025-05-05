@@ -10,6 +10,14 @@ import OrganizationScreen from '../volcarosuel/screens/OrganizationScreen';
 import AccountScreen from '../volcarosuel/screens/AccountScreen';
 import { AuthContext } from '../auth/AuthContext';
 import { themePacks, seasonal } from '../volcarosuel/screens/shop';
+import { useFocusEffect } from '@react-navigation/native';
+const DEFAULT_PALETTE = [
+  '#fff6e7',
+  '#fff0d4',
+  '#ffe8c9',
+  '#333333',
+];
+
 
 const { width } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
@@ -21,36 +29,57 @@ export default function DrawerNavigator() {
   const { user } = useContext(AuthContext);
 
   // default palette: [ bg, gradStart, gradEnd, textColor ]
-  const DEFAULT = ['#fff6e7', '#fff0d4', '#ffe8c9', '#333'];
-  const [palette, setPalette] = useState(DEFAULT);
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) return;
-    const key = `@shop/active-${user.uid}`;
-    AsyncStorage.getItem(key)
-      .then(id => {
-        if (!id) return;
+  const loadActiveTheme = async () => {
+    if (!user) {
+      setPalette(DEFAULT_PALETTE);
+      setLoading(false);
+      return;
+    }
+    try {
+      const key = `@shop/active-${user.uid}`;
+      const id  = await AsyncStorage.getItem(key);
+      if (id) {
         const pack =
           themePacks.find(t => t.id === id) ||
           seasonal.find(s => s.id === id);
         if (pack?.colors) {
           const c = pack.colors;
+          // fill out exactly 4 slots
           setPalette([
-            c[0] || DEFAULT[0],
-            c[1] || DEFAULT[1],
-            c[2] || DEFAULT[2],
-            c[3] || DEFAULT[3],
+            c[0] ?? DEFAULT_PALETTE[0],
+            c[1] ?? DEFAULT_PALETTE[1],
+            c[2] ?? DEFAULT_PALETTE[2],
+            c[3] ?? DEFAULT_PALETTE[3],
           ]);
+          return;
         }
-      })
-      .catch(console.warn);
-  }, [user]);
+      }
+      // no active theme found
+      setPalette(DEFAULT_PALETTE);
+    } catch (e) {
+      console.warn('Failed loading active theme', e);
+      setPalette(DEFAULT_PALETTE);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // run on mount...
+  useEffect(() => { loadActiveTheme(); }, [user]);
+  // ...and every time screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadActiveTheme();
+    }, [user])
+  );
   return (
     <View style={{ flex: 1 }}>
       <StatusBar
         barStyle="dark-content"
-        backgroundColor={palette[1]}
+        backgroundColor={palette[0]}
       />
       <Drawer.Navigator
         drawerContent={props => <CustomSideBarMenu {...props} />}
@@ -66,7 +95,7 @@ export default function DrawerNavigator() {
           },
           headerBackground: () => (
             <LinearGradient
-              colors={[palette[1], palette[2]]}
+              colors={[palette[0], palette[0]]}
               style={StyleSheet.absoluteFill}
             />
           ),

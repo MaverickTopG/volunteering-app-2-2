@@ -1,5 +1,5 @@
 // LeaderboardScreen.tsx
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,13 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { onSnapshot, collection } from 'firebase/firestore';
+import { User as FirebaseUser } from 'firebase/auth';
 
 import { AuthContext } from '../../auth/AuthContext';
 import { themePacks, seasonal } from '../screens/shop';
 import { db, auth } from '../../auth/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { User as FirebaseUser } from 'firebase/auth';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const refW = 428, refH = 926;
@@ -24,54 +25,100 @@ const scale  = (s: number) => (width  / refW) * s;
 const vScale = (s: number) => (height / refH) * s;
 const ms     = (s: number, f = 0.5) => s + (scale(s) - s) * f;
 
-// default 4-color palette: [screenBg, rowBg, cardBg, text/border]
+// default 4-color palette
 const DEFAULT_PALETTE = ['#FFF6E7', '#FFF0D4', '#FFF6E7', '#000'];
 
 interface Player { uid: string; name: string; hours: number }
 
+// 100 humorous placeholders
+const FUNNY_NAMES = [
+  "Mystery Hero","Secret Agent","Ninja Volunteer","Phantom Giver","Invisible Samaritan",
+  "Undercover Helper","Time-Traveler","Rogue Robin Hood","Masked Do-Gooder","Cloaked Contributor",
+  "Stealth Goodwill","Whimsical Warrior","Ghost Helper","Quiet Crusader","Masked Philanthropist",
+  "Hidden Hand","Camouflage Caregiver","Shadow Samaritan","Wandering Benefactor","Silent Sower",
+  "Sneaky Supporter","Covert Kindness","Subtle Samaritan","Midnight Mentor","Hidden Heart",
+  "Secret Support","Stealth Steward","Anonymous Ally","Invisible Ivy","Phantom Philanthropist",
+  "Dusty Do-Gooder","Muted Mentor","Blind Benefactor","Hidden Herald","Secret Shepherd",
+  "Sly Samaritan","Hushed Helper","Guerilla Goodwill","Cloaked Crusader","Secret Smile",
+  "Undercover Uplifter","Stealth Steward","Masked Mentor","Unknown Uplifter","Quiet Quartermaster",
+  "Cloaked Captain","Midnight Medic","Invisible Inspirer","Phantom Philomath","Ghostly Guide",
+  "Hidden Healer","Subterranean Samaritan","Low-key Leader","Secret Sentinel","Quiet Questor",
+  "Masked Maverick","Obscure Oracle","Silent Samaritan","Undercover Umpire","Shadow Shepherd",
+  "Veiled Volunteer","Mystic Mentor","Covert Guide","Sneaky Samaritan","Hidden Handshake",
+  "Subtle Samaritan","Camouflaged Caregiver","Masked Medic","Cloaked Coach","Invisible Instructor",
+  "Phantom Partner","Ghostly Giver","Secret Supporter","Shy Samaritan","Shadowy Samaritan",
+  "Stealthy Spreader","Masked Motivator","Undercover Underdog","Quiet Quester","Hidden Helper",
+  "Mystery Motivator","Phantom Philomath","Ghost Giver","Cloaked Contributor","Subtle Supporter",
+  "Secret Sailor","Silent Sailor","Stealth Scholar","Camouflage Coach","Invisible Icon",
+  "Masked Mastermind","Shadow Shaper","Undercover Umpire","Buried Benefactor","Quiet Queller",
+  "Hidden Harmonizer","Stealth Sprite","Phantom Friend"
+];
+
+function pickFunnyName(uid: string): string {
+  let hash = 0;
+  for (let i = 0; i < uid.length; i++) {
+    hash = uid.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return FUNNY_NAMES[Math.abs(hash) % FUNNY_NAMES.length];
+}
+
 export default function LeaderboardScreen() {
-  // ——— Hooks: ALWAYS in the same order ———
   const insets = useSafeAreaInsets();
   const meUid  = (auth.currentUser as FirebaseUser | null)?.uid;
 
-  // theme loading
-  const [palette, setPalette]         = useState<string[]>(DEFAULT_PALETTE);
-  const [loadingTheme, setLoadingTheme] = useState(true);
-
-  // players loading
-  const [players, setPlayers]     = useState<Player[]>([]);
+  
+  const [players, setPlayers]             = useState<Player[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
 
-  // fetch theme
-  useEffect(() => {
-    const u = auth.currentUser;
-    if (!u) {
-      setLoadingTheme(false);
+  const { user } = useContext(AuthContext);
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+  const [loading, setLoading] = useState(true);
+
+  const loadActiveTheme = async () => {
+    if (!user) {
+      setPalette(DEFAULT_PALETTE);
+      setLoading(false);
       return;
     }
-    const key = `@shop/active-${u.uid}`;
-    AsyncStorage.getItem(key)
-      .then(id => {
-        if (id) {
-          const pack =
-            themePacks.find(t => t.id === id) ||
-            seasonal.find(s => s.id === id);
-          if (pack?.colors) {
-            const c = pack.colors;
-            setPalette([
-              c[0] ?? DEFAULT_PALETTE[0],
-              c[1] ?? DEFAULT_PALETTE[1],
-              c[2] ?? DEFAULT_PALETTE[2],
-              c[3] ?? DEFAULT_PALETTE[3],
-            ]);
-          }
+    try {
+      const key = `@shop/active-${user.uid}`;
+      const id  = await AsyncStorage.getItem(key);
+      if (id) {
+        const pack =
+          themePacks.find(t => t.id === id) ||
+          seasonal.find(s => s.id === id);
+        if (pack?.colors) {
+          const c = pack.colors;
+          // fill out exactly 4 slots
+          setPalette([
+            c[0] ?? DEFAULT_PALETTE[0],
+            c[1] ?? DEFAULT_PALETTE[1],
+            c[2] ?? DEFAULT_PALETTE[2],
+            c[3] ?? DEFAULT_PALETTE[3],
+          ]);
+          return;
         }
-      })
-      .catch(console.warn)
-      .finally(() => setLoadingTheme(false));
-  }, []);
+      }
+      // no active theme found
+      setPalette(DEFAULT_PALETTE);
+    } catch (e) {
+      console.warn('Failed loading active theme', e);
+      setPalette(DEFAULT_PALETTE);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // subscribe to volunteer_logs
+  // run on mount...
+  useEffect(() => { loadActiveTheme(); }, [user]);
+  // ...and every time screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadActiveTheme();
+    }, [user])
+  );
+
+  // subscribe volunteer_logs
   useEffect(() => {
     const unsub = onSnapshot(
       collection(db, 'volunteer_logs'),
@@ -89,31 +136,23 @@ export default function LeaderboardScreen() {
         setLoadingPlayers(false);
       },
       err => {
-        console.warn('Leaderboard subscription error', err);
+        console.warn('Leaderboard error', err);
         setLoadingPlayers(false);
       }
     );
     return unsub;
   }, []);
 
-  // while either is loading, show spinner
-  if (loadingTheme || loadingPlayers) {
-    return (
-      <View style={[styles.container, { backgroundColor: DEFAULT_PALETTE[0], justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" color={DEFAULT_PALETTE[3]} />
-      </View>
-    );
-  }
 
-  // destructure palette
+
   const [BG, ROWBG, CARDBG, TEXTCOL] = palette;
-  const BORDER   = TEXTCOL;
-  const ACCENT   = BG;
-  const trophyClr= TEXTCOL;
+  const BORDER = TEXTCOL;
+  const ACCENT = BG;
 
   const podium = players.slice(0,3);
   const rest   = players.slice(3);
 
+  // Avatar same as before
   const iconFor = (uid: string) => {
     const ICONS = [
       'happy-outline','paw-outline','leaf-outline','planet-outline',
@@ -128,8 +167,7 @@ export default function LeaderboardScreen() {
     for (const c of uid) h = c.charCodeAt(0) + ((h<<5)-h);
     return ICONS[Math.abs(h) % ICONS.length];
   };
-
-  const Avatar = ({ p, rank, size }: { p: Player; rank: number; size: number }) => (
+  const Avatar = ({ p, rank, size }: { p: Player; rank: number; size:number }) => (
     <View style={{ alignItems:'center' }}>
       <View style={[
         styles.avatar,
@@ -152,9 +190,10 @@ export default function LeaderboardScreen() {
     </View>
   );
 
-  const Row = ({ item, index }: { item: Player; index:number }) => {
+  const Row = ({ item, index }: { item:Player; index:number }) => {
     const rank = index + 4;
     const mine = item.uid === meUid;
+    const name = item.name === 'Unknown' ? pickFunnyName(item.uid) : item.name;
     return (
       <View style={[
         styles.row,
@@ -169,13 +208,13 @@ export default function LeaderboardScreen() {
               styles.rowName,
               mine && { color: BORDER, fontWeight:'700' }
             ]}
-          >{item.name}</Text>
+          >{name}</Text>
         </View>
         <View style={{ flexDirection:'row', alignItems:'center' }}>
           <Ionicons
             name="trophy-outline"
             size={scale(16)}
-            color={mine ? BORDER : trophyClr}
+            color={mine ? BORDER : TEXTCOL}
             style={{ marginRight: scale(4) }}
           />
           <Text style={[styles.hoursTxt, mine && { color: BORDER, fontWeight:'700' }]}>
@@ -201,15 +240,13 @@ export default function LeaderboardScreen() {
           if (!p) return null;
           const rank = idx+1;
           const size = rank===1 ? scale(96) : scale(76);
+          const name = p.name === 'Unknown' ? pickFunnyName(p.uid) : p.name;
           return (
             <View key={p.uid} style={styles.podiumItem}>
-              <Avatar p={p} rank={rank} size={size}/>
+              <Avatar p={p} rank={rank} size={size} />
               <Text numberOfLines={1}
-                style={[styles.podiumName,{
-                  width:size+scale(20),
-                  color: TEXTCOL
-                }]}
-              >{p.name}</Text>
+                style={[styles.podiumName,{ width:size+scale(20), color: TEXTCOL }]}
+              >{name}</Text>
               <View style={{flexDirection:'row',alignItems:'center'}}>
                 <Ionicons name="trophy-outline" size={scale(14)} color={TEXTCOL}/>
                 <Text style={[styles.podiumHours,{ color: TEXTCOL }]}>
@@ -227,9 +264,7 @@ export default function LeaderboardScreen() {
           keyExtractor={p=>p.uid}
           renderItem={Row}
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={()=>
-            <View style={{height:1,backgroundColor: BORDER+'33'}}/>
-          }
+          ItemSeparatorComponent={()=> <View style={{height:1,backgroundColor: BORDER+'33'}}/>}
           contentContainerStyle={{ paddingBottom: vScale(20) }}
         />
       </View>

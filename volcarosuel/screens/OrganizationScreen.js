@@ -1,5 +1,5 @@
 // SuggestOrganizationScreen.js
-import React, { useState, useContext, useCallback } from 'react';
+import React, { useState, useContext, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -31,46 +31,61 @@ const verticalScale = size => (height / guidelineBaseHeight) * size;
 const DEFAULT_PALETTE = ['#FFF6E7', '#FFF0D4', '#FFE8C9', '#333333'];
 
 export default function SuggestOrganizationScreen() {
-  const { user } = useContext(AuthContext);
-  const navigation = useNavigation();
 
-  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+  const navigation = useNavigation();
   const [form, setForm] = useState({
     name: '', description: '', location: '',
     requirements: '', contact: '', website: '',
     county: '', reference: '',
   });
   const [submissionMessage, setSubmissionMessage] = useState('');
+  const { user } = useContext(AuthContext);
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+  const [loading, setLoading] = useState(true);
 
-  // Reload theme on focus
-  useFocusEffect(useCallback(() => {
+  const loadActiveTheme = async () => {
     if (!user) {
       setPalette(DEFAULT_PALETTE);
+      setLoading(false);
       return;
     }
-    const key = `@shop/active-${user.uid}`;
-    AsyncStorage.getItem(key)
-      .then(id => {
-        if (!id) {
-          setPalette(DEFAULT_PALETTE);
-          return;
-        }
+    try {
+      const key = `@shop/active-${user.uid}`;
+      const id  = await AsyncStorage.getItem(key);
+      if (id) {
         const pack =
           themePacks.find(t => t.id === id) ||
           seasonal.find(s => s.id === id);
         if (pack?.colors) {
           const c = pack.colors;
+          // fill out exactly 4 slots
           setPalette([
             c[0] ?? DEFAULT_PALETTE[0],
             c[1] ?? DEFAULT_PALETTE[1],
             c[2] ?? DEFAULT_PALETTE[2],
             c[3] ?? DEFAULT_PALETTE[3],
           ]);
+          return;
         }
-      })
-      .catch(() => setPalette(DEFAULT_PALETTE));
-  }, [user]));
+      }
+      // no active theme found
+      setPalette(DEFAULT_PALETTE);
+    } catch (e) {
+      console.warn('Failed loading active theme', e);
+      setPalette(DEFAULT_PALETTE);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // run on mount...
+  useEffect(() => { loadActiveTheme(); }, [user]);
+  // ...and every time screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadActiveTheme();
+    }, [user])
+  );
   if (!user) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: palette[0] }]}>

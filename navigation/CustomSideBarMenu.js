@@ -18,6 +18,7 @@ import { auth, db } from '../auth/firebase';
 import { signOut } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
 import { themePacks, seasonal } from '../volcarosuel/screens/shop';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
@@ -29,12 +30,59 @@ export default function CustomSideBarMenu(props) {
   const navigation = props.navigation;
   const { user, setUser } = useContext(AuthContext);
 
-  // ---- Theme palette ----
-  // [ background, gradStart, gradEnd, text/icon ]
-  const DEFAULT = ['#fff6e7','#fff0d4','#ffe8c9','#333'];
-  const [palette, setPalette] = useState(DEFAULT);
-  const [themeLoading, setThemeLoading] = useState(true);
+  const DEFAULT_PALETTE = [
+    '#fff6e7',
+    '#fff0d4',
+    '#ffe8c9',
+    '#333333',
+  ];
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
+  const [loading, setLoading] = useState(true);
 
+  const loadActiveTheme = async () => {
+    if (!user) {
+      setPalette(DEFAULT_PALETTE);
+      setLoading(false);
+      return;
+    }
+    try {
+      const key = `@shop/active-${user.uid}`;
+      const id  = await AsyncStorage.getItem(key);
+      if (id) {
+        const pack =
+          themePacks.find(t => t.id === id) ||
+          seasonal.find(s => s.id === id);
+        if (pack?.colors) {
+          const c = pack.colors;
+          // fill out exactly 4 slots
+          setPalette([
+            c[0] ?? DEFAULT_PALETTE[0],
+            c[1] ?? DEFAULT_PALETTE[1],
+            c[2] ?? DEFAULT_PALETTE[2],
+            c[3] ?? DEFAULT_PALETTE[3],
+          ]);
+          return;
+        }
+      }
+      // no active theme found
+      setPalette(DEFAULT_PALETTE);
+    } catch (e) {
+      console.warn('Failed loading active theme', e);
+      setPalette(DEFAULT_PALETTE);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // run on mount...
+  useEffect(() => { loadActiveTheme(); }, [user]);
+  // ...and every time screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadActiveTheme();
+    }, [user])
+  );
+  
   // ---- Animation ----
   const rotation = useRef(new Animated.Value(0)).current;
   const animationRef = useRef(null);
@@ -46,33 +94,11 @@ export default function CustomSideBarMenu(props) {
   const [randomFact, setRandomFact] = useState('');
 
   // ---- Load theme ----
-  useEffect(() => {
-    if (!user) {
-      setThemeLoading(false);
-      return;
-    }
-    const key = `@shop/active-${user.uid}`;
-    AsyncStorage.getItem(key)
-      .then(id => {
-        if (!id) return;
-        const pack = themePacks.find(t => t.id === id) || seasonal.find(s => s.id === id);
-        if (pack?.colors) {
-          const c = pack.colors;
-          setPalette([
-            c[0] || DEFAULT[0],
-            c[1] || DEFAULT[1],
-            c[2] || DEFAULT[2],
-            c[3] || DEFAULT[3],
-          ]);
-        }
-      })
-      .catch(console.warn)
-      .finally(() => setThemeLoading(false));
-  }, [user]);
+ 
 
   // ---- Fetch fun fact on open ----
   useEffect(() => {
-    if (isDrawerOpen && !themeLoading) {
+    if (isDrawerOpen) {
       (async () => {
         try {
           const snap = await getDocs(collection(db, 'volunteer_funfacts'));
@@ -88,7 +114,7 @@ export default function CustomSideBarMenu(props) {
         }
       })();
     }
-  }, [isDrawerOpen, themeLoading]);
+  }, [isDrawerOpen]);
 
   // ---- Rotate spaceship when open ----
   useEffect(() => {
@@ -133,11 +159,6 @@ export default function CustomSideBarMenu(props) {
     inputRange: [0,1],
     outputRange: ['0deg','360deg']
   });
-
-  if (themeLoading) {
-    // blank until theme loads
-    return null;
-  }
 
   return (
     <View style={styles.container}>

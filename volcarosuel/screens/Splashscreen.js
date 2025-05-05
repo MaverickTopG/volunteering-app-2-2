@@ -18,47 +18,71 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../../auth/AuthContext';
 import { themePacks, seasonal } from '../screens/shop';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const scale = (s) => (width  / guidelineBaseWidth)  * s;
 const verticalScale = (s) => (height / guidelineBaseHeight) * s;
+const DEFAULT_PALETTE = [
+  '#fff6e7',
+  '#fff0d4',
+  '#ffe8c9',
+  '#333333',
+];
 
 export default function GoFundMeScreen() {
   const { user } = useContext(AuthContext);
 
   // 4-color palette: [bg, gradStart, gradEnd, text]
-  const DEFAULT = ['#FFF6E7','#FFF0D4','#FFE8C9','#333'];
-  const [palette, setPalette] = useState(DEFAULT);
+
+  const [palette, setPalette] = useState(DEFAULT_PALETTE);
   const [loading, setLoading] = useState(true);
 
-  // load active theme from AsyncStorage
-  useEffect(() => {
+  const loadActiveTheme = async () => {
     if (!user) {
+      setPalette(DEFAULT_PALETTE);
       setLoading(false);
       return;
     }
-    const key = `@shop/active-${user.uid}`;
-    AsyncStorage.getItem(key)
-      .then(id => {
-        if (!id) return;
+    try {
+      const key = `@shop/active-${user.uid}`;
+      const id  = await AsyncStorage.getItem(key);
+      if (id) {
         const pack =
-          themePacks.find(t=>t.id===id) ||
-          seasonal.find(s=>s.id===id);
+          themePacks.find(t => t.id === id) ||
+          seasonal.find(s => s.id === id);
         if (pack?.colors) {
           const c = pack.colors;
+          // fill out exactly 4 slots
           setPalette([
-            c[0]||DEFAULT[0],
-            c[1]||DEFAULT[1],
-            c[2]||DEFAULT[2],
-            c[3]||DEFAULT[3],
+            c[0] ?? DEFAULT_PALETTE[0],
+            c[1] ?? DEFAULT_PALETTE[1],
+            c[2] ?? DEFAULT_PALETTE[2],
+            c[3] ?? DEFAULT_PALETTE[3],
           ]);
+          return;
         }
-      })
-      .catch(console.warn)
-      .finally(()=>setLoading(false));
-  },[user]);
+      }
+      // no active theme found
+      setPalette(DEFAULT_PALETTE);
+    } catch (e) {
+      console.warn('Failed loading active theme', e);
+      setPalette(DEFAULT_PALETTE);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // run on mount...
+  useEffect(() => { loadActiveTheme(); }, [user]);
+  // ...and every time screen regains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadActiveTheme();
+    }, [user])
+  );
 
   // Animations
   const logoScale   = useRef(new Animated.Value(0)).current;
@@ -88,8 +112,8 @@ export default function GoFundMeScreen() {
 
   if(loading){
     return (
-      <SafeAreaView style={[styles.container,{backgroundColor:DEFAULT[0]}]}>
-        <ActivityIndicator size="large" color={DEFAULT[3]} />
+      <SafeAreaView style={[styles.container,{backgroundColor:palette[0]}]}>
+        <ActivityIndicator size="large" color={palette[3]} />
       </SafeAreaView>
     );
   }

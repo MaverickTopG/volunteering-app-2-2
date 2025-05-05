@@ -109,7 +109,7 @@ export default function ShowScreen({ route, navigation }) {
             style={[styles.visitBtn, { backgroundColor: palette[2] }]}
             onPress={handleVisit}
           >
-            <Text style={[styles.visitTxt, { color: '#fff' }]}>
+            <Text style={[styles.visitTxt, { color: palette[4] }]}>
               Visit Website
             </Text>
           </TouchableOpacity>
@@ -120,7 +120,7 @@ export default function ShowScreen({ route, navigation }) {
           style={[styles.backBtn, { backgroundColor: palette[2] }]}
           onPress={() => navigation.goBack()}
         >
-          <Text style={[styles.backTxt, { color: '#fff' }]}>
+          <Text style={[styles.backTxt, { color: palette[4] }]}>
             ← Back
           </Text>
         </TouchableOpacity>
