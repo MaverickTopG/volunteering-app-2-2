@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
   logText:          { fontSize:scale(14), marginBottom:verticalScale(4) },
   logHoursButton:   {
     position:'absolute',
-    bottom:verticalScale(720),
+    bottom:verticalScale(770),
     right:scale(10),
     borderRadius:scale(20),
     paddingVertical:verticalScale(10),

@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   notLoggedInContainer:{ flex:1,justifyContent:'center',alignItems:'center' },
   notLoggedInText:  { fontSize:scale(18), textAlign:'center' },
 
-  title:            { fontSize:scale(26), fontWeight:'bold', marginTop:verticalScale(20), marginBottom:verticalScale(10), textAlign:'center' },
+  title:            { fontSize:scale(26), fontWeight:'bold', marginTop:verticalScale(90), marginBottom:verticalScale(10), textAlign:'center' },
   subtitle:         { fontSize:scale(16), marginBottom:verticalScale(20), textAlign:'center', paddingHorizontal:scale(20) },
 
   formCard:         { width:'100%', borderRadius:scale(12), padding:scale(20),

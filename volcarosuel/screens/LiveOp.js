@@ -251,16 +251,11 @@ const styles = StyleSheet.create({
   },
   header: {
     height: HEADER_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    width: '100%',
-    position: 'absolute',
-    top: 0, left: 0, right: 0,
-    zIndex: 1,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2, shadowRadius: 10
+    justifyContent: 'center', alignItems: 'center',
+    borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
+    position: 'absolute', top: 60, left: 0, right: 0, zIndex: 1,
+    shadowColor: '#333', shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1, shadowRadius: 0
   },
   headerText: {
     fontSize: RFPercentage(2.5),

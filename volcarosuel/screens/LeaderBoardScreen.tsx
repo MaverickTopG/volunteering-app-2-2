@@ -278,7 +278,8 @@ const styles = StyleSheet.create({
     textAlign:'center',
     fontSize: ms(24),
     fontWeight:'700',
-    marginBottom: vScale(32),
+    marginBottom: vScale(92),
+    top:vScale(60)
   },
   podium:{
     flexDirection:'row',

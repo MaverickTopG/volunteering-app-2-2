@@ -176,8 +176,8 @@ useFocusEffect(
 
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { flex: 1, bottom: verticalScale(-60) },
+  container: { flex: 1,bottom: verticalScale(-80) },
+  map: { flex: 1, bottom: verticalScale(-50) },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -187,10 +187,12 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: scale(30),
     borderBottomRightRadius: scale(30),
     position: 'absolute',
-    top: 0,
+    top: verticalScale(-85),
     left: 0,
     right: 0,
     zIndex: 10,
+    paddingTop: verticalScale(100),   // ← add extra space at the top
+
   },
   searchInput: {
     flex: 1,
@@ -262,7 +264,7 @@ const styles = StyleSheet.create({
   },
   locateButton: {
     position: 'absolute',
-    bottom: verticalScale(665),
+    bottom: verticalScale(775),
     right: scale(10),
     width: scale(50),
     height: scale(50),

@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
 const aboutStyles = StyleSheet.create({
   container:     { flex:1, backgroundColor:'#fff6e7' },
   backButton:    {
-    position:'absolute',top:vScale(10),left:scale(10),
+    position:'absolute',top:vScale(112),left:scale(10),
     zIndex:1,padding:scale(10)
   },
   scrollContent: {

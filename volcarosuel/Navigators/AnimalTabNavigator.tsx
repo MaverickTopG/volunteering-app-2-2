@@ -46,7 +46,6 @@ import DisplayScreen from "../displayer/ShowScreen";
 import MapScreen from "../screens/MapScreen";
 import SplashScreen from "../screens/Splashscreen";
 import LiveOps from "../screens/LiveOp";
-import ApiMode from "../screens/apiScreen";
 import ShopScreen from "../screens/shop";
 
 import SuggestOrganizationScreen from "../screens/OrganizationScreen";
@@ -90,7 +89,6 @@ const TabStack = ({ route }) => {
       />
       <Stack.Screen name="DisplayScreen" component={DisplayScreen} />
       <Stack.Screen name="LiveOps" component={LiveOps} />
-      <Stack.Screen name="api" component={ApiMode} />
     </Stack.Navigator>
   );
 };
