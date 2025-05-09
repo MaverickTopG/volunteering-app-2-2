@@ -860,27 +860,81 @@ const MorphingSearchBar = memo(({ isSearchActive, setIsSearchActive, dbMode, set
       fontSize: scale(14),
       color: palette[3],
     },
+    staticSearchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: scale(10),
+      borderBottomWidth: 1,
+      borderColor: '#ccc',
+      backgroundColor: palette[0],
+    },
+    staticDbButton: {
+      marginRight: scale(8),
+      padding: scale(6),
+    },
+    staticTextInput: {
+      flex: 1,
+      height: verticalScale(40),
+      borderRadius: scale(20),
+      paddingHorizontal: scale(15),
+      borderWidth: 1,
+      borderColor: palette[3],
+      backgroundColor: palette[0],
+      color: palette[3],
+    },
+    staticSendButton: {
+      marginLeft: scale(8),
+      padding: scale(6),
+    },
+    
   });
   
 
   return (
-    // Wrap everything in TouchableWithoutFeedback to dismiss the keyboard and hide the search bar when tapping outside
-    <TouchableWithoutFeedback
-      onPress={() => {
-        if (isSearchActive) {
-          Keyboard.dismiss();
-          setIsSearchActive(false);
-        }
-      }}
-    >
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.contentContainer}
+    <SafeAreaView style={styles.container}>
+      {/* Static search bar at top */}
+      <View style={styles.staticSearchBar}>
+        {/* DB mode toggle */}
+        <TouchableOpacity
+          style={styles.staticDbButton}
+          onPress={() => setDbMode(!dbMode)}
         >
-          {data.length === 1 ? (
-            <IntroSection />
-          ) : (
+          <Ionicons
+            name="server-outline"
+            size={scale(22)}
+            color={dbMode ? 'green' : palette[3]}
+          />
+        </TouchableOpacity>
+  
+        {/* Text input */}
+        <TextInput
+          ref={textInputRef}
+          style={styles.staticTextInput}
+          placeholder={dbMode ? 'DB-mode: enter a category' : 'Message Ordix'}
+          placeholderTextColor="#aaa"
+          value={textInput}
+          onChangeText={setTextInput}
+          returnKeyType="send"
+          onSubmitEditing={handleSend}
+        />
+  
+        {/* Send button */}
+        <TouchableOpacity
+          style={styles.staticSendButton}
+          onPress={handleSend}
+        >
+          <Ionicons name="send-outline" size={scale(22)} color={palette[3]} />
+        </TouchableOpacity>
+      </View>
+  
+      {/* Chat area */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.contentContainer}
+      >
+        {data.length === 1
+          ? <IntroSection />
+          : (
             <ChatSection
               data={data}
               isLoading={isLoading}
@@ -888,29 +942,18 @@ const MorphingSearchBar = memo(({ isSearchActive, setIsSearchActive, dbMode, set
               inputFocused={inputFocused}
               onSelectFallbackCategory={handleFallbackCategorySelect}
             />
-          )}
-          {error ? (
-            <Animated.View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </Animated.View>
-          ) : null}
-        </KeyboardAvoidingView>
-        <MorphingSearchBar
-          isSearchActive={isSearchActive}
-          setIsSearchActive={setIsSearchActive}
-          dbMode={dbMode}
-          setDbMode={setDbMode}
-          textInput={textInput}
-          setTextInput={setTextInput}
-          handleSend={handleSend}
-          handleAskPress={handleAskPress}
-          morphAnim={morphAnim}
-          textInputRef={textInputRef}
-          keyboardAppearance="dark"
-        />
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+          )
+        }
+  
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
+  
   
 };
 
