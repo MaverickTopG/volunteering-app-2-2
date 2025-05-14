@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="da31aa4a-d2cb-48d5-8dab-863a695fae27" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.vscode/settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/.vscode/settings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/assets/adaptive-icon.png" beforeDir="false" afterPath="$PROJECT_DIR$/assets/adaptive-icon.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink.xcodeproj/project.pbxproj" beforeDir="false" afterPath="$PROJECT_DIR$/ios/NexoLink.xcodeproj/project.pbxproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink.xcworkspace/contents.xcworkspacedata" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/AppIcon.appiconset/Contents.json" beforeDir="false" afterPath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/AppIcon.appiconset/Contents.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/AppIcon.appiconset/app_logo_1024x1024.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/Contents.json" beforeDir="false" afterPath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/Contents.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/SplashScreen.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/SplashScreen.imageset/image.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/SplashScreenBackground.imageset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/SplashScreenBackground.imageset/image.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/SplashScreenLogo.imageset/Contents.json" beforeDir="false" afterPath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/SplashScreenLogo.imageset/Contents.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/SplashScreenLogo.imageset/splashscreen 1.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/SplashScreenLogo.imageset/splashscreen 2.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Images.xcassets/SplashScreenLogo.imageset/splashscreen.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Info.plist" beforeDir="false" afterPath="$PROJECT_DIR$/ios/NexoLink/Info.plist" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/NexoLink.entitlements" beforeDir="false" afterPath="$PROJECT_DIR$/ios/NexoLink/NexoLink.entitlements" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/PrivacyInfo.xcprivacy" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/SplashScreen.storyboard" beforeDir="false" afterPath="$PROJECT_DIR$/ios/NexoLink/SplashScreen.storyboard" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/NexoLink/Supporting/Expo.plist" beforeDir="false" afterPath="$PROJECT_DIR$/ios/NexoLink/Supporting/Expo.plist" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/Podfile" beforeDir="false" afterPath="$PROJECT_DIR$/ios/Podfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/Podfile.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/Podfile.properties.json" beforeDir="false" afterPath="$PROJECT_DIR$/ios/Podfile.properties.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/volcarosuel/displayer/ShowScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/displayer/ShowScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/volcarosuel/displayer/showContainer.js" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/displayer/showContainer.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/volcarosuel/screens/AccountScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/screens/AccountScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/volcarosuel/screens/ProfileScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/screens/ProfileScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/volcarosuel/screens/SearchScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/screens/SearchScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/volcarosuel/screens/shop.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/screens/shop.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/volcarosuel/screens/volunteer_log.js" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/screens/volunteer_log.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="2x1qAdL6BJPndeEsAjIx1CQXBcr" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "settings.editor.selected.configurable": "AndroidSdkUpdater"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="da31aa4a-d2cb-48d5-8dab-863a695fae27" name="Changes" comment="" />
+      <created>1747115785707</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1747115785707</updated>
+    </task>
+    <servers />
+  </component>
+</project>

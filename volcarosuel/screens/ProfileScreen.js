@@ -365,6 +365,7 @@ const MorphingSearchBar = memo(({ isSearchActive, setIsSearchActive, dbMode, set
   });
 
   return (
+    <SafeAreaView style={styles.container} edges={['top']}>
     <Animated.View
       style={[
         styles.morphContainer,
@@ -416,6 +417,7 @@ const MorphingSearchBar = memo(({ isSearchActive, setIsSearchActive, dbMode, set
         )}
       </Animated.View>
     </Animated.View>
+     </SafeAreaView>
   );
 });
 
@@ -860,14 +862,20 @@ const MorphingSearchBar = memo(({ isSearchActive, setIsSearchActive, dbMode, set
       fontSize: scale(14),
       color: palette[3],
     },
-    staticSearchBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: scale(10),
-      borderBottomWidth: 1,
-      borderColor: '#ccc',
-      backgroundColor: palette[0],
-    },
+
+  staticSearchBar: {
+    position: 'absolute',
+    top: verticalScale(60),
+    left: 0,
+    right: 0,
+    zIndex: 10,                  // float above the chat list
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: scale(10),
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor: palette[0],
+  },
     staticDbButton: {
       marginRight: scale(8),
       padding: scale(6),
@@ -891,7 +899,7 @@ const MorphingSearchBar = memo(({ isSearchActive, setIsSearchActive, dbMode, set
   
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Static search bar at top */}
       <View style={styles.staticSearchBar}>
         {/* DB mode toggle */}

@@ -2,10 +2,11 @@
   "expo": {
     "name": "NexoLink",
     "slug": "snack-e35a9482-38e0-4709-8097-c86cd1817f3e",
-    "version": "2.15.0",
+    "version": "3.5.0",
     "orientation": "portrait",
     "icon": "./assets/app_logo.jpg",
     "userInterfaceStyle": "light",
+    "jsEngine": "hermes",
     "splash": {
       "image": "./assets/splashscreen.jpg",
       "resizeMode": "cover",
@@ -17,6 +18,11 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "extra": {
+      "eas": {
+        "projectId": "41026c81-0bd5-407c-a8ec-1e685b1f38d0"
+      }
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ayanshsingh.nexolink",
@@ -24,9 +30,9 @@
       "infoPlist": {
         "NSUserNotificationUsageDescription": "This app uses notifications to remind you to volunteer and make a difference!"
       }
-
     },
     "android": {
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
@@ -37,12 +43,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "41026c81-0bd5-407c-a8ec-1e685b1f38d0"
-      }
-    }
+      "expo-font",
+      "expo-asset"
+    ]
   }
 }

@@ -249,15 +249,15 @@ const styles = StyleSheet.create({
   },
   loadingText: { marginTop: 10, fontSize: 18 },
   header: {
-    height: 100, justifyContent: 'center', alignItems: 'center',
+    height: 140, justifyContent: 'center', alignItems: 'center',
     borderBottomLeftRadius: 30, borderBottomRightRadius: 30,
-    position: 'absolute', top: 60, left: 0, right: 0, zIndex: 1,
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1,
     shadowColor: '#333', shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1, shadowRadius: 0
   },
-  headerText: { fontSize: RFPercentage(3), fontWeight: 'bold' },
+  headerText: { fontSize: RFPercentage(3), fontWeight: 'bold',marginTop:60 },
   backButton: { marginTop: -25, position: 'absolute', left: 5, padding: 10, zIndex: 100 },
-  scrollViewContent: { paddingTop: 120, paddingBottom: 90, paddingHorizontal: 20 },
+  scrollViewContent: { paddingTop: 140, paddingBottom: 90, paddingHorizontal: 20 },
   countyHeaderText: { fontSize: RFPercentage(2.5), fontWeight: 'bold' },
   gradientWrapper: { marginVertical: 10 },
   dropdownHeader: {

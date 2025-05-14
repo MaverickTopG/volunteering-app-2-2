@@ -13,9 +13,11 @@ import {
   Dimensions,
   Animated,
   FlatList,
-  SafeAreaView,
   ActivityIndicator,
+  Platform,
+  StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -30,9 +32,6 @@ const guidelineBaseHeight = 926;
 const scale = (s) => (width / guidelineBaseWidth) * s;
 const verticalScale = (s) => (height / guidelineBaseHeight) * s;
 
-
-
-// Categories
 let categories = [
   { id: "1", title: "Animals", icon: "paw-outline", reference: "Animal" },
   { id: "2", title: "Arts", icon: "color-palette-outline", reference: "Arts" },
@@ -55,7 +54,9 @@ export default function CausesScreen() {
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
   const [loadingTheme, setLoadingTheme] = useState(true);
 
-  const animations = useRef(categories.map(() => new Animated.Value(0))).current;
+  const animations = useRef(
+    categories.map(() => new Animated.Value(0))
+  ).current;
 
   useEffect(() => {
     if (!user) {
@@ -66,7 +67,9 @@ export default function CausesScreen() {
     AsyncStorage.getItem(key)
       .then((id) => {
         if (!id) return;
-        const pack = themePacks.find((t) => t.id === id) || seasonal.find((s) => s.id === id);
+        const pack =
+          themePacks.find((t) => t.id === id) ||
+          seasonal.find((s) => s.id === id);
         if (pack && Array.isArray(pack.colors)) {
           const c = pack.colors;
           setPalette([
@@ -108,8 +111,15 @@ export default function CausesScreen() {
   const renderItem = ({ item, index }) => {
     const anim = animations[index];
     const from = index % 2 === 0 ? -width : width;
-    const translateX = anim.interpolate({ inputRange: [0, 1], outputRange: [from, 0] });
-    const scaleAnim = anim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1], extrapolate: "clamp" });
+    const translateX = anim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [from, 0],
+    });
+    const scaleAnim = anim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.8, 1],
+      extrapolate: "clamp",
+    });
     const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
 
     return (
@@ -128,12 +138,18 @@ export default function CausesScreen() {
           end={{ x: 1, y: 0 }}
           style={styles.item}
         >
-          <TouchableOpacity onPress={() => handleCategoryPress(item)} style={styles.cardContent}>
-            <View style={[styles.gradientIconContainer, { backgroundColor: palette[0] }]}
+          <TouchableOpacity
+            onPress={() => handleCategoryPress(item)}
+            style={styles.cardContent}
+          >
+            <View
+              style={[styles.gradientIconContainer, { backgroundColor: palette[0] }]}
             >
               <Ionicons name={item.icon} size={scale(28)} color={palette[3]} />
             </View>
-            <Text style={[styles.itemText, { color: palette[3] }]}>{item.title}</Text>
+            <Text style={[styles.itemText, { color: palette[3] }]}>
+              {item.title}
+            </Text>
           </TouchableOpacity>
         </LinearGradient>
       </Animated.View>
@@ -142,16 +158,28 @@ export default function CausesScreen() {
 
   if (loadingTheme) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={DEFAULT_PALETTE[3]} />
+      <SafeAreaView
+        style={[
+          styles.rootContainer,
+          { backgroundColor: DEFAULT_PALETTE[0] },
+        ]}
+        edges={["top"]}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={DEFAULT_PALETTE[3]} />
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.rootContainer, { backgroundColor: palette[0] }]}
+    <SafeAreaView
+      style={[styles.rootContainer, { backgroundColor: palette[0] }]}
+      edges={["top"]}
     >
-      <View style={[styles.headerContainer, { backgroundColor: palette[0] }]}> 
+      <View
+        style={[styles.headerContainer, { backgroundColor: palette[0] }]}
+      >
         <Text style={[styles.headerText, { color: palette[3] }]}>Volunteer Causes</Text>
       </View>
 

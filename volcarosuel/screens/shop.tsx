@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     flexDirection:'row',
     justifyContent:'space-between',
     alignItems:'center',
-    padding:12, paddingHorizontal:16
+    padding:12, paddingHorizontal:16,marginTop:50
   },
   headerTitle:    { fontSize:22, fontWeight:'700' },
   headerCredits:  { fontSize:16, fontWeight:'600' },

@@ -131,15 +131,16 @@ export default function ShowScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: scale(16), paddingBottom: vScale(40) },
+  scroll: { padding: scale(16), paddingBottom: vScale(50) },
 
   headerPill: {
     borderRadius: scale(25),
     paddingVertical: vScale(14),
     paddingHorizontal: scale(20),
-    marginBottom: vScale(20),
+    marginBottom: vScale(70),
     alignSelf: 'center',
     minWidth: '90%',
+    top:vScale(50)
   },
   headerText: {
     fontSize: scale(22),

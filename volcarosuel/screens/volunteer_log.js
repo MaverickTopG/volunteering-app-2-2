@@ -444,7 +444,7 @@ export default function VolunteerLogs() {
 const styles = StyleSheet.create({
   container:        { flex:1 },
   header: {
-    paddingTop:verticalScale(20),
+    paddingTop:verticalScale(70),
     paddingBottom:verticalScale(10),
     paddingHorizontal:scale(20),
     flexDirection:'row',
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
   logText:          { fontSize:scale(14), marginBottom:verticalScale(4) },
   logHoursButton:   {
     position:'absolute',
-    bottom:verticalScale(770),
+    bottom:verticalScale(820),
     right:scale(10),
     borderRadius:scale(20),
     paddingVertical:verticalScale(10),
