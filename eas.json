@@ -16,7 +16,7 @@
         "scheme": "NexoLink"
       },
       "android": {
-        "buildType": "app-bundle" 
+        "buildType": "app-bundle"
       }
     }
   },

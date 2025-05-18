@@ -21,9 +21,11 @@ import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../../auth/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { PermissionsAndroid, Platform } from 'react-native';
+
 
 MapboxGL.setAccessToken(
-  'sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA'
+  'pk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA'
 );
 const DEFAULT_PALETTE = [
   '#fff6e7',
@@ -68,6 +70,55 @@ const fetchCoordsForAddress = async (addr) => {
     return null;
   }
 };
+// ——— Android location helper ———
+
+/** Request fine-location permission on Android. */
+async function requestAndroidLocationPermission() {
+  if (Platform.OS !== 'android') return true;
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      {
+        title: 'Location Permission',
+        message: 'This app needs access to your location to show your position on the map.',
+        buttonPositive: 'OK',
+        buttonNegative: 'Cancel',
+      }
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  } catch (err) {
+    console.warn('Location permission error:', err);
+    Alert.alert('Permission Error', 'Could not request location permission.');
+    return false;
+  }
+}
+
+/** Wrap Geolocation.getCurrentPosition in a Promise. */
+function getCurrentPositionAsync(options = {}) {
+  return new Promise((resolve, reject) => {
+    Geolocation.getCurrentPosition(
+      pos => resolve([pos.coords.longitude, pos.coords.latitude]),
+      err => {
+        console.warn('getCurrentPosition error:', err);
+        Alert.alert('Location Error', 'Unable to fetch current location.');
+        reject(err);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, ...options }
+    );
+  });
+}
+
+/** Combined: request permission then fetch location, or null if denied/fails. */
+async function fetchAndroidLocation() {
+  const ok = await requestAndroidLocationPermission();
+  if (!ok) return null;
+  try {
+    return await getCurrentPositionAsync();
+  } catch {
+    return null;
+  }
+}
+// ——————————————————————————
 
 
 const MapScreen = () => {
@@ -89,7 +140,28 @@ const MapScreen = () => {
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
 const [loading, setLoading] = useState(true);
 const {user} = useContext(AuthContext);
-
+useEffect(() => {
+  (async () => {
+    if (Platform.OS === 'android') {
+      // this shows the permission dialog immediately
+      const coords = await fetchAndroidLocation();
+      if (coords) {
+        setUserLocation(coords);
+        // also treat it as your “home” if you like:
+        setHomeLocation(coords);
+        // center the map:
+        cameraRef.current?.setCamera({
+          centerCoordinate: coords,
+          zoomLevel: 14,
+          animationDuration: 800,
+        });
+      } else {
+        // permission denied or fetch failed
+        setGeoLocationFailed(true);
+      }
+    }
+  })();
+}, []);
 useEffect(() => {
   async function loadVolunteerOrgs() {
     try {
@@ -291,7 +363,7 @@ const styles = StyleSheet.create({
   },
   instructionsBar: {
     position: 'absolute',
-    bottom: verticalScale(660),
+    bottom: verticalScale(770),
     left: scale(10),
     right: scale(70),
     backgroundColor: palette[0],
@@ -559,7 +631,7 @@ const styles = StyleSheet.create({
     try {
       const [userLon, userLat] = userLocation;
       const [destLon, destLat] = destCoords;
-      const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${userLon},${userLat};${destLon},${destLat}?geometries=geojson&steps=true&access_token=sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA`;
+      const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${userLon},${userLat};${destLon},${destLat}?geometries=geojson&steps=true&access_tokenpk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA`;
       const resp = await axios.get(directionsUrl);
       if (resp.data.routes?.length) {
         const routeObj = resp.data.routes[0];

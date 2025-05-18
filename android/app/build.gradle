@@ -91,7 +91,7 @@ android {
         applicationId 'com.ayanshsingh.nexo'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
+        versionCode 4
         versionName "3.5.0"
     }
     signingConfigs {
@@ -101,6 +101,13 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+                  // your production keystore; put upload-keystore.jks in android/app/
+                          storeFile file('upload-keystore.jks')
+                  storePassword '3a27abf876ebdf204ba6de3c3c81894a'
+                  keyAlias '2594312d86535f5bb77fb5dba86f3771'
+                  keyPassword '0c30e5b43f4896143d47c291c6bca1b5'
+                }
     }
     buildTypes {
         debug {
@@ -109,7 +116,7 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
@@ -149,6 +156,8 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation "com.google.android.gms:play-services-location:$googlePlayServicesLocationVersion"
+
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

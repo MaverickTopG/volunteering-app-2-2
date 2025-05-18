@@ -1,16 +1,4 @@
-/**
- * PillTabNavigator.tsx
- * – includes custom collapsing pill, extension FAB, and hidden routes (Suggestions, Account, Leaderboard).
- * – icons disappear on the active pill; label only is shown.
- */
-
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useContext,
-} from "react";
+import React, { useState, useEffect, useRef, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -114,26 +102,9 @@ const VolunteerLogsStack = () => {
 const TabArr = [
   { route: "Search", label: "Home", icon: "home", component: TabStack },
   { route: "Ordix", label: "Ordix", icon: "search1", component: AIScreen },
-  {
-    route: "Volunteer",
-    label: "Logs",
-    icon: "team",
-    component: VolunteerLogsStack,
-  },
-  {
-    route: "Map",
-    label: "Map",
-    icon: "location",
-    component: MapScreen,
-    isEvilIcon: true,
-  },
-  {
-    route: "Donate",
-    label: "Donate",
-    icon: "user",
-    component: SplashScreen,
-    isEvilIcon: true,
-  },
+  { route: "Volunteer", label: "Logs", icon: "team", component: VolunteerLogsStack },
+  { route: "Map", label: "Map", icon: "location", component: MapScreen, isEvilIcon: true },
+  { route: "Donate", label: "Donate", icon: "user", component: SplashScreen, isEvilIcon: true },
 ];
 
 // ---------- tab button ----------
@@ -159,46 +130,19 @@ const TabButton = ({ item, onPress, accessibilityState }) => {
   }, [focused]);
 
   const renderIcon = () => {
-    // hide icon when active
     if (focused) return null;
-
     if (item.isEvilIcon) {
-      return (
-        <Animatable.View>
-          <EvilIcons
-            name={item.icon}
-            size={28}
-            color={Colors.whiteAlpha}
-            style={{ marginRight: 0 }}
-          />
-        </Animatable.View>
-      );
+      return <EvilIcons name={item.icon} size={28} color={Colors.whiteAlpha} />;
     }
-    return (
-      <Animatable.View>
-        <AntDesign
-          name={item.icon}
-          size={20}
-          color={Colors.whiteAlpha}
-          style={{ marginRight: 0 }}
-        />
-      </Animatable.View>
-    );
+    return <AntDesign name={item.icon} size={20} color={Colors.whiteAlpha} />;
   };
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={1}
-      style={[styles.tabItemContainer, { flex: focused ? 1.4 : 1 }]}
-    >
+    <TouchableOpacity onPress={onPress} activeOpacity={1} style={[styles.tabItemContainer, { flex: focused ? 1.4 : 1 }]}>
       <View>
         <Animatable.View
           ref={bubbleRef}
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: Colors.primary, borderRadius: 16 },
-          ]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: Colors.primary, borderRadius: 16 }]}
         />
         <View style={styles.tabItem}>
           {renderIcon()}
@@ -212,28 +156,28 @@ const TabButton = ({ item, onPress, accessibilityState }) => {
 };
 
 // ---------- extension FAB ----------
-/* ---------- extension FAB (updated) ---------- */
+const RADIUS = 60;
+const EXT_ITEMS = [
+  { angle: 120, icon: 'person-outline', route: 'Account' },
+  { angle: 180, icon: 'bulb-outline',  route: 'Suggestions' },
+  { angle:  60, icon: 'trophy-outline', route: 'Leaderboard' },
+  { angle:   0, icon: 'cart-outline',   route: 'S' },
+];
 
-// Replace your ExtensionButtons and ExtensionBar with this:
-
-const ExtensionBar = ({ onSelectExtension }) => {
+const ExtensionBar = ({ onSelectExtension, resetAutoCollapse }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const open = useSharedValue(0);
-  const toggle = () => {
-    open.value = withTiming(open.value ? 0 : 1, { duration: 300 });
-  };
 
-  // Four angles: 180° (left), 120° (up-left), 60° (up-right), 0° (right)
-  const RADIUS = 60;
-  const items = [
-    { angle: 120, icon: 'person-outline', route: 'Account'     },
-    { angle: 180, icon: 'bulb-outline',  route: 'Suggestions' },
-    { angle:  60, icon: 'trophy-outline', route: 'Leaderboard'  },
-    { angle:   0, icon: 'cart-outline',   route: 'S'         },
-  ];
+  const toggle = useCallback(() => {
+    const next = !isOpen;
+    setIsOpen(next);
+    open.value = withTiming(next ? 1 : 0, { duration: 300 });
+    resetAutoCollapse();
+  }, [isOpen, open, resetAutoCollapse]);
 
   return (
     <View style={extStyles.container}>
-      {items.map(({ angle, icon, route }, i) => {
+      {EXT_ITEMS.map(({ angle, icon, route }, i) => {
         const rad = (angle * Math.PI) / 180;
         const x   = RADIUS * Math.cos(rad);
         const y   = -RADIUS * Math.sin(rad);
@@ -246,9 +190,14 @@ const ExtensionBar = ({ onSelectExtension }) => {
           opacity: open.value,
         }));
 
+        const onPress = () => {
+          onSelectExtension(route);
+          resetAutoCollapse();
+        };
+
         return (
           <Animated.View key={i} style={[extStyles.button, style]}>
-            <TouchableOpacity onPress={() => onSelectExtension(route)}>
+            <TouchableOpacity onPress={onPress}>
               <Ionicons name={icon} size={22} color="#fff" />
             </TouchableOpacity>
           </Animated.View>
@@ -256,23 +205,44 @@ const ExtensionBar = ({ onSelectExtension }) => {
       })}
 
       <TouchableOpacity onPress={toggle} style={extStyles.mainButton}>
-        <Ionicons name={open.value > 0.5 ? 'close' : 'add'} size={24} color="#fff" />
+        <Ionicons name={isOpen ? 'close' : 'add'} size={24} color="#fff" />
       </TouchableOpacity>
     </View>
   );
 };
 
-// Styles (unchanged):
-
 // ---------- custom tab bar ----------
-const CustomTabBar = (props) => {
-  const { state, navigation } = props;
+const TabNav = createBottomTabNavigator();
+
+function PillTabNavigator() {
+  return (
+    <TabNav.Navigator
+      screenOptions={{ headerShown: false, tabBarStyle: { height: TAB_BAR_HEIGHT } }}
+      tabBar={(props) => <CustomTabBar {...props} />}
+    >
+      {TabArr.map((item) => (
+        <TabNav.Screen
+          key={item.route}
+          name={item.route}
+          component={item.component}
+        />
+      ))}
+      {/* hidden routes */}
+      <TabNav.Screen name="Suggestions" component={SuggestOrganizationScreen} />
+      <TabNav.Screen name="Account" component={AccountStackNavigator} />
+      <TabNav.Screen name="Leaderboard" component={LeaderboardScreen} />
+      <TabNav.Screen name="S" component={ShopScreen} />
+    </TabNav.Navigator>
+  );
+}
+
+const CustomTabBar = ({ state, navigation }) => {
   const [expanded, setExpanded] = useState(true);
-  const timer = useRef<NodeJS.Timeout | null>(null);
+  const timer = useRef(null);
   const widthAnim = useSharedValue(ORIGINAL_WIDTH);
   const touchOpacity = useSharedValue(0);
 
-  const resetAuto = useCallback(() => {
+  const resetAutoCollapse = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     if (expanded) {
       timer.current = setTimeout(() => {
@@ -289,13 +259,13 @@ const CustomTabBar = (props) => {
       widthAnim.value = ORIGINAL_WIDTH;
       touchOpacity.value = 0;
     }
-    resetAuto();
-  }, [expanded, widthAnim, touchOpacity, resetAuto]);
+    resetAutoCollapse();
+  }, [expanded, widthAnim, touchOpacity, resetAutoCollapse]);
 
   useEffect(() => {
-    resetAuto();
+    resetAutoCollapse();
     return () => timer.current && clearTimeout(timer.current);
-  }, [resetAuto]);
+  }, [resetAutoCollapse]);
 
   const rContainer = useAnimatedStyle(() => ({
     width: withTiming(widthAnim.value, { duration: FADE_DURATION }),
@@ -304,21 +274,19 @@ const CustomTabBar = (props) => {
     opacity: withTiming(touchOpacity.value, { duration: FADE_DURATION }),
   }));
 
-  const onSelectExtension = (name: string) => navigation.navigate(name);
+  const onSelectExtension = (name) => navigation.navigate(name);
 
   if (expanded) {
     return (
       <TouchableWithoutFeedback onPress={handlePress}>
         <Animated.View style={[styles.tabBarContainer, rContainer]}>
           {state.routes.map((route, idx) => {
-            const item = TabArr.find(
-              (i) => i.route.toLowerCase() === route.name.toLowerCase()
-            );
+            const item = TabArr.find(i => i.route === route.name);
             if (!item) return null;
             const focused = state.index === idx;
             const onPressTab = () => {
               if (!focused) navigation.navigate(item.route);
-              resetAuto();
+              resetAutoCollapse();
             };
             return (
               <TabButton
@@ -330,7 +298,7 @@ const CustomTabBar = (props) => {
             );
           })}
           <View style={fabStyles.centerWrapper}>
-            <ExtensionBar onSelectExtension={onSelectExtension} />
+            <ExtensionBar onSelectExtension={onSelectExtension} resetAutoCollapse={resetAutoCollapse} />
           </View>
         </Animated.View>
       </TouchableWithoutFeedback>
@@ -338,57 +306,14 @@ const CustomTabBar = (props) => {
   }
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={1}>
-      <Animated.View
-        style={[
-          styles.tabBarContainer,
-          rContainer,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
+      <Animated.View style={[styles.tabBarContainer, rContainer, { justifyContent: "center", alignItems: "center" }]}>
         <Animated.View style={rTouchID}>
-          <Image
-            source={spaceshipImage}
-            style={{
-              width: 28,
-              height: 28,
-              resizeMode: "contain",
-              tintColor: "#fff6e7",
-            }}
-          />
+          <Image source={spaceshipImage} style={{ width: 28, height: 28, resizeMode: "contain", tintColor: "#fff6e7" }} />
         </Animated.View>
       </Animated.View>
     </TouchableOpacity>
   );
 };
-
-// ---------- navigator ----------
-const TabNav = createBottomTabNavigator();
-
-function PillTabNavigator() {
-  return (
-    <TabNav.Navigator
-      screenOptions={{ headerShown: false, tabBarStyle: { height: TAB_BAR_HEIGHT } }}
-      tabBar={(p) => <CustomTabBar {...p} />}
-    >
-      {TabArr.map((item) => (
-        <TabNav.Screen
-          key={item.route}
-          name={item.route}
-          component={item.component}
-        />
-      ))}
-
-      {/* hidden routes */}
-      <TabNav.Screen name="Suggestions" component={SuggestOrganizationScreen} />
-      <TabNav.Screen name="Account" component={AccountStackNavigator} />
-      <TabNav.Screen name="Leaderboard" component={LeaderboardScreen} />
-      <TabNav.Screen name="S" component={ShopScreen} />  
-
-
-
-    </TabNav.Navigator>
-  );
-}
 
 export default PillTabNavigator;
 
