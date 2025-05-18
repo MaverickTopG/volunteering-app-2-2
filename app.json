@@ -2,7 +2,7 @@
   "expo": {
     "name": "NexoLink",
     "slug": "snack-e35a9482-38e0-4709-8097-c86cd1817f3e",
-    "version": "3.5.0",
+    "version": "3.5.2",
     "orientation": "portrait",
     "icon": "./assets/app_logo.jpg",
     "userInterfaceStyle": "light",
@@ -26,7 +26,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ayanshsingh.nexolink",
-      "buildNumber": "30",
+      "buildNumber": "32",
       "infoPlist": {
         "NSUserNotificationUsageDescription": "This app uses notifications to remind you to volunteer and make a difference!"
       }

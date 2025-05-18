@@ -137,10 +137,10 @@ const styles = StyleSheet.create({
     borderRadius: scale(25),
     paddingVertical: vScale(14),
     paddingHorizontal: scale(20),
-    marginBottom: vScale(70),
+    marginBottom: vScale(20),
     alignSelf: 'center',
     minWidth: '90%',
-    top:vScale(50)
+    top:vScale(0)
   },
   headerText: {
     fontSize: scale(22),

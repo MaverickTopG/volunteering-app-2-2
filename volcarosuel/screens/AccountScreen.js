@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
 
   headerWrapper: {
     alignItems:'center',
-    marginTop:vScale(70),
+    marginTop:vScale(10),
     marginBottom:vScale(10)
   },
   headerPill:    {
