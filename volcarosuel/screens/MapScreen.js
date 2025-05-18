@@ -21,11 +21,9 @@ import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../../auth/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import { PermissionsAndroid, Platform } from 'react-native';
-
 
 MapboxGL.setAccessToken(
-  'pk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA'
+  'sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA'
 );
 const DEFAULT_PALETTE = [
   '#fff6e7',
@@ -46,80 +44,26 @@ const verticalScale = (size) => (height / guidelineBaseHeight) * size;
 const geocodeCache = {};
 
 // Helper: Geocode an address using Nominatim
-const fetchCoordsForAddress = async (addr) => {
-  if (!addr || addr.trim().toLowerCase() === 'not specified') {
-    return null;
-  }
-  if (geocodeCache[addr]) {
-    return geocodeCache[addr];
-  }
+async function fetchCoordsForAddress(addr) {
+  if (!addr) return null;
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-      addr
-    )}&format=json&limit=1`;
-    const resp = await axios.get(url);
-    if (resp.data.length > 0) {
-      const { lat, lon } = resp.data[0];
-      const coords = [parseFloat(lon), parseFloat(lat)];
-      geocodeCache[addr] = coords;
-      return coords;
+    const { data } = await axios.get(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json`, {
+        params: { access_token: 'pk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA', limit: 1 }
+      }
+    );
+    
+    if (data.features.length) {
+      const [lon, lat] = data.features[0].center;
+      geocodeCache[addr] = [lon, lat];
+      return [lon, lat];
     }
     return null;
   } catch (err) {
-    console.warn('fetchCoordsForAddress error:', err);
-    return null;
-  }
-};
-// ——— Android location helper ———
-
-/** Request fine-location permission on Android. */
-async function requestAndroidLocationPermission() {
-  if (Platform.OS !== 'android') return true;
-  try {
-    const granted = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      {
-        title: 'Location Permission',
-        message: 'This app needs access to your location to show your position on the map.',
-        buttonPositive: 'OK',
-        buttonNegative: 'Cancel',
-      }
-    );
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  } catch (err) {
-    console.warn('Location permission error:', err);
-    Alert.alert('Permission Error', 'Could not request location permission.');
-    return false;
-  }
-}
-
-/** Wrap Geolocation.getCurrentPosition in a Promise. */
-function getCurrentPositionAsync(options = {}) {
-  return new Promise((resolve, reject) => {
-    Geolocation.getCurrentPosition(
-      pos => resolve([pos.coords.longitude, pos.coords.latitude]),
-      err => {
-        console.warn('getCurrentPosition error:', err);
-        Alert.alert('Location Error', 'Unable to fetch current location.');
-        reject(err);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000, ...options }
-    );
-  });
-}
-
-/** Combined: request permission then fetch location, or null if denied/fails. */
-async function fetchAndroidLocation() {
-  const ok = await requestAndroidLocationPermission();
-  if (!ok) return null;
-  try {
-    return await getCurrentPositionAsync();
-  } catch {
+    console.warn('Mapbox geocode error:', err);
     return null;
   }
 }
-// ——————————————————————————
-
 
 const MapScreen = () => {
   // ====== State ======
@@ -140,28 +84,7 @@ const MapScreen = () => {
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
 const [loading, setLoading] = useState(true);
 const {user} = useContext(AuthContext);
-useEffect(() => {
-  (async () => {
-    if (Platform.OS === 'android') {
-      // this shows the permission dialog immediately
-      const coords = await fetchAndroidLocation();
-      if (coords) {
-        setUserLocation(coords);
-        // also treat it as your “home” if you like:
-        setHomeLocation(coords);
-        // center the map:
-        cameraRef.current?.setCamera({
-          centerCoordinate: coords,
-          zoomLevel: 14,
-          animationDuration: 800,
-        });
-      } else {
-        // permission denied or fetch failed
-        setGeoLocationFailed(true);
-      }
-    }
-  })();
-}, []);
+
 useEffect(() => {
   async function loadVolunteerOrgs() {
     try {
@@ -197,6 +120,32 @@ useEffect(() => {
 
   loadVolunteerOrgs();
 }, []);
+
+// ——————————————————————————
+// Geocode volunteer sites sequentially
+useEffect(() => {
+  async function geocodeSites() {
+    // clear out any old data
+    setVolunteerSitesWithCoords([]);
+    for (let site of volunteerSites) {
+      // turn address → [lon, lat]
+      const coords = await fetchCoordsForAddress(site.address);
+      // append to coords array
+      setVolunteerSitesWithCoords(prev => [
+        ...prev,
+        { ...site, coords }
+      ]);
+      // small pause to be kind to Nominatim
+      await new Promise(res => setTimeout(res, 500));
+    }
+  }
+
+  if (volunteerSites.length) {
+    geocodeSites();
+  }
+}, [volunteerSites]);
+useEffect(() => {
+}, [volunteerSitesWithCoords]);
 
 
 
@@ -363,7 +312,7 @@ const styles = StyleSheet.create({
   },
   instructionsBar: {
     position: 'absolute',
-    bottom: verticalScale(770),
+    bottom: verticalScale(660),
     left: scale(10),
     right: scale(70),
     backgroundColor: palette[0],
@@ -473,18 +422,15 @@ const styles = StyleSheet.create({
 
   // Geocode volunteer sites sequentially
   useEffect(() => {
-    async function geocodeSites() {
+    if (!volunteerSites.length) return;
+    setVolunteerSitesWithCoords([]);     // ← reset once
+    (async () => {
       for (let site of volunteerSites) {
         const coords = await fetchCoordsForAddress(site.address);
         setVolunteerSitesWithCoords(prev => [...prev, { ...site, coords }]);
-        // small delay to avoid hammering Nominatim
-        await new Promise(res => setTimeout(res, 500));
+        await new Promise(r => setTimeout(r, 500));
       }
-    }
-    if (volunteerSites.length) {
-      setVolunteerSitesWithCoords([]);    // reset if needed
-      geocodeSites();
-    }
+    })();
   }, [volunteerSites]);
   
 
@@ -631,7 +577,7 @@ const styles = StyleSheet.create({
     try {
       const [userLon, userLat] = userLocation;
       const [destLon, destLat] = destCoords;
-      const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${userLon},${userLat};${destLon},${destLat}?geometries=geojson&steps=true&access_tokenpk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA`;
+      const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${userLon},${userLat};${destLon},${destLat}?geometries=geojson&steps=true&access_token=sk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA`;
       const resp = await axios.get(directionsUrl);
       if (resp.data.routes?.length) {
         const routeObj = resp.data.routes[0];
