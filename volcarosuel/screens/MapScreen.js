@@ -45,25 +45,24 @@ const geocodeCache = {};
 
 // Helper: Geocode an address using Nominatim
 async function fetchCoordsForAddress(addr) {
-  if (!addr) return null;
+  if (!addr?.trim()) return null;
   try {
-    const { data } = await axios.get(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addr)}.json`, {
-        params: { access_token: 'pk.eyJ1IjoiYXlhbnNoc2luZ2giLCJhIjoiY201MDN2MDEwMWpzdDJxcHAyMHZ4aGtwOSJ9.D8WgPNxITq3D4a1-AiTpVA', limit: 1 }
-      }
-    );
-    
-    if (data.features.length) {
-      const [lon, lat] = data.features[0].center;
-      geocodeCache[addr] = [lon, lat];
-      return [lon, lat];
+    const url = `https://nominatim.openstreetmap.org/search`
+      + `?q=${encodeURIComponent(addr)}`
+      + `&format=json&limit=1`;
+    const { data } = await axios.get(url, {
+      headers: { 'User-Agent': 'YourAppName/1.0' }
+    });
+    if (data.length > 0) {
+      const { lat, lon } = data[0];
+      return [parseFloat(lon), parseFloat(lat)];
     }
-    return null;
   } catch (err) {
-    console.warn('Mapbox geocode error:', err);
-    return null;
+    console.warn('Nominatim error:', err);
   }
+  return null;
 }
+
 
 const MapScreen = () => {
   // ====== State ======
@@ -86,66 +85,49 @@ const [loading, setLoading] = useState(true);
 const {user} = useContext(AuthContext);
 
 useEffect(() => {
-  async function loadVolunteerOrgs() {
+  (async () => {
     try {
-      const q = query(collection(db, 'volunteer_organizations'));
+      const q    = query(collection(db, 'volunteer_organizations'));
       const snap = await getDocs(q);
+    
 
-      // 1) Map each doc to a site object
       const sites = snap.docs.map(doc => {
         const data = doc.data();
         return {
-          id: doc.id,
-          name: data.title || data.name,
-          address: data.address,
+          id:      doc.id,
+          name:    data.title || data.name,
+        // ← THIS must match your screenshot
+         address: data.address,      // make sure it’s spelled exactly “address”
         };
       });
-
-      // 2) Deduplicate by `id`
-      const uniqueSitesById = Array.from(
-        sites.reduce((map, site) => {
-          if (!map.has(site.id)) {
-            map.set(site.id, site);
-          }
-          return map;
-        }, new Map())
-      );
-
-      // 3) Update state with the unique array
-      setVolunteerSites(uniqueSitesById);
+      setVolunteerSites(sites);
     } catch (err) {
-      console.warn('Error loading volunteer orgs:', err);
+      console.warn(err);
     }
-  }
-
-  loadVolunteerOrgs();
+  })();
 }, []);
+
 
 // ——————————————————————————
 // Geocode volunteer sites sequentially
 useEffect(() => {
-  async function geocodeSites() {
-    // clear out any old data
-    setVolunteerSitesWithCoords([]);
+  if (!volunteerSites.length) return;
+
+  // reset before looping
+  setVolunteerSitesWithCoords([]);
+
+  (async () => {
     for (let site of volunteerSites) {
-      // turn address → [lon, lat]
       const coords = await fetchCoordsForAddress(site.address);
-      // append to coords array
       setVolunteerSitesWithCoords(prev => [
         ...prev,
         { ...site, coords }
       ]);
-      // small pause to be kind to Nominatim
-      await new Promise(res => setTimeout(res, 500));
+      await new Promise(res => setTimeout(res, 100));
     }
-  }
-
-  if (volunteerSites.length) {
-    geocodeSites();
-  }
+  })();
 }, [volunteerSites]);
-useEffect(() => {
-}, [volunteerSitesWithCoords]);
+
 
 
 
@@ -198,7 +180,7 @@ useFocusEffect(
 
 const styles = StyleSheet.create({
   container: { flex: 1,bottom: verticalScale(-80) },
-  map: { flex: 1, bottom: verticalScale(-50) },
+   map: { flex: 1 },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -312,7 +294,7 @@ const styles = StyleSheet.create({
   },
   instructionsBar: {
     position: 'absolute',
-    bottom: verticalScale(660),
+    bottom: verticalScale(760),
     left: scale(10),
     right: scale(70),
     backgroundColor: palette[0],
@@ -421,17 +403,6 @@ const styles = StyleSheet.create({
   }, []);
 
   // Geocode volunteer sites sequentially
-  useEffect(() => {
-    if (!volunteerSites.length) return;
-    setVolunteerSitesWithCoords([]);     // ← reset once
-    (async () => {
-      for (let site of volunteerSites) {
-        const coords = await fetchCoordsForAddress(site.address);
-        setVolunteerSitesWithCoords(prev => [...prev, { ...site, coords }]);
-        await new Promise(r => setTimeout(r, 500));
-      }
-    })();
-  }, [volunteerSites]);
   
 
   useEffect(() => {
@@ -630,41 +601,37 @@ const styles = StyleSheet.create({
 
   // ====== Volunteer Markers ======
   const renderVolunteerMarkers = () =>
-    volunteerSitesWithCoords.map((site) => {
-      if (!site.coords) return null;
-      return (
-        <MapboxGL.PointAnnotation
-          key={site.id}
-          id={`volunteer-${site.id}`}
-          coordinate={site.coords}
-          onSelected={() => {
-            Alert.alert(
-              'Volunteer Site',
-              `${site.name}\n${site.address}`,
-              [
-                {
-                  text: 'Show Directions',
-                  onPress: async () => {
-                    if (site.coords) {
-                      setDestination(site.coords);
-                      await calculateRoute(site.coords);
-                      startNavigation();
-                    } else {
-                      Alert.alert('Error', 'Coordinates not available for this site.');
-                    }
-                  },
+  volunteerSitesWithCoords
+    // 1) Filter out any falsy coords
+    .filter(site => site.coords)
+    // 2) Map to annotations, using both id *and* index for the key
+    .map((site, idx) => (
+      <MapboxGL.PointAnnotation
+        key={`${site.id}-${idx}`}
+        id={`volunteer-${site.id}-${idx}`}
+        coordinate={site.coords}
+        onSelected={() => {
+          Alert.alert(
+            'Volunteer Site',
+            `${site.name}\n${site.address}`,
+            [
+              {
+                text: 'Show Directions',
+                onPress: async () => {
+                  await calculateRoute(site.coords);
+                  startNavigation();
                 },
-                { text: 'Cancel', style: 'cancel' },
-              ]
-            );
-          }}
-        >
-          <View style={styles.blackMarker}>
-            <Ionicons name="location" size={scale(26)} color="black" />
-          </View>
-        </MapboxGL.PointAnnotation>
-      );
-    });
+              },
+              { text: 'Cancel', style: 'cancel' },
+            ]
+          );
+        }}
+      >
+        <View style={styles.blackMarker}>
+          <Ionicons name="location" size={scale(26)} color="black" />
+        </View>
+      </MapboxGL.PointAnnotation>
+    ));
 
   // ====== Instructions Bar ======
   const renderInstructionsBar = () => {
@@ -692,11 +659,13 @@ const styles = StyleSheet.create({
       </Animated.View>
     );
   };
+ 
 
   // ====== "Set Location" Modal ======
   const handleHomePress = () => {
     // This function was removed as per request.
   };
+  renderVolunteerMarkers()
 
   // ====== Custom Blue Dot ======
   const renderUserLocationDot = () => {
