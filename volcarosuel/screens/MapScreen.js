@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   },
   routeDetailsContainer: {
     position: 'absolute',
-    bottom: verticalScale(120),
+    bottom: verticalScale(180),
     left: scale(20),
     right: scale(20),
     backgroundColor: palette[0],

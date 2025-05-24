@@ -2,6 +2,7 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
 /**
@@ -91,8 +92,9 @@ android {
         applicationId 'com.ayanshsingh.nexo'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
+        versionCode 6
         versionName "3.5.0"
+        multiDexEnabled true
     }
     signingConfigs {
         debug {
@@ -157,7 +159,8 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation "com.google.android.gms:play-services-location:$googlePlayServicesLocationVersion"
-
+    implementation "com.google.android.gms:play-services-location:21.0.1"
+    implementation 'androidx.multidex:multidex:2.0.1'
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

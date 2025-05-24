@@ -84,7 +84,9 @@ const TabStack = ({ route }) => {
 const VolunteerLogsStack = () => {
   const { user } = useContext(AuthContext);
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    
+    <Stack.Navigator 
+    screenOptions={{ headerShown: false }}>
       {user ? (
         <Stack.Screen name="VolunteerLogs" component={VolunteerLogs} />
       ) : (
@@ -108,53 +110,46 @@ const TabArr = [
 ];
 
 // ---------- tab button ----------
+
 const TabButton = ({ item, onPress, accessibilityState }) => {
   const focused = accessibilityState.selected;
-  const bubbleRef = useRef(null);
-  const labelRef = useRef(null);
-
-  useEffect(() => {
-    if (focused) {
-      bubbleRef.current?.animate({ 0: { scale: 0 }, 1: { scale: 1 } }, 300);
-      labelRef.current?.animate(
-        { 0: { scale: 0, opacity: 0 }, 1: { scale: 1, opacity: 1 } },
-        300
-      );
-    } else {
-      bubbleRef.current?.animate({ 0: { scale: 1 }, 1: { scale: 0 } }, 300);
-      labelRef.current?.animate(
-        { 0: { scale: 1, opacity: 1 }, 1: { scale: 0, opacity: 0 } },
-        300
-      );
-    }
-  }, [focused]);
-
-  const renderIcon = () => {
-    if (focused) return null;
-    if (item.isEvilIcon) {
-      return <EvilIcons name={item.icon} size={28} color={Colors.whiteAlpha} />;
-    }
-    return <AntDesign name={item.icon} size={20} color={Colors.whiteAlpha} />;
-  };
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={1} style={[styles.tabItemContainer, { flex: focused ? 1.4 : 1 }]}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={1}
+      style={[
+        styles.tabItemContainer,
+        { flex: focused ? 1.4 : 1 }
+      ]}
+    >
       <View>
         <Animatable.View
-          ref={bubbleRef}
-          style={[StyleSheet.absoluteFill, { backgroundColor: Colors.primary, borderRadius: 16 }]}
+          animation={focused ? { 0: { scale: 0 }, 1: { scale: 1 } } : { 0: { scale: 1 }, 1: { scale: 0 } }}
+          duration={300}
+          style={[StyleSheet.absoluteFill, {
+            backgroundColor: Colors.primary,
+            borderRadius: 16,
+          }]}
         />
         <View style={styles.tabItem}>
-          {renderIcon()}
-          <Animatable.View ref={labelRef} style={styles.labelWrapper}>
-            {focused && <Text style={styles.label}>{item.label}</Text>}
-          </Animatable.View>
+          {item.isEvilIcon
+            ? <EvilIcons
+                name={item.icon}
+                size={28}
+                color={focused ? Colors.white : Colors.whiteAlpha}
+              />
+            : <AntDesign
+                name={item.icon}
+                size={20}
+                color={focused ? Colors.white : Colors.whiteAlpha}
+              />
+          }
         </View>
       </View>
     </TouchableOpacity>
-  );
-};
-
+      );
+    };
 // ---------- extension FAB ----------
 const RADIUS = 60;
 const EXT_ITEMS = [

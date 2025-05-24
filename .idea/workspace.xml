@@ -5,19 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="da31aa4a-d2cb-48d5-8dab-863a695fae27" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/android/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/android/gradle.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eas.json" beforeDir="false" afterPath="$PROJECT_DIR$/eas.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ios/NexoLink.xcodeproj/project.pbxproj" beforeDir="false" afterPath="$PROJECT_DIR$/ios/NexoLink.xcodeproj/project.pbxproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ios/Podfile" beforeDir="false" afterPath="$PROJECT_DIR$/ios/Podfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pushdatatoFB.html" beforeDir="false" afterPath="$PROJECT_DIR$/pushdatatoFB.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/volcarosuel/Navigators/AnimalTabNavigator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/Navigators/AnimalTabNavigator.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/volcarosuel/screens/MapScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/screens/MapScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/volcarosuel/displayer/ShowScreen.js" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/displayer/ShowScreen.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/volcarosuel/displayer/showContainer.js" beforeDir="false" afterPath="$PROJECT_DIR$/volcarosuel/displayer/showContainer.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

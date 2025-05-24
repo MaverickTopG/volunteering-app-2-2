@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>NexoLink Duplicate & Similar Cleanup</title>
+  <style>
+    body { font-family: sans-serif; background: #F7F3EB; padding: 2rem; }
+    button { padding: .75rem 1.5rem; font-size: 1rem; background: #FFE8C9; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #FFD4A4; }
+    #log { margin-top: 1rem; max-height: 70vh; overflow-y: auto; background: white; padding: 1rem; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); white-space: pre-wrap; }
+    .entry { margin-bottom: .5rem; font-size: .9rem; }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      deleteDoc,
+      doc
+    } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyC1kY4dlbg9v38ZkuYVPJGnSulMEouvw58",
+      authDomain: "nexolink-b8eb5.firebaseapp.com",
+      projectId: "nexolink-b8eb5",
+      storageBucket: "nexolink-b8eb5.appspot.com",
+      messagingSenderId: "247675121621",
+      appId: "1:247675121621:web:98772b2e0cfbe8a381175c"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Levenshtein distance for “similar” detection
+    function levenshtein(a, b) {
+      const dp = Array(b.length+1).fill().map(() => Array(a.length+1));
+      for (let i=0; i<=a.length; i++) dp[0][i]=i;
+      for (let j=0; j<=b.length; j++) dp[j][0]=j;
+      for (let j=1; j<=b.length; j++) {
+        for (let i=1; i<=a.length; i++) {
+          if (a[i-1] === b[j-1]) dp[j][i] = dp[j-1][i-1];
+          else dp[j][i] = 1 + Math.min(dp[j-1][i], dp[j][i-1], dp[j-1][i-1]);
+        }
+      }
+      return dp[b.length][a.length];
+    }
+
+    const logEl = document.getElementById("log");
+    function log(msg) {
+      const d = document.createElement("div");
+      d.className = "entry";
+      d.textContent = msg;
+      logEl.appendChild(d);
+    }
+
+    document.getElementById("runBtn").onclick = async () => {
+      logEl.innerHTML = "";
+      log("▶ Starting full duplicate & similar-name cleanup…\n");
+
+      // 1) Fetch all docs
+      const snap = await getDocs(collection(db, "volunteer_organizations"));
+      const byCountyRef = {};   // county → reference → [docs]
+      const byCountyAll = {};   // county → [docs]
+
+      snap.forEach(s => {
+        const d = s.data(), cid = s.id;
+        const county = d.county||"Unknown", ref = d.reference||"Unspecified";
+        byCountyRef[county] = byCountyRef[county]||{};
+        byCountyRef[county][ref] = byCountyRef[county][ref]||[];
+        byCountyRef[county][ref].push({ id: cid, data: d });
+        byCountyAll[county] = byCountyAll[county]||[];
+        byCountyAll[county].push({ id: cid, data: d });
+      });
+
+      // Helper to delete lowest-field-count doc in list
+      async function deleteLowest(docs, context) {
+        if (docs.length<2) return;
+        const scored = docs.map(d=>{
+          const count = Object.values(d.data).filter(v=>v!=null).length;
+          return {...d, count};
+        });
+        scored.sort((a,b)=>a.count-b.count);
+        const del = scored[0];
+        await deleteDoc(doc(db,"volunteer_organizations",del.id));
+        log(`✂ [${context}] Deleted ${del.id} (fields:${del.count})`);
+      }
+
+      // 2) Exact duplicates per county/ref
+      for (const [county, refGroups] of Object.entries(byCountyRef)) {
+        for (const [ref, docs] of Object.entries(refGroups)) {
+          const ctx = `${county}/${ref}`;
+          // group by JSON
+          const buckets = {};
+          docs.forEach(d=>{
+            const keys=Object.keys(d.data).sort();
+            const obj={}; keys.forEach(k=>obj[k]=d.data[k]);
+            const json = JSON.stringify(obj);
+            (buckets[json]=buckets[json]||[]).push(d);
+          });
+          for (const group of Object.values(buckets)) {
+            if (group.length>1) {
+              log(`— Duplicate group in ${ctx} (${group.length})`);
+              await deleteLowest(group, ctx);
+            }
+          }
+        }
+      }
+
+      // 3) Similar titles per county
+      for (const [county, docs] of Object.entries(byCountyAll)) {
+        const seen = new Set();
+        for (let i=0; i<docs.length; i++) {
+          for (let j=i+1; j<docs.length; j++) {
+            const d1=docs[i], d2=docs[j];
+            const n1=(d1.data.title||"").toLowerCase();
+            const n2=(d2.data.title||"").toLowerCase();
+            if (!n1||!n2||n1===n2) continue;
+            const dist = levenshtein(n1,n2);
+            if (dist<=2) {
+              const key = [d1.id,d2.id].sort().join(',');
+              if (seen.has(key)) continue;
+              seen.add(key);
+              log(`— Similar names in ${county}: “[${n1}]” vs “[${n2}]” (dist=${dist})`);
+              // delete the one with fewer fields:
+              await deleteLowest([d1,d2], `${county}/SIMILAR`);
+            }
+          }
+        }
+      }
+
+      log("\n✅ Cleanup complete!");
+    };
+  </script>
+</head>
+<body>
+  <h1>NexoLink Cleanup Tool</h1>
+  <p>This will delete exact duplicates per county/reference and also remove similar‐named orgs (Levenshtein ≤2).</p>
+  <button id="runBtn">Run Cleanup</button>
+  <div id="log"></div>
+</body>
+</html>

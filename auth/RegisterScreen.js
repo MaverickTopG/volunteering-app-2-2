@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useContext, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,156 +10,152 @@ import {
   Dimensions,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { LinearGradient } from 'expo-linear-gradient';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from './AuthContext';
 
-/* ---------- helpers ---------- */
+// Helpers
 const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-const scale  = (s) => (width  / guidelineBaseWidth)  * s;
-const vScale = (s) => (height / guidelineBaseHeight) * s;
+const scale = s => (width / guidelineBaseWidth) * s;
+const vScale = s => (height / guidelineBaseHeight) * s;
+const PALETTE = ['#FFF6E7', '#FFF0D4', '#FFE8C9', '#333333'];
 
-/* ---------- component ---------- */
 export default function RegisterScreen() {
-  /* form */
   const [firstName, setFirstName] = useState('');
-  const [lastName,  setLastName]  = useState('');
-  const [email,     setEmail]     = useState('');
-  const [password,  setPassword]  = useState('');
-
-  /* sheet stage & ref */
-  const [stage, setStage] = useState('confirm');   // confirm | loading | done
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [stage, setStage] = useState('confirm'); // confirm | loading | done
   const sheetRef = useRef(null);
-
-  /* nav / ctx */
+  const snapPoints = useMemo(() => ['45%', '80%'], []);
+  const { signUp } = useContext(AuthContext);
   const navigation = useNavigation();
-  const { signUp } = React.useContext(AuthContext);
-
-  /* open sheet */
-  const openConfirmSheet = () => {
+  
+  const openSheet = () => {
     setStage('confirm');
-    sheetRef.current?.snapToIndex(0);   // 0 == first snapPoint
+    sheetRef.current?.snapToIndex(0);
   };
 
-  /* run sign-up */
   const handleOk = async () => {
     setStage('loading');
-    const ok = await signUp({ email, password, firstName, lastName });
+    const ok = await signUp({ firstName, lastName, email, password });
     setStage(ok ? 'done' : 'confirm');
   };
 
-  /* close helper */
   const closeSheet = () => sheetRef.current?.close();
 
-  /* snap points */
-  const snapPoints = ['45%'];
+  // Enable resend after 10s when done
+  const [canResend, setCanResend] = useState(false);
+  useEffect(() => {
+    if (stage === 'done') {
+      setCanResend(false);
+      const t = setTimeout(() => setCanResend(true), 10000);
+      return () => clearTimeout(t);
+    }
+  }, [stage]);
 
-  /* ----------------------------- */
   return (
-    <GestureHandlerRootView style={{ flex:1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
+        {/* organic shapes */}
+        <View style={styles.blobA} />
+        <View style={styles.blobB} />
+        <View style={styles.blobC} />
+        <View style={styles.blobD} />
+
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.inner}
         >
-          {/* header */}
           <LinearGradient
-            colors={['rgba(255,240,212,0.8)','rgba(255,232,201,0.8)']}
+            colors={['rgba(255,232,201,0.8)', 'rgba(255,240,212,0.8)']}
             style={styles.header}
           >
             <Text style={styles.title}>Create Account</Text>
           </LinearGradient>
 
-          {/* form */}
           <View style={styles.form}>
             {[
-              { v:firstName,s:setFirstName,p:'First Name' },
-              { v:lastName, s:setLastName, p:'Last Name'  },
-              { v:email,    s:setEmail,    p:'Email',    props:{ keyboardType:'email-address', autoCapitalize:'none' } },
-              { v:password, s:setPassword, p:'Password', props:{ secureTextEntry:true } },
-            ].map((f,i)=>(
+              { value: firstName, setter: setFirstName, placeholder: 'First Name' },
+              { value: lastName, setter: setLastName, placeholder: 'Last Name' },
+              { value: email, setter: setEmail, placeholder: 'Email', props: { keyboardType: 'email-address', autoCapitalize: 'none' } },
+              { value: password, setter: setPassword, placeholder: 'Password', props: { secureTextEntry: true } },
+            ].map((fld, i) => (
               <View key={i} style={styles.inputBox}>
                 <TextInput
-                  value={f.v}
-                  onChangeText={f.s}
-                  placeholder={f.p}
+                  value={fld.value}
+                  onChangeText={fld.setter}
+                  placeholder={fld.placeholder}
                   placeholderTextColor="#aaa"
                   style={styles.input}
-                  {...(f.props||{})}
+                  {...(fld.props || {})}
                 />
               </View>
             ))}
 
-            <TouchableOpacity activeOpacity={0.85} onPress={openConfirmSheet}>
-              <LinearGradient colors={['#fff0d4','#ffe8c9']} style={styles.mainBtn}>
-                <Text style={styles.mainBtnText}>Sign Up</Text>
+            <TouchableOpacity activeOpacity={0.85} onPress={openSheet}>
+              <LinearGradient colors={[PALETTE[1], PALETTE[2]]} style={styles.submitBtn}>
+                <Text style={styles.submitText}>Sign Up</Text>
               </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
               <Text style={styles.link}>Already have an account? Log in</Text>
             </TouchableOpacity>
-
             <TouchableOpacity onPress={() => navigation.navigate('Delete')}>
               <Text style={styles.link}>Delete Account</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
 
-        {/* ---------------- BottomSheet ---------------- */}
         <BottomSheet
           ref={sheetRef}
-          index={-1}                    /* start closed */
+          index={-1}
           snapPoints={snapPoints}
           enablePanDownToClose={stage !== 'loading'}
           backgroundStyle={styles.sheetBackground}
-          handleIndicatorStyle={{ backgroundColor:'#ccc' }}
+          handleIndicatorStyle={styles.handleIndicator}
+          backdropComponent={() => <View style={styles.backdrop} />}
         >
           <BottomSheetView style={styles.sheetContent}>
-          
-
-            {/* confirm */}
             {stage === 'confirm' && (
               <>
-                <Text style={styles.sheetTitle}>
-                  {`Hi ${firstName || 'there'}!`}
-                </Text>
+                <Text style={styles.sheetTitle}>Hi {firstName || 'there'}!</Text>
                 <Text style={styles.sheetMsg}>
-                  Press OK to create your account. We’ll send a verification e-mail to&nbsp;
-                  <Text style={{ fontWeight:'600' }}>{email}</Text>.
+                  Press OK to create your account. We’ll send a verification email to{' '}
+                  <Text style={{ fontWeight: '600' }}>{email}</Text>.
                 </Text>
-                <TouchableOpacity style={styles.blackBtn} onPress={handleOk}>
-                  <Text style={[styles.mainBtnText,{ color:'#fff' }]}>OK</Text>
+                <TouchableOpacity style={styles.okBtn} onPress={handleOk}>
+                  <Text style={[styles.submitText, { color: '#fff' }]}>OK</Text>
                 </TouchableOpacity>
               </>
             )}
-
-            {/* loading */}
             {stage === 'loading' && (
-              <View style={{ alignItems:'center' }}>
-                <ActivityIndicator size="large" color="#000" />
-                <Text style={[styles.sheetMsg,{ marginTop:vScale(18) }]}>
-                  Creating your account…
-                </Text>
+              <View style={styles.loadingWrap}>
+                <ActivityIndicator size="large" color="#333" />
+                <Text style={styles.sheetMsg}>Creating your account…</Text>
               </View>
             )}
-
-            {/* done */}
             {stage === 'done' && (
               <>
                 <Text style={styles.sheetTitle}>All Set!</Text>
                 <Text style={styles.sheetMsg}>
-                  We’ve emailed&nbsp;
-                  <Text style={{ fontWeight:'600' }}>{email}</Text>. Confirm it to begin!
+                  We’ve emailed{' '}
+                  <Text style={{ fontWeight: '600' }}>{email}</Text>. Confirm it to start!
                 </Text>
-                <TouchableOpacity style={styles.mainBtn} onPress={closeSheet}>
-                  <Text style={styles.mainBtnText}>Close</Text>
+                {canResend && (
+                  <TouchableOpacity style={styles.resendBtn} onPress={handleOk}>
+                    <Text style={styles.resendText}>Resend Email</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity style={styles.submitBtn} onPress={closeSheet}>
+                  <Text style={styles.submitText}>Close</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -170,36 +166,56 @@ export default function RegisterScreen() {
   );
 }
 
-/* ---------- styles ---------- */
+const B = width * 0.7;
 const styles = StyleSheet.create({
-  container:{ flex:1, backgroundColor:'#fff6e7' },
-  inner:{ flex:1, justifyContent:'center', paddingHorizontal:scale(20) },
-
-  header:{
-    marginBottom:vScale(30), paddingVertical:vScale(15), paddingHorizontal:scale(20),
-    alignItems:'center', borderRadius:scale(25),
+  container: { flex: 1, backgroundColor: PALETTE[0] },
+  blobA: { position: 'absolute', top: -B * 0.4, left: -B * 0.3, width: B, height: B, backgroundColor: PALETTE[2], borderRadius: B / 2 },
+  blobB: { position: 'absolute', top: -B * 0.2, right: -B * 0.4, width: B * 1.1, height: B * 1.1, backgroundColor: PALETTE[1], borderRadius: B * 0.55 },
+  blobC: { position: 'absolute', bottom: -B * 0.5, left: -B * 0.5, width: B * 1.4, height: B, backgroundColor: PALETTE[1], borderRadius: B / 2 },
+  blobD: { position: 'absolute', bottom: -B * 0.3, right: -B * 0.2, width: B, height: B * 0.8, backgroundColor: PALETTE[2], borderRadius: B * 0.5 },
+  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: scale(20) },
+  header: { marginBottom: vScale(30), paddingVertical: vScale(15), alignItems: 'center', borderRadius: scale(25) },
+  title: { fontSize: scale(28), fontWeight: '700', color: PALETTE[3] },
+  form: { marginTop: vScale(20) },
+  inputBox: { borderColor: PALETTE[2], borderWidth: 1, borderRadius: scale(25), backgroundColor: PALETTE[0], marginBottom: vScale(15) },
+  input: { height: vScale(48), paddingHorizontal: scale(20), fontSize: scale(16), color: PALETTE[3] },
+  submitBtn: { backgroundColor: PALETTE[2], borderRadius: scale(25), paddingVertical: vScale(14), alignItems: 'center', marginBottom: vScale(16) },
+  submitText: { fontSize: scale(16), fontWeight: '600', color: PALETTE[3] },
+  okBtn: { backgroundColor: '#333', borderRadius: scale(25), paddingVertical: vScale(14), alignItems: 'center', marginTop: vScale(16) },
+  link: { color: PALETTE[3], textAlign: 'center', fontSize: scale(14), marginBottom: vScale(10) },
+  // BottomSheet styles
+  sheetBackground: {
+    backgroundColor: PALETTE[1],
+    borderTopLeftRadius: scale(24),
+    borderTopRightRadius: scale(24),
   },
-  title:{ fontSize:scale(28), fontWeight:'bold', color:'#333' },
-
-  form:{ marginTop:vScale(20) },
-  inputBox:{
-    borderColor:'#e1c699', borderWidth:scale(1), borderRadius:scale(25),
-    backgroundColor:'#fff6e7', marginBottom:vScale(15),
+  handleIndicator: {
+    backgroundColor: '#ccc',
+    width: scale(80),
+    height: scale(6),
+    borderRadius: scale(3),
   },
-  input:{ height:vScale(50), paddingHorizontal:scale(20), fontSize:scale(16), color:'#333' },
-
-  mainBtn:{
-    backgroundColor:'#ffe8c9', borderRadius:scale(25), paddingVertical:scale(15),
-    alignItems:'center', shadowOffset:{ width:0, height:vScale(4) }, shadowOpacity:0.6, elevation:6,
+  sheetContent: {
+    flex: 1,
+    paddingHorizontal: scale(24),
+    paddingTop: vScale(16),
   },
-  mainBtnText:{ fontSize:scale(16), fontWeight:'bold', color:'#333' },
-  blackBtn:{ backgroundColor:'#000', borderRadius:scale(25), paddingVertical:scale(15), alignItems:'center', marginTop:vScale(24) },
-  link:{ color:'#333', textAlign:'center', fontSize:scale(16), marginTop:vScale(10) },
-
-  /* sheet */
-  sheetBackground:{ backgroundColor:'#ffe8c9' },
-  sheetContent:{ flex:1, paddingHorizontal:scale(24), paddingTop:vScale(32) },
-  closeIcon:{ position:'absolute', top:8, left:8, zIndex:10 },
-  sheetTitle:{ fontSize:scale(24), fontWeight:'bold', marginBottom:vScale(12), color:'#333' },
-  sheetMsg:{ fontSize:scale(16), lineHeight:vScale(22), color:'#333' },
+  sheetInner: {
+    flexGrow: 1,
+    paddingBottom: vScale(32),
+  },
+  sheetTitle: {
+    fontSize: scale(22),
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: vScale(12),
+  },
+  sheetMsg: {
+    fontSize: scale(16),
+    textAlign: 'center',
+    marginBottom: vScale(16),
+  },
+  loadingWrap: { alignItems: 'center', marginTop: vScale(20) },
+  resendBtn: { alignSelf: 'center', padding: vScale(8), marginBottom: vScale(16) },
+  resendText: { color: PALETTE[3], textDecorationLine: 'underline', fontSize: scale(14) },
 });
