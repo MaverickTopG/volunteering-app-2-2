@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>NexoLink County Merge Tool</title>
+  <title>NexoLink County Merge & State Set</title>
   <style>
     body { font-family: sans-serif; background: #F7F3EB; padding: 2rem; }
     button { padding: .75rem 1.5rem; background: #FFE8C9; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
@@ -49,51 +49,55 @@
 
     document.getElementById("runBtn").onclick = async () => {
       logEl.innerHTML = "";
-      log("▶ Starting county merge…\n");
+      log("▶ Starting county normalization & state assignment…\n");
 
       // 1) Fetch all docs
       const snap = await getDocs(collection(db, "volunteer_organizations"));
-      const updates = [];
+      const batch = writeBatch(db);
+      let countCountyUpdates = 0;
+      let countStateUpdates  = 0;
 
       snap.forEach(snapDoc => {
         const data = snapDoc.data();
         const origCounty = (data.county || "").trim();
 
-        // 2) Strip ALL occurrences of "county" (case-insensitive)
+        // Normalize county
         let base = origCounty.replace(/county/gi, "").trim();
-
-        // 3) Title-case and append exactly one " County"
         const canonical = toTitleCase(base) + " County";
 
-        // 4) If different from original, schedule update
+        // If county differs, schedule its update
         if (origCounty !== canonical) {
-          updates.push({ id: snapDoc.id, from: origCounty, to: canonical });
+          batch.update(
+            doc(db, "volunteer_organizations", snapDoc.id),
+            { county: canonical }
+          );
+          log(`  📝 [${snapDoc.id}] county: "${origCounty}" → "${canonical}"`);
+          countCountyUpdates++;
         }
+
+        // Always (re)write state = "California"
+        batch.update(
+          doc(db, "volunteer_organizations", snapDoc.id),
+          { state: "California" }
+        );
+        countStateUpdates++;
       });
 
-      if (updates.length === 0) {
-        log("✅ All county names are already normalized.");
-        return;
+      if (countCountyUpdates === 0) {
+        log("ℹ️ No county fields needed normalization.");
       }
+      log(`ℹ️ Added/updated 'state' on ${countStateUpdates} documents.`);
 
-      log(`ℹ️ ${updates.length} documents to update:`);
-      const batch = writeBatch(db);
-
-      updates.forEach(u => {
-        const ref = doc(db, "volunteer_organizations", u.id);
-        batch.update(ref, { county: u.to });
-        log(`  📝 ${u.id}: "${u.from}" → "${u.to}"`);
-      });
-
+      // 2) Commit batch
       await batch.commit();
-      log("\n✅ County merge complete!");
+      log("\n✅ All updates committed!");
     };
   </script>
 </head>
 <body>
-  <h1>NexoLink County Merge Tool</h1>
-  <p>This will remove ALL existing “county” text and re-append a single “ County”.</p>
-  <button id="runBtn">Run Merge</button>
+  <h1>NexoLink County Merge & State Set</h1>
+  <p>This will normalize every doc’s <code>county</code> (strip and re‐append “ County”) and set <code>state: "California"</code> on all documents.</p>
+  <button id="runBtn">Run Merge & State Assign</button>
   <div id="log"></div>
 </body>
 </html>

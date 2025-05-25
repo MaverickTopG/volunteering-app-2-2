@@ -45,7 +45,7 @@ const spaceshipImage = require("../../assets/spaceship.png");
 // ---------- constants ----------
 const Colors = {
   primary: "#000",
-  white: "#fff",
+  white: "#fff6e7",
   whiteAlpha: "rgba(255,255,255,0.5)",
 };
 const { width: screenWidth } = Dimensions.get("window");
@@ -193,14 +193,14 @@ const ExtensionBar = ({ onSelectExtension, resetAutoCollapse }) => {
         return (
           <Animated.View key={i} style={[extStyles.button, style]}>
             <TouchableOpacity onPress={onPress}>
-              <Ionicons name={icon} size={22} color="#fff" />
+              <Ionicons name={icon} size={22} color="#fff6e7" />
             </TouchableOpacity>
           </Animated.View>
         );
       })}
 
       <TouchableOpacity onPress={toggle} style={extStyles.mainButton}>
-        <Ionicons name={isOpen ? 'close' : 'add'} size={24} color="#fff" />
+        <Ionicons name={isOpen ? 'close' : 'add'} size={24} color="#fff6e7" />
       </TouchableOpacity>
     </View>
   );

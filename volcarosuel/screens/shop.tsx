@@ -16,7 +16,6 @@ import {
   Alert,
   ActivityIndicator,
   SafeAreaView,
-  Modal
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -28,8 +27,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { AuthContext } from '../../auth/AuthContext';
 import { db } from '../../auth/firebase';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-
 
 const { width } = Dimensions.get('window');
 const CARD_W = Math.min(200, width * 0.55);
@@ -55,8 +52,6 @@ export const seasonal = [
 
 export default function ShopScreen() {
   const { user } = useContext(AuthContext);
-  const [ showInfo, setShowInfo ] = useState(false);
-
   if (!user) {
     return (
       <SafeAreaView style={styles.locked}>
@@ -212,18 +207,7 @@ export default function ShopScreen() {
               {credits} cr
             </Text>
         }
-           <TouchableOpacity
-              style={styles.infoButton}
-              onPress={() => setShowInfo(true)}
-            >
-              <Ionicons
-                name="information-circle-outline"
-                size={20}
-                color={txtC}
-              />
-            </TouchableOpacity>
       </View>
-              
 
       {/* sections */}
       <SectionList
@@ -249,27 +233,6 @@ export default function ShopScreen() {
           />
         )}
       />
-            <Modal
-        visible={showInfo}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowInfo(false)}
-      >
-        <View style={styles.centeredModal}>
-          <View style={[styles.modalBox, { backgroundColor: secBg }]}>
-            <Text style={[styles.modalText, { color: txtC }]}>
-              You can earn Cr by doing volunteering hours{'\n'}
-              and these purchases will not affect your volunteering hours.
-            </Text>
-            <TouchableOpacity
-              style={styles.modalClose}
-              onPress={() => setShowInfo(false)}
-            >
-              <Text style={[styles.closeText, { color: txtC }]}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -286,7 +249,7 @@ const styles = StyleSheet.create({
     flexDirection:'row',
     justifyContent:'space-between',
     alignItems:'center',
-    padding:12, paddingHorizontal:16,marginTop:10
+    padding:12, paddingHorizontal:16,marginTop:50
   },
   headerTitle:    { fontSize:22, fontWeight:'700' },
   headerCredits:  { fontSize:16, fontWeight:'600' },
@@ -333,34 +296,4 @@ const styles = StyleSheet.create({
     fontSize:14,
     fontWeight:'600'
   },
-
-  centeredModal: { 
-    flex:1, 
-    justifyContent:'center', 
-    alignItems:'center', 
-    backgroundColor:'rgba(0,0,0,0.3)'
-  },
-  modalBox: {
-    width:'80%',
-    padding:20,
-    borderRadius:12,
-    alignItems:'center'
-  },
-  modalText: {
-    fontSize:16,
-    textAlign:'center',
-    marginBottom:12
-  },
-  modalClose: {
-    position:'absolute',
-    top:8,
-    right:8,
-    padding:4
-  },
-  closeText: {
-    fontSize:18,
-    fontWeight:'600'
-  },
-  infoButton:     { marginLeft:8, padding:4 },
-
 });
