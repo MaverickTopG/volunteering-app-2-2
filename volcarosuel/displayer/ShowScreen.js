@@ -1,46 +1,99 @@
 // ShowScreen.js
+
 import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   StyleSheet,
   Dimensions,
+  StatusBar,
+  ImageBackground,
   Linking,
   Alert,
+  Platform,
 } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../../auth/AuthContext';
-import { themePacks, seasonal } from '../screens/shop';
+import { RFPercentage } from 'react-native-responsive-fontsize';
 
 const { width, height } = Dimensions.get('window');
-const scale = s => (width  / 428)  * s;
-const vScale = s => (height / 926) * s;
-const SHAPE_SIZE = width * 0.8;
 
-// Default 4-color palette
-const DEFAULT_PALETTE = [
-  '#FFF6E7', // screen bg
-  '#FFF0D4', // card & header bg
-  '#FFE8C9', // button bg
-  '#333333'  // text/icons
-];
+// Simple map from two‐letter state codes to full names
+const STATE_MAP = {
+  CA: 'California',
+  NY: 'New York',
+  TX: 'Texas',
+  FL: 'Florida',
+  WA: 'Washington',
+  // add more as needed
+};
 
-export default function ShowScreen({ route, navigation }) {
-  const { item } = route.params;
+// Category → header image URLs
+const CATEGORY_IMAGES = {
+  Animal:
+    'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?auto=format&fit=crop&w=1000&q=80',
+  Arts:
+    'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1000&q=80',
+  Education:
+    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1000&q=80',
+  Environment:
+    'https://images.unsplash.com/photo-1505483531331-7a6f89990147?auto=format&fit=crop&w=1000&q=80',
+  Family:
+    'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=1000&q=80',
+  Hospital:
+    'https://images.unsplash.com/photo-1580281657528-675e542ccf4e?auto=format&fit=crop&w=1000&q=80',
+  Library:
+    'https://images.unsplash.com/photo-1510936111840-3b9c0f7a5f34?auto=format&fit=crop&w=1000&q=80',
+  Seniors:
+    'https://images.unsplash.com/photo-1519241047957-be31d7379a5d?auto=format&fit=crop&w=1000&q=80',
+  Tech:
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1000&q=80',
+};
+const DEFAULT_HEADER_IMAGE =
+  'https://images.unsplash.com/photo-1491975474562-1f4e30bc9468?auto=format&fit=crop&w=1000&q=80';
+
+// Compute status‐bar height (Android vs. iOS)
+const STATUS_BAR_HEIGHT =
+  Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44;
+const HEADER_IMAGE_HEIGHT = 200; // Actual image height (excluding status bar)
+const TOTAL_HEADER_HEIGHT = HEADER_IMAGE_HEIGHT + STATUS_BAR_HEIGHT;
+
+const BOTTOM_SHEET_HEIGHT = height * 0.77;
+
+export default function ShowScreen() {
+  const navigation = useNavigation();
+  const route = useRoute();
   const { user } = useContext(AuthContext);
+
+  // "item" passed via route params (organization object)
+  const item = route.params?.item || {};
+
+  // If the item has a "reference" field (category), pick its header image
+  const category = item.reference || 'Animal';
+  const headerBgImage = CATEGORY_IMAGES[category] || DEFAULT_HEADER_IMAGE;
+
+  // Color palette defaults (can be overridden by theme)
+  const DEFAULT_PALETTE = [
+    '#F7F7F7', // background behind cards (greyish white)
+    '#FFFFFF', // card & header bg (pure white)
+    '#FFFFFF', // button bg
+    '#333333', // text/icons
+  ];
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
 
   useEffect(() => {
     if (!user) return;
     AsyncStorage.getItem(`@shop/active-${user.uid}`)
-      .then(id => {
+      .then((id) => {
         if (!id) return;
+        const { themePacks, seasonal } = require('../screens/shop');
         const pack =
-          themePacks.find(t => t.id === id) ||
-          seasonal.find(s => s.id === id);
+          themePacks.find((t) => t.id === id) ||
+          seasonal.find((s) => s.id === id);
         if (pack?.colors) {
           setPalette([
             pack.colors[0] ?? DEFAULT_PALETTE[0],
@@ -53,80 +106,121 @@ export default function ShowScreen({ route, navigation }) {
       .catch(() => {});
   }, [user]);
 
+  // Handle "Visit Website" button tap
   const handleVisit = () => {
     if (!item.website) return;
     Linking.canOpenURL(item.website)
-      .then(supported => {
+      .then((supported) => {
         supported
           ? Linking.openURL(item.website)
-          : Alert.alert('Error','Cannot open link');
+          : Alert.alert('Error', 'Cannot open link');
       })
-      .catch(() => Alert.alert('Error','Unexpected error'));
+      .catch(() => Alert.alert('Error', 'Unexpected error'));
   };
 
   return (
     <View style={[styles.container, { backgroundColor: palette[0] }]}>
-      {/* ▷ Background circles (must precede SafeAreaView to sit behind) */}
-      <View style={[
-        styles.circle,
-        styles.circleLeft,
-        { backgroundColor: palette[2] }
-      ]}/>
-      <View style={[
-        styles.circle,
-        styles.circleRight,
-        { backgroundColor: palette[1] }
-      ]}/>
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
-      <SafeAreaView />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
+      {/* ─── HEADER IMAGE ────────────────────────────────────── */}
+      <ImageBackground
+        source={{ uri: headerBgImage }}
+        style={[
+          styles.headerImage,
+          { width: width, height: TOTAL_HEADER_HEIGHT },
+        ]}
+        imageStyle={{ resizeMode: 'cover' }}
       >
-        <View style={[styles.headerPill, { backgroundColor: palette[1] }]}>
-          <Text style={[styles.headerText, { color: palette[3] }]}>
-            {item.title}
-          </Text>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: palette[1] }]}>
-          <Text style={[styles.bodyText, { color: palette[3] }]}>
-            {item.description}
-          </Text>
+        <View style={styles.headerOverlay}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Map', { address: item.address })}
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.linkText, { color: palette[3] }]}>
-              {item.address}
-            </Text>
+            <View style={[styles.backCircle, { backgroundColor: palette[1] }]}>
+              <Ionicons name="chevron-back" size={24} color="#000" />
+            </View>
           </TouchableOpacity>
-          {item.email && (
-            <Text style={[styles.bodyText, { color: palette[3] }]}>
-              Contact: {item.email}
+
+          <View style={styles.headerTextContainer}>
+            <Text style={[styles.headerTitle, { color: '#FFF' }]}>
+              {item.title}
             </Text>
-          )}
+          </View>
+
+          <View style={styles.headerRightPlaceholder} />
         </View>
+      </ImageBackground>
 
-        {item.website && (
-          <TouchableOpacity
-            style={[styles.visitBtn, { backgroundColor: palette[2] }]}
-            onPress={handleVisit}
-          >
-            <Text style={[styles.visitTxt, { color: palette[3] }]}>
-              Visit Website
-            </Text>
-          </TouchableOpacity>
-        )}
+      {/* ─── BOTTOM SHEET ────────────────────────────────────── */}
+      <View
+        style={[
+          styles.bottomSheet,
+          { height: BOTTOM_SHEET_HEIGHT, backgroundColor: palette[0] },
+        ]}
+      >
+        <View style={styles.handleBar} />
 
-        <TouchableOpacity
-          style={[styles.backBtn, { backgroundColor: palette[2] }]}
-          onPress={() => navigation.goBack()}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={[styles.backTxt, { color: palette[3] }]}>
-            ← Back
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+          {/* ─── DESCRIPTION CARD ─────────────────────────── */}
+          <View style={[styles.card, { backgroundColor: palette[1] }]}>
+            <Text style={[styles.sectionLabel, { color: palette[3] }]}>
+              Description
+            </Text>
+            <Text style={[styles.bodyText, { color: palette[3] }]}>
+              {item.description}
+            </Text>
+          </View>
+
+          {/* ─── ADDRESS CARD ─────────────────────────────── */}
+          <View style={[styles.card, { backgroundColor: palette[1] }]}>
+            <Text style={[styles.sectionLabel, { color: palette[3] }]}>
+              Address
+            </Text>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('Map', { address: item.address })
+              }
+            >
+              <Text style={[styles.linkText, { color: palette[3] }]}>
+                {item.address}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ─── CONTACT CARD ─────────────────────────────── */}
+          {item.email && (
+            <View style={[styles.card, { backgroundColor: palette[1] }]}>
+              <Text style={[styles.sectionLabel, { color: palette[3] }]}>
+                Contact
+              </Text>
+              <Text style={[styles.bodyText, { color: palette[3] }]}>
+                {item.email}
+              </Text>
+            </View>
+          )}
+
+          {/* ─── VISIT WEBSITE BUTTON ──────────────────────── */}
+          {item.website && (
+            <TouchableOpacity
+              style={[styles.visitBtn, { backgroundColor: palette[2] }]}
+              onPress={handleVisit}
+            >
+              <Text style={[styles.visitTxt, { color: palette[3] }]}>
+                Visit Website
+              </Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -134,85 +228,106 @@ export default function ShowScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    overflow: 'hidden',    // ensure offscreen shapes don't clip odd
+    overflow: 'hidden',
   },
-  scroll: {
-    padding: scale(16),
-    paddingBottom: vScale(50),
+  headerImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  headerOverlay: {
+    flex: 1,
+    marginTop: STATUS_BAR_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: HEADER_IMAGE_HEIGHT,
+  },
+  backButton: {
+    padding: 6,
+  },
+  backCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: RFPercentage(3),
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  headerRightPlaceholder: {
+    width: 32,
   },
 
-  headerPill: {
-    borderRadius: scale(25),
-    paddingVertical: vScale(14),
-    paddingHorizontal: scale(20),
-    marginBottom: vScale(30),
-    alignSelf: 'center',
-    minWidth: '90%',
-    top: vScale(10),
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    elevation: 8,
+    zIndex: 10,
   },
-  headerText: {
-    fontSize: scale(22),
-    fontWeight: '700',
-    textAlign: 'center',
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: 'black',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginVertical: 8,
+  },
+  scrollView: {
+    flex: 1,
+    marginTop: TOTAL_HEADER_HEIGHT - HEADER_IMAGE_HEIGHT-30,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+    backgroundColor: 'transparent',
   },
 
   card: {
-    borderRadius: scale(20),
-    padding: scale(20),
-    marginBottom: vScale(20),
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    backgroundColor: '#FFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
   },
+  sectionLabel: {
+    fontSize: RFPercentage(2.2),
+    fontWeight: '600',
+    marginBottom: 8,
+  },
   bodyText: {
-    fontSize: scale(16),
-    lineHeight: vScale(24),
-    marginBottom: vScale(12),
+    fontSize: RFPercentage(1.8),
+    lineHeight: RFPercentage(2.6),
   },
   linkText: {
-    fontSize: scale(16),
+    fontSize: RFPercentage(1.8),
     textDecorationLine: 'underline',
-    marginBottom: vScale(12),
   },
 
   visitBtn: {
-    borderRadius: scale(25),
-    paddingVertical: vScale(14),
+    borderRadius: 25,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: vScale(20),
+    marginHorizontal: 16,
+    marginTop: 12,
   },
   visitTxt: {
-    fontSize: scale(18),
+    fontSize: RFPercentage(2),
     fontWeight: '600',
-  },
-
-  backBtn: {
-    borderRadius: scale(25),
-    paddingVertical: vScale(14),
-    alignItems: 'center',
-  },
-  backTxt: {
-    fontSize: scale(18),
-    fontWeight: '600',
-  },
-
-  // background circles
-  circle: {
-    position: 'absolute',
-    width: SHAPE_SIZE * 0.4,
-    height: SHAPE_SIZE * 0.4,
-    borderRadius: (SHAPE_SIZE * 0.4) / 2,
-    opacity: 0.2,
-    zIndex: -1,
-  },
-  circleLeft: {
-    bottom: -SHAPE_SIZE * 0.2,
-    left: -SHAPE_SIZE * 0.1,
-  },
-  circleRight: {
-    bottom: -SHAPE_SIZE * 0.2,
-    right: -SHAPE_SIZE * 0.1,
   },
 });

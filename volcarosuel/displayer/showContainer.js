@@ -1,4 +1,5 @@
 // VolunteerCarousel.js
+
 import React, { useEffect, useRef, useState, useContext } from 'react';
 import {
   View,
@@ -6,577 +7,500 @@ import {
   Dimensions,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   ActivityIndicator,
   Animated,
-  TextInput,
-  Alert,
+  StatusBar,
+  ImageBackground,
+  Platform,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { RFPercentage } from 'react-native-responsive-fontsize';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../auth/firebase';
 import { AuthContext } from '../../auth/AuthContext';
-import { themePacks, seasonal } from '../screens/shop';
 
-const { width } = Dimensions.get('window');
-const HEADER_HEIGHT = 140;
-const ITEM_HEIGHT = 90;
-const DEFAULT_PALETTE = ['#FFF6E7', '#FFF0D4', '#FFE8C9', '#333333'];
+const { width, height } = Dimensions.get('window');
 
-// State code ⇆ full name
+// Simple map from two‐letter state codes to full names
 const STATE_MAP = {
   CA: 'California',
   NY: 'New York',
   TX: 'Texas',
   FL: 'Florida',
   WA: 'Washington',
+  // add more as needed
 };
-const STATE_CODES = Object.keys(STATE_MAP);
 
-export default function VolunteerCarousel({ route }) {
+// Compute status‐bar height (Android vs. iOS)
+const STATUS_BAR_HEIGHT =
+  Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44;
+const HEADER_IMAGE_HEIGHT = 200; // Actual image height (excluding status bar)
+const TOTAL_HEADER_HEIGHT = HEADER_IMAGE_HEIGHT + STATUS_BAR_HEIGHT;
+
+const BOTTOM_SHEET_HEIGHT = height * 0.77;
+const CATEGORY_IMAGES = {
+  Animals:
+    'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?auto=format&fit=crop&w=1000&q=80',
+  Arts:
+    'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1000&q=80',
+  Education:
+    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1000&q=80',
+  Environment:
+    'https://images.unsplash.com/photo-1505483531331-7a6f89990147?auto=format&fit=crop&w=1000&q=80',
+  Family:
+    'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=1000&q=80',
+  Hospital:
+    'https://images.unsplash.com/photo-1580281657528-675e542ccf4e?auto=format&fit=crop&w=1000&q=80',
+  Library:
+    'https://images.unsplash.com/photo-1510936111840-3b9c0f7a5f34?auto=format&fit=crop&w=1000&q=80',
+  Seniors:
+    'https://images.unsplash.com/photo-1519241047957-be31d7379a5d?auto=format&fit=crop&w=1000&q=80',
+  Tech:
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1000&q=80',
+};
+const DEFAULT_HEADER_IMAGE =
+  'https://images.unsplash.com/photo-1491975474562-1f4e30bc9468?auto=format&fit=crop&w=1000&q=80';
+
+export default function VolunteerCarousel() {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  const route = useRoute();
   const { user } = useContext(AuthContext);
-  const refParam = route.params?.reference || 'Animal';
 
-  // theming
-  const [palette, setPalette] = useState(DEFAULT_PALETTE);
-  useEffect(() => {
-    if (!user) return;
-    AsyncStorage.getItem(`@shop/active-${user.uid}`)
-      .then(id => {
-        if (!id) return;
-        const pack =
-          themePacks.find(t => t.id === id) ||
-          seasonal.find(s => s.id === id);
-        if (pack?.colors) {
-          const c = pack.colors;
-          setPalette([
-            c[0] || DEFAULT_PALETTE[0],
-            c[1] || DEFAULT_PALETTE[1],
-            c[2] || DEFAULT_PALETTE[2],
-            c[3] || DEFAULT_PALETTE[3],
-          ]);
-        }
-      })
-      .catch(() => {});
-  }, [user]);
+  // Retrieve category ("reference") and state code from route params
+  const reference = route.params?.category || 'Animal';
+  const stateCode = route.params?.stateCode || 'CA';
+  const stateName = STATE_MAP[stateCode] || stateCode;
 
-  // state‐filter
-  const [selectedStateCode, setSelectedStateCode] = useState(null);
-  const [isStateBubbleVisible, setStateBubbleVisible] = useState(false);
-  const stateBubbleScale = useRef(new Animated.Value(0)).current;
-
-  // county‐search
-  const [isSearchBubbleVisible, setSearchBubbleVisible] = useState(false);
-  const bubbleScale = useRef(new Animated.Value(0)).current;
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // data
-  const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [expandedSections, setExpandedSections] = useState({});
   const animValuesRef = useRef({});
-  const scrollViewRef = useRef(null);
-  const positionsRef = useRef({});
 
-  // toggle bubbles
-  const toggleStateBubble = () => {
-    if (isStateBubbleVisible) {
-      Animated.timing(stateBubbleScale, { toValue: 0, duration: 200, useNativeDriver: true })
-        .start(() => setStateBubbleVisible(false));
-    } else {
-      setStateBubbleVisible(true);
-      Animated.timing(stateBubbleScale, { toValue: 1, duration: 200, useNativeDriver: true }).start();
-    }
-  };
-  const toggleSearchBubble = () => {
-    if (isSearchBubbleVisible) {
-      Animated.timing(bubbleScale, { toValue: 0, duration: 200, useNativeDriver: true })
-        .start(() => setSearchBubbleVisible(false));
-    } else {
-      setSearchBubbleVisible(true);
-      Animated.timing(bubbleScale, { toValue: 1, duration: 200, useNativeDriver: true }).start();
-    }
-  };
-
-  // fetch & group
-  const fetchOrgs = async (stateName = null) => {
+  // Fetch and group all orgs for this category & state
+  const fetchOrgs = async () => {
     setLoading(true);
     try {
-      const clauses = [where('reference', '==', refParam)];
-      if (stateName) clauses.push(where('state', '==', stateName));
+      const clauses = [
+        where('reference', '==', reference),
+        where('state', '==', stateName),
+      ];
       const q = query(collection(db, 'volunteer_organizations'), ...clauses);
       const snap = await getDocs(q);
+
+      // Group by county name (trimmed), eliminating duplicates
       const byCounty = {};
-      snap.forEach(d => {
-        const data = d.data();
-        const cnt = data.county || 'Unknown';
-        byCounty[cnt] = byCounty[cnt] || [];
-        byCounty[cnt].push(data);
+      snap.forEach((doc) => {
+        const data = doc.data();
+        const rawCounty = data.county?.trim() || 'Unknown';
+        if (!byCounty[rawCounty]) byCounty[rawCounty] = {};
+        const key = doc.id || data.title;
+        byCounty[rawCounty][key] = data;
       });
-      // sort county titles alphabetically
-      const titles = Object.keys(byCounty).sort((a,b) => a.localeCompare(b));
-      const grouped = titles.map(title => ({ title, data: byCounty[title] }));
-      setSections(grouped);
-      grouped.forEach(s => {
-        if (!animValuesRef.current[s.title]) {
-          animValuesRef.current[s.title] = new Animated.Value(0);
+
+      // Convert into sorted array of { title: "X County", data: [ … ] }
+      const sortedCounties = Object.keys(byCounty)
+        .sort((a, b) => a.localeCompare(b))
+        .map((countyKey) => {
+          const orgMap = byCounty[countyKey];
+          const orgList = Object.keys(orgMap).map((k) => orgMap[k]);
+          return {
+            title: countyKey + ' County',
+            data: orgList,
+          };
+        });
+
+      setSections(sortedCounties);
+
+      // Initialize animated values for each county section
+      sortedCounties.forEach((sec) => {
+        if (!animValuesRef.current[sec.title]) {
+          animValuesRef.current[sec.title] = new Animated.Value(0);
         }
       });
     } catch (e) {
-      console.error(e);
+      console.error('Error fetching organizations:', e);
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    const stateName = selectedStateCode ? STATE_MAP[selectedStateCode] : null;
-    fetchOrgs(stateName);
-  }, [refParam, selectedStateCode]);
 
-  // expand/collapse
-  const toggleSection = title => {
-    const isExp = !!expandedSections[title];
+  useEffect(() => {
+    fetchOrgs();
+  }, [reference, stateName]);
+
+  // Toggle expand/collapse of a given county section
+  const toggleSection = (title) => {
+    const isExpanded = !!expandedSections[title];
     const animV = animValuesRef.current[title];
     if (!animV) return;
-    if (isExp) {
-      Animated.timing(animV, { toValue: 0, duration: 300, useNativeDriver: true })
-        .start(() => setExpandedSections(ps => ({ ...ps, [title]: false })));
+
+    if (isExpanded) {
+      Animated.timing(animV, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(() => {
+        setExpandedSections((prev) => ({ ...prev, [title]: false }));
+      });
     } else {
-      setExpandedSections(ps => ({ ...ps, [title]: true }));
+      setExpandedSections((prev) => ({ ...prev, [title]: true }));
       animV.setValue(0);
-      Animated.timing(animV, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      Animated.timing(animV, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
     }
   };
 
-  // jump to county
-  const handleCountySelect = county => {
-    const y = positionsRef.current[county];
-    if (y == null) {
-      Alert.alert('Not Found', `${county} not found`);
-    } else {
-      scrollViewRef.current?.scrollTo({ y: y - HEADER_HEIGHT, animated: true });
-    }
-    toggleSearchBubble();
+  // Navigate to LiveOps screen
+  const handleLiveOps = () => {
+    navigation.navigate('LiveOps');
   };
 
-  // Live Ops
-  const handleLiveOps = () => navigation.navigate('LiveOps');
+  // Navigate to DisplayScreen for a given org
+  const handleOrgPress = (org) => {
+    navigation.navigate('DisplayScreen', { item: org });
+  };
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: palette[0] }]}>
-        <ActivityIndicator size="large" color={palette[3]} />
-        <Text style={[styles.loadingText, { color: palette[3] }]}>Loading…</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#333" />
+        <Text style={styles.loadingText}>Loading opportunities…</Text>
       </View>
     );
   }
 
-  const counties = sections.map(s => s.title);
-  const filteredCounties = counties.filter(c =>
-    c.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Pick header background image based on category, fallback if missing
+  const headerBgImage = CATEGORY_IMAGES[reference] || DEFAULT_HEADER_IMAGE;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette[0] }]}>
-      {/* HEADER */}
-      <View style={[styles.header, { backgroundColor: palette[0],bottom:-30 }]}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={24} color={palette[3]} />
+    <View style={styles.container}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
+      {/* Full‐width Header Image (behind status bar, no tint) */}
+      <ImageBackground
+        source={{ uri: headerBgImage }}
+        style={[
+          styles.headerImage,
+          { width: width, height: TOTAL_HEADER_HEIGHT },
+        ]}
+        imageStyle={{ resizeMode: 'cover' }}
+      >
+        <View style={styles.headerOverlay}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            activeOpacity={0.8}
+          >
+            {/* White circle around back arrow */}
+            <View style={styles.backCircle}>
+              <Ionicons name="chevron-back" size={24} color="#000" />
+            </View>
           </TouchableOpacity>
 
-          <View style={styles.titleAndState}>
-            <Text style={[styles.headerText, { color: palette[3] }]}>
-              {refParam}
-            </Text>
-            <TouchableOpacity
-              onPress={toggleStateBubble}
-              style={[styles.stateButton, { borderColor: palette[3] }]}
-            >
-              <Text style={[styles.stateButtonText, { color: palette[3] }]}>
-                {selectedStateCode || 'All'}
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>{reference}</Text>
+            <Text style={styles.headerState}>{stateName}</Text>
           </View>
 
-          <TouchableOpacity onPress={toggleSearchBubble}>
-            <MaterialIcons name="search" size={24} color={palette[3]} />
-          </TouchableOpacity>
+          <View style={styles.headerRightPlaceholder} />
         </View>
-      </View>
+      </ImageBackground>
 
-      {/* STATE BUBBLE */}
-      {isStateBubbleVisible && (
-        <Animated.View
-          style={[
-            styles.searchBubble,
-            {
-              backgroundColor: palette[0],
-              transform: [{ scale: stateBubbleScale }],
-            },
-          ]}
+      {/* Bottom Sheet: full‐width, elevated above header */}
+      <View style={[styles.bottomSheet, { height: BOTTOM_SHEET_HEIGHT }]}>
+        <View style={styles.handleBar} />
+
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.bubbleHeader}>
-            <Text style={[styles.searchBubbleTitle, { color: palette[3] }]}>
-              Select State
-            </Text>
-            <TouchableOpacity onPress={toggleStateBubble} style={styles.closeButton}>
-              <MaterialIcons name="close" size={20} color={palette[3]} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView contentContainerStyle={styles.countyButtonsContainer}>
-            {STATE_CODES.map(code => (
-              <TouchableOpacity
-                key={code}
-                onPress={() => {
-                  setSelectedStateCode(code);
-                  toggleStateBubble();
-                }}
-                style={[styles.countyButton, { borderColor: palette[3], marginBottom: 8 }]}
-              >
-                <Text style={[styles.countyButtonText, { color: palette[3] }]}>
-                  {code}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Animated.View>
-      )}
+          {sections.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateIcon}>🐾</Text>
+              <Text style={styles.emptyStateText}>
+                No opportunities found
+              </Text>
+            </View>
+          ) : (
+            sections.map((section) => {
+              const isExpanded = !!expandedSections[section.title];
+              const animV = animValuesRef.current[section.title];
 
-      {/* COUNTY BUBBLE */}
-      {isSearchBubbleVisible && (
-        <Animated.View
-          style={[
-            styles.searchBubble,
-            {
-              backgroundColor: palette[0],
-              transform: [{ scale: bubbleScale }],
-            },
-          ]}
-        >
-          <View style={styles.bubbleHeader}>
-            <Text style={[styles.searchBubbleTitle, { color: palette[3] }]}>
-              Find County
-            </Text>
-            <TouchableOpacity onPress={toggleSearchBubble} style={styles.closeButton}>
-              <MaterialIcons name="close" size={20} color={palette[3]} />
-            </TouchableOpacity>
-          </View>
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Type county…"
-            placeholderTextColor={palette[3]}
-            style={[styles.searchInput, { borderColor: palette[3], color: palette[3] }]}
-          />
-          <ScrollView contentContainerStyle={styles.countyButtonsContainer}>
-            {(filteredCounties.length ? filteredCounties : ['-- no matches --']).map((c,i) => (
-              <TouchableOpacity
-                key={i}
-                onPress={() => handleCountySelect(c)}
-                style={[styles.countyButton, { borderColor: palette[3] }]}
-              >
-                <Text style={[styles.countyButtonText, { color: palette[3] }]}>{c}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </Animated.View>
-      )}
-
-      {/* LIST */}
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scrollViewContent}>
-        {sections.map(section => {
-          const isExp = !!expandedSections[section.title];
-          const animV = animValuesRef.current[section.title];
-          return (
-            <View
-              key={section.title}
-              onLayout={e => {
-                positionsRef.current[section.title] = e.nativeEvent.layout.y;
-              }}
-            >
-              <TouchableOpacity onPress={() => toggleSection(section.title)} style={styles.gradientWrapper}>
-                <LinearGradient
-                  colors={[palette[1], palette[2]]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.dropdownHeader}
-                >
-                  <Text style={[styles.countyHeaderText, { color: palette[3] }]}>
-                    {section.title}
-                  </Text>
-                  <MaterialIcons
-                    name={isExp ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                    size={24}
-                    color={palette[3]}
-                  />
-                </LinearGradient>
-              </TouchableOpacity>
-
-              {isExp && (
-                <Animated.View style={{ opacity: animV }}>
-                  {section.data.length ? (
-                    section.data.map((org,j) => (
-                      <TouchableOpacity
-                        key={j}
-                        onPress={() => navigation.navigate('DisplayScreen',{item:org})}
-                        style={styles.cardWrapper}
-                      >
-                        <LinearGradient
-                          colors={[palette[1], palette[2]]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          style={styles.card}
-                        >
-                          <Text style={[styles.cardTitle, { color: palette[3] }]}>
-                            {org.title}
-                          </Text>
-                        </LinearGradient>
-                      </TouchableOpacity>
-                    ))
-                  ) : (
-                    <View style={styles.comingSoonContainer}>
-                      <Text style={[styles.comingSoonText, { color: palette[3] }]}>
-                        Coming Soon!
+              return (
+                <View key={section.title} style={styles.countyCard}>
+                  {/* County Header */}
+                  <TouchableOpacity
+                    onPress={() => toggleSection(section.title)}
+                    style={styles.countyHeader}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.countyInfo}>
+                      <Text style={styles.countyName}>
+                        {section.title}
+                      </Text>
+                      <Text style={styles.countyCount}>
+                        {section.data.length}{' '}
+                        {section.data.length === 1
+                          ? 'organization'
+                          : 'organizations'}
                       </Text>
                     </View>
-                  )}
-                </Animated.View>
-              )}
-            </View>
-          );
-        })}
+                    {/* Dropdown icon */}
+                    <Ionicons
+                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={24}
+                      color="#333"
+                    />
+                  </TouchableOpacity>
 
-        <TouchableOpacity style={styles.liveButton} onPress={handleLiveOps}>
-          <LinearGradient
-            colors={[palette[1], palette[2]]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.liveButtonGradient}
-          >
-            <Text style={[styles.liveButtonText, { color: palette[3] }]}>
-              Live Opportunities
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+                  {/* Expanded organization list */}
+                  {isExpanded && (
+                    <Animated.View
+                      style={[
+                        styles.orgsContainer,
+                        {
+                          opacity: animV,
+                          transform: [{ scale: animV }],
+                        },
+                      ]}
+                    >
+                      {section.data.map((org, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          onPress={() => handleOrgPress(org)}
+                          style={styles.organizationItem}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={styles.orgTitle}>{org.title}</Text>
+                          <Ionicons
+                            name="chevron-forward"
+                            size={20}
+                            color="#AAA"
+                          />
+                        </TouchableOpacity>
+                      ))}
+                    </Animated.View>
+                  )}
+                </View>
+              );
+            })
+          )}
+
+          {/* Live Opportunities Button (black background, white text) */}
+          <View style={styles.liveWrap}>
+            <TouchableOpacity
+              style={styles.liveButton}
+              onPress={handleLiveOps}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#000', '#444']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.liveButtonGradient}
+              >
+                <Text style={styles.liveButtonText}>
+                  Live Opportunities
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Container & Loading
   container: {
     flex: 1,
-    backgroundColor: DEFAULT_PALETTE[0],
+    backgroundColor: '#EFEFEF',
   },
+
+  // Loading Screen
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: DEFAULT_PALETTE[0],
+    backgroundColor: '#FFF',
   },
   loadingText: {
     marginTop: 12,
-    fontSize: RFPercentage(2.2),
-    color: DEFAULT_PALETTE[3],
+    fontSize: RFPercentage(2),
+    color: '#333',
   },
 
-  // Header & curved background
-  header: {
+  // Header Image + Overlay (covers status bar)
+  headerImage: {
     position: 'absolute',
-    top: insets => insets.top,
+    top: 0,
+    left: 0,
+  },
+  headerOverlay: {
+    flex: 1,
+    marginTop: STATUS_BAR_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: HEADER_IMAGE_HEIGHT,
+  },
+  backButton: {
+    padding: 6,
+  },
+  backCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: RFPercentage(3),
+    fontWeight: '800',
+    color: '#FFF',
+  },
+  headerState: {
+    fontSize: RFPercentage(1.8),
+    color: '#EEE',
+    marginTop: 2,
+  },
+  headerRightPlaceholder: {
+    width: 32,
+  },
+
+  // Bottom Sheet
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
     left: 0,
     right: 0,
-    height: HEADER_HEIGHT+50,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    shadowColor: '#333',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 0,
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    elevation: 8,
     zIndex: 10,
-    
   },
-
-  // row inside header
-  headerRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-
-  backButton: {
-    padding: 8,
-  },
-
-  titleAndState: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    bottom:-25,
-    left:0
-  },
-  headerText: {
-    fontSize: RFPercentage(3),
-    fontWeight: '700',
-  },
-  stateButton: {
-    marginLeft: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  stateButtonText: {
-    fontWeight: '600',
-  },
-
-  // Scroll content offset below header
-  scrollViewContent: {
-    paddingTop: HEADER_HEIGHT + 10,
-    paddingBottom: 90,
-    paddingHorizontal: 20,
-  },
-
-  // Section Dropdown
-  gradientWrapper: {
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#CCC',
+    borderRadius: 2,
+    alignSelf: 'center',
     marginVertical: 8,
   },
-  dropdownHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  countyHeaderText: {
-    fontSize: RFPercentage(2.4),
-    fontWeight: '600',
-    color: DEFAULT_PALETTE[3],
-  },
 
-  // Cards
-  cardWrapper: {
-    alignSelf: 'center',
-    marginVertical: 6,
-    width: width * 0.9,
-  },
-  card: {
-    borderRadius: 15,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardTitle: {
-    fontSize: RFPercentage(2),
-    fontWeight: '500',
-    textAlign: 'center',
-    color: DEFAULT_PALETTE[3],
-  },
-  comingSoonContainer: {
-    height: ITEM_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  comingSoonText: {
-    fontSize: RFPercentage(2.2),
-    color: DEFAULT_PALETTE[3],
-  },
-
-  // Search bubbles
-  searchBubble: {
-    position: 'absolute',
-    top: HEADER_HEIGHT - 20,
-    left: 20,
-    right: 20,
-    backgroundColor: DEFAULT_PALETTE[0],
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 5,
-    zIndex: 20,
-  },
-  bubbleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  searchBubbleTitle: {
+  // ScrollView Container
+  scrollView: {
     flex: 1,
-    fontSize: RFPercentage(2.4),
-    fontWeight: '600',
-    color: DEFAULT_PALETTE[3],
+    marginTop: TOTAL_HEADER_HEIGHT - HEADER_IMAGE_HEIGHT-30, // push content below header
   },
-  closeButton: {
-    padding: 4,
-  },
-  searchInput: {
-    width: '100%',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: DEFAULT_PALETTE[2],
-    fontSize: RFPercentage(2),
-    color: DEFAULT_PALETTE[3],
-    marginBottom: 16,
-  },
-  countyButtonsContainer: {
-    maxHeight: 200,
-  },
-  countyButton: {
-    paddingVertical: 12,
+  scrollContent: {
     paddingHorizontal: 16,
+    paddingBottom: 120, // extra space so live button isn’t covered
+  },
+
+  // Empty State
+  emptyState: {
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    color: '#CCC',
+  },
+  emptyStateText: {
+    marginTop: 12,
+    fontSize: RFPercentage(2.2),
+    color: '#AAA',
+  },
+
+  // County Card
+  countyCard: {
+    marginBottom: 12,
+    backgroundColor: '#FAFAFA',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: DEFAULT_PALETTE[2],
-    marginBottom: 10,
+    borderColor: '#ECECEC',
+    overflow: 'hidden',
+  },
+  countyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  countyInfo: {
+    flex: 1,
+  },
+  countyName: {
+    fontSize: RFPercentage(2.2),
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  countyCount: {
+    fontSize: RFPercentage(1.6),
+    color: '#777',
+  },
+
+  // Expanded Orgs Container
+  orgsContainer: {
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  organizationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 8,
+    marginBottom: 6,
+    borderRadius: 12,
+    backgroundColor: '#F7F7F7',
+  },
+  orgTitle: {
+    flex: 1,
+    fontSize: RFPercentage(2),
+    color: '#444',
+  },
+
+  // Live Opportunities
+  liveWrap: {
+    marginTop: 20,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  liveButton: {
+    width: '90%',
+    borderRadius: 22,
+    overflow: 'hidden',
+    elevation: 3,
+  },
+  liveButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  countyButtonText: {
-    fontSize: RFPercentage(2),
-    color: DEFAULT_PALETTE[3],
-  },
-
-  // Live Ops
-  liveButton: {
-    marginTop: 20,
-    alignSelf: 'center',
-    width: width * 0.9,
-  },
-  liveButtonGradient: {
-    borderRadius: 15,
     paddingVertical: 14,
-    alignItems: 'center',
   },
   liveButtonText: {
-    fontSize: RFPercentage(2),
-    fontWeight: '600',
-    color: DEFAULT_PALETTE[3],
+    fontSize: RFPercentage(2.2),
+    color: '#FFF',
+    fontWeight: '700',
   },
 });

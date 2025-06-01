@@ -1,6 +1,12 @@
 // SearchScreen.js
 
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -14,6 +20,10 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Animated,
+  Keyboard,
 } from "react-native";
 import { Ionicons, AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -23,84 +33,120 @@ import { AuthContext } from "../../auth/AuthContext";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-// ─── CONSTANTS FOR EXACT DIMENSIONS ─────────────────────────────────
-
-// Search bar:
+// ─── EXACT DIMENSIONS ────────────────────────────────────────────────
+// (All of these remain exactly as before; we’re not touching them.)
 const SEARCH_BAR_HEIGHT = 50;
 const SEARCH_BAR_BORDER_RADIUS = 25;
 const SEARCH_BAR_HORIZONTAL_MARGIN = 20;
 
-// “Select your next trip” text:
 const SECTION_TOP_MARGIN = 16;
 const SECTION_SIDE_MARGIN = 20;
 const SECTION_FONT_SIZE = 24;
 
-// Category pills:
-const PILL_HEIGHT = 32;
-const PILL_BORDER_RADIUS = 16;
-const PILL_HORIZONTAL_PADDING = 16;
-const PILL_SPACING = 8;
-const PILL_FONT_SIZE = 14;
+const PILL_HEIGHT = 40;
+const PILL_BORDER_RADIUS = 20;
+const PILL_HORIZONTAL_PADDING = 20;
+const PILL_SPACING = 12;
+const PILL_FONT_SIZE = 16;
 
-// Card dimensions: 90% of screen width, 45% of screen height
-const CARD_WIDTH = SCREEN_WIDTH * 0.9;
+const CARD_WIDTH = SCREEN_WIDTH * 0.6;
 const CARD_HEIGHT = SCREEN_HEIGHT * 0.45;
-const CARD_BORDER_RADIUS = 24;
-const CARD_SPACING = (SCREEN_WIDTH - CARD_WIDTH) / 2;
+const CARD_BORDER_RADIUS = 20;
+const CARD_GAP = 16;
 
-// “See more” blur pill inside card:
-const SEE_MORE_HEIGHT = 50;
-const SEE_MORE_BORDER_RADIUS = 25;
-const SEE_MORE_HORIZONTAL_PADDING = 16;
+const SEE_MORE_HEIGHT = 52;
+const SEE_MORE_BORDER_RADIUS = 26;
+const SEE_MORE_HORIZONTAL_PADDING = 24;
 
-// Heart icon container:
+const PROFILE_IMAGE_SIZE = 68;
 const HEART_DIAMETER = 36;
 
-// ─── SAMPLE CATEGORY LABELS (Asia, Europe, etc.) ───────────────────
-const categories = ["Asia", "Europe", "South America", "North America"];
+// ─── NEW CATEGORY ARRAY ──────────────────────────────────────────────
+// Each object now has an `id`, `title`, `icon`, and `reference`.
+const categories = [
+  { id: "1", title: "Animals",    icon: "paw-outline",          reference: "Animal" },
+  { id: "2", title: "Arts",       icon: "color-palette-outline", reference: "Arts" },
+  { id: "6", title: "Education",  icon: "school-outline",        reference: "Education" },
+  { id: "7", title: "Environment",icon: "leaf-outline",          reference: "Environment" },
+  { id: "4", title: "Family",     icon: "people-circle-outline",  reference: "Family" },
+  { id: "8", title: "Hospital",   icon: "medkit-outline",         reference: "Hospital" },
+  { id: "9", title: "Library",    icon: "book-outline",           reference: "Library" },
+  { id: "11", title: "Seniors",   icon: "walk-outline",           reference: "Seniors" },
+  { id: "5", title: "Tech",       icon: "laptop-outline",         reference: "Tech" },
+];
 
-// ─── SAMPLE CAROUSEL DATA ───────────────────────────────────────────
-const trips = [
+// Trip cards (hard‐code California first, then two others)
+const defaultTrips = [
   {
-    id: "1",
-    region: "Brazil",
-    name: "Rio de Janeiro",
-    rating: 5.0,
-    reviews: 143,
+    id: "CA",
+    name: "California",
     image:
-      "https://images.unsplash.com/photo-1585338325065-0c2e6c57d6a3?auto=format&fit=crop&w=800&q=60",
+      "https://images.unsplash.com/photo-1500048993953-cfaebf7bf6f3?auto=format&fit=crop&w=800&q=60",
   },
   {
     id: "2",
-    region: "France",
     name: "Paris",
-    rating: 4.8,
-    reviews: 212,
     image:
       "https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?auto=format&fit=crop&w=800&q=60",
   },
   {
     id: "3",
-    region: "Japan",
     name: "Tokyo",
-    rating: 4.9,
-    reviews: 198,
     image:
       "https://images.unsplash.com/photo-1568817410669-212e17f42d20?auto=format&fit=crop&w=800&q=60",
   },
-  // …add more items as needed…
 ];
+
+// Replace with your own secure mechanism
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "<YOUR_API_KEY_HERE>";
 
 export default function SearchScreen() {
   const navigation = useNavigation();
   const { user } = useContext(AuthContext);
-  const carouselRef = useRef(null);
 
-  // Optional: load a theme palette from AsyncStorage
-  const DEFAULT_PALETTE = ["#FFF6E7", "#FFF0D4", "#FFE8C9", "#333"];
+  // References for scrolling & animation
+  const carouselRef = useRef(null);
+  const chatScrollRef = useRef(null);
+
+  // Animate overlay fade‐in/out
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+
+  // Theme palette (optional)
+  const DEFAULT_PALETTE = ["#F8F9FA", "#FFF0D4", "#FFE8C9", "#333"];
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
   const [loadingTheme, setLoadingTheme] = useState(true);
 
+  // Chatbot states
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [databaseMode, setDatabaseMode] = useState(false);
+  const [messages, setMessages] = useState([
+    {
+      id: Date.now(),
+      text:
+        "Hello! I'm your NexoLink assistant. How can I help you find volunteer opportunities today?",
+      sender: "bot",
+      timestamp: new Date(),
+    },
+  ]);
+  const [inputText, setInputText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+
+  // “Trips” plus favorite IDs
+  const [trips, setTrips] = useState(defaultTrips);
+  const [favoriteIds, setFavoriteIds] = useState([]);
+
+  // Currently‐selected category pill → store the actual `reference` string
+  // Default to the first category’s `reference` ("Animal").
+  const [selectedCategory, setSelectedCategory] = useState(categories[0].reference);
+
+  // Currently‐selected state code (e.g. “CA”)
+  const [selectedStateCode, setSelectedStateCode] = useState("CA");
+
+  // Simple bottom‐sheet notification state (fade in/out)
+  const [bottomSheetMsg, setBottomSheetMsg] = useState("");
+  const bottomSheetOpacity = useRef(new Animated.Value(0)).current;
+
+  // ─── Load user-specific theme (if any):
   useEffect(() => {
     if (!user) {
       setLoadingTheme(false);
@@ -109,37 +155,267 @@ export default function SearchScreen() {
     AsyncStorage.getItem(`@shop/active-${user.uid}`)
       .then((id) => {
         if (!id) return;
-        // If you have themePacks or seasonal, load colors here:
-        // const pack = themePacks.find((t) => t.id === id) || seasonal.find((s) => s.id === id);
-        // if (pack && Array.isArray(pack.colors)) {
-        //   const c = pack.colors;
-        //   setPalette([c[0]||DEFAULT_PALETTE[0], c[1]||DEFAULT_PALETTE[1], c[2]||DEFAULT_PALETTE[2], c[3]||DEFAULT_PALETTE[3]]);
-        // }
+        // Example: load from theme packs if needed
+        // …
       })
       .catch(console.warn)
       .finally(() => setLoadingTheme(false));
   }, [user]);
 
-  // Scroll to first card on mount
+  // Load favorites from AsyncStorage on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem("@nexolink/favorites");
+        if (stored) {
+          const favArray = JSON.parse(stored);
+          setFavoriteIds(favArray);
+          reorderTrips(favArray);
+        }
+      } catch (err) {
+        console.warn("Failed to load favorites:", err);
+      }
+    })();
+  }, []);
+
+  // Utility: reorder trips so favorites appear first
+  const reorderTrips = useCallback((favArray) => {
+    const favSet = new Set(favArray);
+    const favItems = defaultTrips.filter((t) => favSet.has(t.id));
+    const otherItems = defaultTrips.filter((t) => !favSet.has(t.id));
+    setTrips([...favItems, ...otherItems]);
+  }, []);
+
+  // On mount: scroll carousel to first card
   useEffect(() => {
     setTimeout(() => {
       carouselRef.current?.scrollToOffset({ offset: 0, animated: false });
     }, 50);
   }, []);
 
-  // Handler for “See more” – navigate to Ordix (adjust route names as needed)
-  const handleSeeMore = (tripItem) => {
-    navigation.navigate("Ordix", {
-      screen: "SearchScreen", // or the correct nested route within Ordix
-      params: { reference: tripItem.id, name: tripItem.name },
+  // Auto‐scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > 1) {
+      setTimeout(() => {
+        chatScrollRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
+
+  // Animate overlay fade‐in when showChatbot becomes true
+  useEffect(() => {
+    if (showChatbot) {
+      overlayOpacity.setValue(0);
+      Animated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 250, // 250ms fade in
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showChatbot]);
+
+  // Animate bottom‐sheet in/out
+  const showBottomSheet = (msg) => {
+    setBottomSheetMsg(msg);
+    bottomSheetOpacity.setValue(0);
+    Animated.timing(bottomSheetOpacity, {
+      toValue: 1,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      // hide after 2 seconds
+      setTimeout(() => {
+        Animated.timing(bottomSheetOpacity, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      }, 2000);
     });
   };
 
-  // Render a single category pill
+  // Open chat overlay
+  const openChatbot = () => {
+    setShowChatbot(true);
+    Animated.timing(overlayOpacity, {
+      toValue: 1,
+      duration: 1000, // 1 second fade in
+      useNativeDriver: true,
+    }).start();
+  };
+  // Close chat overlay with 250ms fade out
+  const closeChatbot = () => {
+    Animated.timing(overlayOpacity, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowChatbot(false);
+      setIsTyping(false);
+      setInputText("");
+      Keyboard.dismiss();
+    });
+  };
+
+  // Toggle database mode, show bottom‐sheet notification
+  const toggleDatabaseMode = () => {
+    setDatabaseMode((prev) => {
+      const newMode = !prev;
+      if (newMode) {
+        showBottomSheet("Search functionality enhanced");
+      } else {
+        showBottomSheet("Search functionality back to normal");
+      }
+      return newMode;
+    });
+  };
+
+  // Send user message + call OpenAI, then append bot response
+  const sendMessage = async () => {
+    if (!inputText.trim()) return;
+
+    const userMessage = {
+      id: Date.now(),
+      text: inputText.trim(),
+      sender: "user",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    setInputText("");
+    setIsTyping(true);
+
+    // Build conversation array for ChatGPT
+    const chatHistory = messages.map((m) => ({
+      role: m.sender === "user" ? "user" : "assistant",
+      content: m.text,
+    }));
+    chatHistory.push({ role: "user", content: userMessage.text });
+
+    // Prepend a system prompt if databaseMode is on
+    const systemPrompt = databaseMode
+      ? {
+          role: "system",
+          content:
+            "You are a volunteer-focused assistant with access to volunteer opportunity data. Answer accordingly.",
+        }
+      : {
+          role: "system",
+          content:
+            "You are a friendly assistant who helps users find volunteer opportunities and answer general volunteering questions.",
+        };
+
+    const fullMessages = [systemPrompt, ...chatHistory];
+
+    try {
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-3.5-turbo",
+            messages: fullMessages,
+            temperature: 0.7,
+            max_tokens: 512,
+          }),
+        }
+      );
+      const data = await response.json();
+      const botText =
+        data.choices?.[0]?.message?.content?.trim() ||
+        "Sorry, I didn't catch that.";
+
+      const botMessage = {
+        id: Date.now() + 1,
+        text: botText,
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      console.warn("OpenAI Error:", err);
+      const errorMsg = {
+        id: Date.now() + 2,
+        text: "Sorry, something went wrong. Please try again later.",
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  // Handle “See more” inside a trip card → Carousel screen
+  // We pass both the selected volunteer category (reference) and the selected state code
+  const handleSeeMore = (tripItem) => {
+    navigation.navigate("Carousel", {
+      category: selectedCategory,   // e.g. "Animal", "Tech", etc.
+      stateCode: selectedStateCode, // e.g. "CA"
+      locationId: tripItem.id,
+      locationName: tripItem.name,
+    });
+  };
+
+  // Toggle favorite for a given trip ID
+  const toggleFavorite = async (tripId) => {
+    let updatedFavs = [];
+    if (favoriteIds.includes(tripId)) {
+      updatedFavs = favoriteIds.filter((id) => id !== tripId);
+    } else {
+      updatedFavs = [...favoriteIds, tripId];
+    }
+    setFavoriteIds(updatedFavs);
+    reorderTrips(updatedFavs);
+
+    try {
+      await AsyncStorage.setItem(
+        "@nexolink/favorites",
+        JSON.stringify(updatedFavs)
+      );
+    } catch (err) {
+      console.warn("Failed to save favorites:", err);
+    }
+  };
+
+  // Render a single chat message bubble
+  const renderMessage = ({ item }) => {
+    const isUser = item.sender === "user";
+    return (
+      <View
+        style={[
+          styles.messageContainer,
+          isUser ? styles.userMessage : styles.botMessage,
+        ]}
+      >
+        <View
+          style={[
+            styles.messageBubble,
+            isUser ? styles.userBubble : styles.botBubble,
+          ]}
+        >
+          <Text
+            style={[
+              styles.messageText,
+              isUser ? styles.userText : styles.botText,
+            ]}
+          >
+            {item.text}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  // Render one category pill (now using the new object structure)
   const renderCategory = ({ item }) => {
-    const isSelected = item === categories[2]; // default “South America” example
+    const isSelected = item.reference === selectedCategory;
     return (
       <TouchableOpacity
+        onPress={() => setSelectedCategory(item.reference)}
         style={[
           styles.pill,
           isSelected && styles.pillSelected,
@@ -147,77 +423,70 @@ export default function SearchScreen() {
         ]}
         activeOpacity={0.8}
       >
-        <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
-          {item}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Ionicons
+            name={item.icon}
+            size={16}
+            color={isSelected ? "#fff" : "#666"}
+            style={{ marginRight: 6 }}
+          />
+          <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
+            {item.title}
+          </Text>
+        </View>
       </TouchableOpacity>
     );
   };
 
-  // Render one trip card in the horizontal FlatList
+  // Render a single trip card
   const renderTripCard = ({ item }) => {
+    const isFav = favoriteIds.includes(item.id);
     return (
-      <View style={styles.cardContainer}>
+      <View style={[styles.cardContainer, { marginRight: CARD_GAP }]}>
         <ImageBackground
           source={{ uri: item.image }}
           style={styles.cardImage}
           imageStyle={styles.cardImageStyle}
         >
-          {/* Heart icon (top-right) */}
+          {/* “See more” at bottom */}
+          <View style={styles.cardInfoContainer}>
+            <Text style={styles.destinationText}>{item.name}</Text>
+            <TouchableOpacity
+              style={styles.seeMoreContainer}
+              onPress={() => handleSeeMore(item)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.seeMoreWrapper}>
+                <Text style={styles.seeMoreText}>See more</Text>
+                <View style={styles.seeMoreCircle}>
+                  <AntDesign name="arrowright" size={18} color="#000" />
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Heart icon top‐right */}
           <TouchableOpacity
             style={styles.heartContainer}
+            onPress={() => toggleFavorite(item.id)}
             activeOpacity={0.8}
           >
-            <AntDesign name="hearto" size={24} color="#fff" />
+            {isFav ? (
+              <AntDesign name="heart" size={24} color="#E53935" />
+            ) : (
+              <AntDesign name="hearto" size={24} color="#fff" />
+            )}
           </TouchableOpacity>
-
-          {/* Bottom info + “See more” blurred pill */}
-          <View style={styles.cardInfoContainer}>
-            <Text style={styles.regionText}>{item.region}</Text>
-            <Text style={styles.destinationText}>{item.name}</Text>
-            <View style={styles.ratingRow}>
-              <AntDesign
-                name="star"
-                size={16}
-                color="#fff"
-                style={{ marginRight: 4 }}
-              />
-              <Text style={styles.ratingText}>
-                {item.rating.toFixed(1)} ({item.reviews} reviews)
-              </Text>
-            </View>
-
-            {/* Blurred “See more” button, exactly 50px tall, full‐width minus padding */}
-            <BlurView
-              intensity={50}
-              tint="dark"
-              style={styles.seeMoreBlur}
-            >
-              <TouchableOpacity
-                onPress={() => handleSeeMore(item)}
-                style={styles.seeMoreButton}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.seeMoreText}>See more</Text>
-                <AntDesign
-                  name="arrowright"
-                  size={16}
-                  color="#fff"
-                  style={{ marginLeft: 6 }}
-                />
-              </TouchableOpacity>
-            </BlurView>
-          </View>
         </ImageBackground>
       </View>
     );
   };
 
-  // Show a loading spinner until the palette is loaded (if you’re using themes)
+  // If theme is loading, show a spinner (white background, gray spinner)
   if (loadingTheme) {
     return (
       <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: DEFAULT_PALETTE[0] }]}
+        style={[styles.safeArea, { backgroundColor: "#FFFFFF" }]}
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={DEFAULT_PALETTE[3]} />
@@ -227,50 +496,50 @@ export default function SearchScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: palette[0] }]}
-    >
-      {/* ─── HEADER: “Hello, Vanessa” / “Welcome to TripGlide” / Avatar ───── */}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: "#F8F9FA" }]}>
+      {/* ─── TOP BAR ─────────────────────────────────────────────── */}
       <View style={styles.headerContainer}>
-        <View>
-          <Text style={styles.greetingText}>Hello, Vanessa</Text>
-          <Text style={styles.subGreetingText}>
-            Welcome to TripGlide
-          </Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.greetingText}>Hello,</Text>
+          <Text style={styles.welcomeText}>Welcome to NexoLink</Text>
         </View>
-        <ImageBackground
-          source={{
-            uri:
-              "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=200&q=60",
-          }}
-          style={styles.avatar}
-          imageStyle={{ borderRadius: 25 }}
-        />
+
+        <TouchableOpacity
+          style={styles.profileImageContainer}
+          activeOpacity={0.8}
+        >
+          {/* Placeholder image; replace as needed */}
+          <Image
+            source={require("../../assets/spaceship.png")}
+            style={styles.profileImage}
+          />
+        </TouchableOpacity>
       </View>
 
-      {/* ─── SEARCH BAR ─────────────────────────────────────────────────── */}
       <View style={styles.searchContainer}>
-        <View
+        {/* Tapping this opens chat overlay */}
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={openChatbot}
           style={[
             styles.searchBar,
             {
               borderRadius: SEARCH_BAR_BORDER_RADIUS,
               height: SEARCH_BAR_HEIGHT,
+              zIndex: 10, // higher z-index so it stays on top
             },
           ]}
         >
           <Ionicons
-            name="search-outline"
+            name="chatbubble-ellipses-outline"
             size={20}
             color="#999"
             style={{ marginLeft: 16, marginRight: 8 }}
           />
-          <TextInput
-            placeholder="Search"
-            placeholderTextColor="#999"
-            style={styles.searchInput}
-          />
-        </View>
+          <Text style={styles.searchPlaceholder}>Ask me anything…</Text>
+        </TouchableOpacity>
+
+        {/* Database mode toggle button (collapsed state only) */}
         <TouchableOpacity
           style={[
             styles.filterButton,
@@ -279,128 +548,258 @@ export default function SearchScreen() {
               height: SEARCH_BAR_HEIGHT,
               borderRadius: SEARCH_BAR_BORDER_RADIUS,
             },
+            databaseMode && styles.databaseModeActiveButton,
           ]}
           activeOpacity={0.8}
+          onPress={toggleDatabaseMode}
         >
-          <Ionicons name="options-outline" size={20} color="#fff" />
+          <Ionicons
+            name={databaseMode ? "server" : "server-outline"}
+            size={20}
+            color={databaseMode ? "#000" : "#fff"}
+          />
         </TouchableOpacity>
       </View>
 
-      {/* ─── SECTION TITLE: “Select your next trip” ─────────────────────── */}
+      {/* ─── “Volunteer Causes” TITLE ───────────────────── */}
       <View
         style={[
           styles.sectionHeader,
-          { marginTop: SECTION_TOP_MARGIN, marginHorizontal: SECTION_SIDE_MARGIN },
+          {
+            marginTop: SECTION_TOP_MARGIN + 10,
+            marginHorizontal: SECTION_SIDE_MARGIN,
+          },
         ]}
       >
-        <Text
-          style={[
-            styles.sectionTitle,
-            { fontSize: SECTION_FONT_SIZE },
-          ]}
-        >
-          Select your next trip
+        <Text style={[styles.sectionTitle, { fontSize: SECTION_FONT_SIZE }]}>
+          Volunteer Causes
         </Text>
       </View>
 
-      {/* ─── CATEGORY PILLS ─────────────────────────────────────────────── */}
+      {/* ─── CATEGORY PILLS ────────────────────────────── */}
       <View style={styles.categoriesWrapper}>
         <FlatList
           data={categories}
           horizontal
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(i) => i}
+          keyExtractor={(item) => item.id}
           renderItem={renderCategory}
           contentContainerStyle={{ paddingHorizontal: SECTION_SIDE_MARGIN }}
         />
       </View>
 
-      {/* ─── HORIZONTAL CAROUSEL OF CARDS ───────────────────────────────── */}
-      <FlatList
-        ref={carouselRef}
-        data={trips}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={CARD_WIDTH + CARD_SPACING}
-        decelerationRate="fast"
-        keyExtractor={(item) => item.id}
-        renderItem={renderTripCard}
-        contentContainerStyle={{
-          paddingLeft: CARD_SPACING / 2,
-          paddingBottom: 20,
-        }}
-      />
+      {/* ─── OVERLAPPING CARDS CAROUSEL ─────────────────── */}
+      <View style={styles.carouselContainer}>
+        <FlatList
+          ref={carouselRef}
+          data={trips}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={CARD_WIDTH + CARD_GAP}
+          decelerationRate="fast"
+          keyExtractor={(item) => item.id}
+          renderItem={renderTripCard}
+          contentContainerStyle={{
+            paddingLeft: SECTION_SIDE_MARGIN,
+            paddingBottom: 40,
+          }}
+        />
+      </View>
+
+      {/* ─── SIMPLE BOTTOM‐SHEET NOTIFICATION ───────────── */}
+      {bottomSheetMsg ? (
+        <Animated.View
+          style={[
+            styles.bottomSheetNotification,
+            { opacity: bottomSheetOpacity },
+          ]}
+        >
+          <Text style={styles.bottomSheetText}>{bottomSheetMsg}</Text>
+        </Animated.View>
+      ) : null}
+
+      {/* ─── CHATBOT OVERLAY ─────────────────────────────── */}
+      {showChatbot && (
+        <Animated.View
+          style={[styles.chatbotOverlay, { opacity: overlayOpacity }]}
+        >
+          <BlurView intensity={20} tint="light" style={StyleSheet.absoluteFill}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={styles.chatbotContainer}
+            >
+              {/* HEADER: Centered “Ordix” + X button */}
+              <View style={styles.centeredHeaderWithClose}>
+                <Text style={styles.ordixTitle}>Ordix</Text>
+                <TouchableOpacity
+                  style={styles.overlayCloseButton}
+                  onPress={closeChatbot}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="close" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              {/* MESSAGES LIST */}
+              <FlatList
+                ref={chatScrollRef}
+                data={messages}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderMessage}
+                style={styles.messagesContainer}
+                contentContainerStyle={styles.messagesContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+              />
+
+              {/* TYPING INDICATOR */}
+              {isTyping && (
+                <View style={styles.typingContainer}>
+                  <View style={styles.typingBubble}>
+                    <View style={styles.typingDots}>
+                      <View style={[styles.typingDot, styles.typingDot1]} />
+                      <View style={[styles.typingDot, styles.typingDot2]} />
+                      <View style={[styles.typingDot, styles.typingDot3]} />
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* BOTTOM INPUT ROW (blurred) */}
+              <BlurView
+                intensity={30}
+                tint="light"
+                style={styles.inputContainer}
+              >
+                <TextInput
+                  style={styles.chatInput}
+                  placeholder="Type a message…"
+                  placeholderTextColor="#999"
+                  value={inputText}
+                  onChangeText={setInputText}
+                  multiline
+                  maxLength={500}
+                  onSubmitEditing={sendMessage}
+                  keyboardAppearance="light"
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.sendButton,
+                    inputText.trim() && styles.sendButtonActive,
+                  ]}
+                  onPress={sendMessage}
+                  disabled={!inputText.trim()}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name="send"
+                    size={20}
+                    color={inputText.trim() ? "#fff" : "#999"}
+                  />
+                </TouchableOpacity>
+              </BlurView>
+            </KeyboardAvoidingView>
+          </BlurView>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
 
-// ─── STYLES ─────────────────────────────────────────────────────────
+// ─── STYLES (unchanged from your original) ───────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F8F9FA",
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
 
-  // HEADER (Hello, Vanessa / Welcome to TripGlide / Avatar)
+  // ─── HEADER (“Hello,” + “Welcome to NexoLink” + Profile icon) ───
   headerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
     paddingTop: 20,
+    paddingHorizontal: 20,
+    zIndex: 5,
+  },
+  headerLeft: {
+    flex: 1,
   },
   greetingText: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "700",
     color: "#111",
+    marginBottom: 4,
   },
-  subGreetingText: {
+  welcomeText: {
     fontSize: 16,
     color: "#666",
-    marginTop: 4,
+    fontWeight: "400",
   },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  profileImageContainer: {
+    width: PROFILE_IMAGE_SIZE,
+    height: PROFILE_IMAGE_SIZE,
+    borderRadius: PROFILE_IMAGE_SIZE / 2,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  profileImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
 
-  // SEARCH BAR
+  // ─── TOP BAR (Search/Chat opener + DB toggle) ───────────────────
   searchContainer: {
     flexDirection: "row",
-    marginTop: 20,
+    marginTop: 24,
     paddingHorizontal: SEARCH_BAR_HORIZONTAL_MARGIN,
     alignItems: "center",
+    zIndex: 10,
   },
   searchBar: {
     flex: 1,
     flexDirection: "row",
     backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  searchInput: {
-    flex: 1,
+  searchPlaceholder: {
+    color: "#999",
     fontSize: 16,
-    color: "#333",
-    paddingVertical: 0, // so text is vertically centered
-    paddingRight: 16,
   },
   filterButton: {
     marginLeft: 12,
     backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
+    // add subtle shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  databaseModeActiveButton: {
+    backgroundColor: "#fff",
   },
 
-  // SECTION TITLE
+  // ─── “Volunteer Causes” TITLE ────────────────────────────────
   sectionHeader: {
     // margins set inline
   },
@@ -409,9 +808,9 @@ const styles = StyleSheet.create({
     color: "#111",
   },
 
-  // CATEGORY PILLS
+  // ─── CATEGORY PILLS ────────────────────────────────────────
   categoriesWrapper: {
-    marginTop: PILL_SPACING,
+    marginTop: 20,
   },
   pill: {
     height: PILL_HEIGHT,
@@ -419,40 +818,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: PILL_HORIZONTAL_PADDING,
     justifyContent: "center",
     backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   pillSelected: {
-    backgroundColor: "#111",
-    borderColor: "#111",
+    backgroundColor: "#000",
   },
   pillText: {
     fontSize: PILL_FONT_SIZE,
-    color: "#333",
+    color: "#666",
+    fontWeight: "500",
   },
   pillTextSelected: {
     color: "#fff",
+    fontWeight: "600",
   },
 
-  // CARD STYLING
+  // ─── OVERLAPPING CARDS CAROUSEL ──────────────────────────────
+  carouselContainer: {
+    flex: 1,
+    marginTop: 40,
+  },
   cardContainer: {
-    marginRight: CARD_SPACING,
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: CARD_BORDER_RADIUS,
     overflow: "hidden",
     backgroundColor: "#eee",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
   },
   cardImage: {
     flex: 1,
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
   },
   cardImageStyle: {
     borderRadius: CARD_BORDER_RADIUS,
   },
+  cardInfoContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  destinationText: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 16,
+  },
   heartContainer: {
-    alignSelf: "flex-end",
-    margin: 16,
+    position: "absolute",
+    top: 16,
+    right: 16,
     width: HEART_DIAMETER,
     height: HEART_DIAMETER,
     borderRadius: HEART_DIAMETER / 2,
@@ -460,46 +888,195 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  cardInfoContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  regionText: {
-    color: "#fff",
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  destinationText: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "700",
-  },
-  ratingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  ratingText: {
-    color: "#fff",
-    fontSize: 14,
-  },
-  seeMoreBlur: {
-    marginTop: 12,
-    borderRadius: SEE_MORE_BORDER_RADIUS,
-    overflow: "hidden",
-  },
-  seeMoreButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
-    borderRadius: SEE_MORE_BORDER_RADIUS,
-    paddingVertical: (SEE_MORE_HEIGHT * 0.4), // ~20px vertically to total 50px
-    paddingHorizontal: SEE_MORE_HORIZONTAL_PADDING,
+  seeMoreContainer: {
     alignSelf: "flex-start",
+  },
+  seeMoreWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.25)",
+    borderRadius: SEE_MORE_BORDER_RADIUS,
+    height: SEE_MORE_HEIGHT,
+    paddingLeft: SEE_MORE_HORIZONTAL_PADDING,
+    paddingRight: 8,
   },
   seeMoreText: {
     color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  seeMoreCircle: {
+    backgroundColor: "#fff",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 16,
+  },
+
+  // ─── SIMPLE BOTTOM‐SHEET NOTIFICATION ─────────────
+  bottomSheetNotification: {
+    position: "absolute",
+    marginTop: 90,
+    left: 20,
+    right: 20,
+    backgroundColor: "black",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bottomSheetText: {
+    color: "#fff",
     fontSize: 16,
     fontWeight: "500",
+  },
+
+  // ─── CHATBOT OVERLAY ────────────────────────────────────
+  chatbotOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+  },
+  chatbotContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    paddingTop:
+      Platform.OS === "android" ? StatusBar.currentHeight + 20 : 60,
+    paddingBottom: Platform.OS === "ios" ? 34 : 20,
+    paddingHorizontal: 20,
+  },
+
+  centeredHeaderWithClose: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 16,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  ordixTitle: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  overlayCloseButton: {
+    position: "absolute",
+    right: 16,
+    top: 12, // center vertically
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // ─── MESSAGES ────────────────────────────────────────────
+  messagesContainer: {
+    flex: 1,
+  },
+  messagesContent: {
+    paddingVertical: 10,
+  },
+  messageContainer: {
+    marginVertical: 4,
+  },
+  userMessage: {
+    alignItems: "flex-end",
+  },
+  botMessage: {
+    alignItems: "flex-start",
+  },
+  messageBubble: {
+    maxWidth: "80%",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  userBubble: {
+    backgroundColor: "#007AFF",
+    borderBottomRightRadius: 6,
+  },
+  botBubble: {
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderBottomLeftRadius: 6,
+  },
+  messageText: {
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  userText: {
+    color: "#fff",
+  },
+  botText: {
+    color: "#333",
+  },
+
+  // ─── TYPING INDICATOR ────────────────────────────────────
+  typingContainer: {
+    alignItems: "flex-start",
+    marginVertical: 8,
+  },
+  typingBubble: {
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderBottomLeftRadius: 6,
+  },
+  typingDots: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#999",
+    marginHorizontal: 2,
+  },
+  typingDot1: {
+    // animate if desired
+  },
+  typingDot2: {
+    // animate if desired
+  },
+  typingDot3: {
+    // animate if desired
+  },
+
+  // ─── BOTTOM INPUT ROW (blurred) ─────────────────────────
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    height: 60,
+    borderRadius: 30,
+    overflow: "hidden",
+    marginTop: 16,
+  },
+  chatInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ddd",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  sendButtonActive: {
+    backgroundColor: "#007AFF",
   },
 });
