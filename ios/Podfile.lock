@@ -1922,6 +1922,8 @@ PODS:
     - React-utils (= 0.76.9)
   - RNCAsyncStorage (1.23.1):
     - React-Core
+  - RNCClipboard (1.16.2):
+    - React-Core
   - RNCMaskedView (0.3.2):
     - DoubleConversion
     - glog
@@ -2003,6 +2005,8 @@ PODS:
     - React
     - React-Core
     - Turf
+  - RNPermissions (5.4.1):
+    - React-Core
   - RNReanimated (3.16.7):
     - DoubleConversion
     - glog
@@ -2239,6 +2243,7 @@ DEPENDENCIES:
   - ReactCommon (from `../node_modules/react-native/ReactCommon`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
+  - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
   - "RNCMaskedView (from `../node_modules/@react-native-masked-view/masked-view`)"
   - "RNCPicker (from `../node_modules/@react-native-picker/picker`)"
   - RNDeviceInfo (from `../node_modules/react-native-device-info`)
@@ -2246,6 +2251,7 @@ DEPENDENCIES:
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNKeychain (from `../node_modules/react-native-keychain`)
   - "rnmapbox-maps (from `../node_modules/@rnmapbox/maps`)"
+  - RNPermissions (from `../node_modules/react-native-permissions`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
@@ -2456,6 +2462,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNCAsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
+  RNCClipboard:
+    :path: "../node_modules/@react-native-clipboard/clipboard"
   RNCMaskedView:
     :path: "../node_modules/@react-native-masked-view/masked-view"
   RNCPicker:
@@ -2470,6 +2478,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-keychain"
   rnmapbox-maps:
     :path: "../node_modules/@rnmapbox/maps"
+  RNPermissions:
+    :path: "../node_modules/react-native-permissions"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -2585,6 +2595,7 @@ SPEC CHECKSUMS:
   ReactCodegen: f853a20cc9125c5521c8766b4b49375fec20648b
   ReactCommon: 300d8d9c5cb1a6cd79a67cf5d8f91e4d477195f9
   RNCAsyncStorage: aa75595c1aefa18f868452091fa0c411a516ce11
+  RNCClipboard: e1d17c9d093d8129ef50b39b63a17a0e8ccd0ade
   RNCMaskedView: 54acd88ba86f93756d2d88003a931cfc1c0843af
   RNCPicker: 0e683a85cae99a8a739e97a49f269a4630de0a01
   RNDeviceInfo: 900bd20e1fd3bfd894e7384cc4a83880c0341bd3
@@ -2592,6 +2603,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: 32336458ef842088a459ccfcc10b583186de2633
   RNKeychain: 6aa400162221d6c12e6b6a34722a85136e686f2b
   rnmapbox-maps: 0eca9a44a883564bfbcbbb649ba3087224612fd6
+  RNPermissions: 2bde0f50340b36bef585008b5762500ca8c277d6
   RNReanimated: 6d22a1aec06a9787b797bc0c40fc2779be0599a5
   RNScreens: 295d9c0aaeb7f680d03d7e9b476569a4959aae89
   RNSVG: 8542aa11770b27563714bbd8494a8436385fc85f

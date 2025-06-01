@@ -1,4 +1,6 @@
-import React, { useState, useContext, useRef, useMemo, useEffect } from 'react';
+// DeleteScreen.js
+
+import React, { useState, useContext } from 'react';
 import {
   View,
   TextInput,
@@ -6,10 +8,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
   Dimensions,
+  Platform,
   Alert,
+  Image,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,117 +19,287 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from './AuthContext';
 
-// scaling
 const { width, height } = Dimensions.get('window');
 const baseW = 428;
 const baseH = 926;
 const scale = s => (width / baseW) * s;
 const vScale = s => (height / baseH) * s;
-const PALETTE = ['#FFF6E7', '#FFF0D4', '#FFE8C9', '#333333'];
 
 export default function DeleteScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [visible, setVisible] = useState(false);
-  const { deleteAccount, sendDeletionEmail } = useContext(AuthContext);
+
+  const { deleteAccount } = useContext(AuthContext);
   const nav = useNavigation();
 
   const handleDelete = async () => {
+    if (!email.trim() || !password) {
+      return Alert.alert('Error', 'Please enter both email and password.');
+    }
     try {
-      await deleteAccount(email, password);
+      await deleteAccount(email.trim(), password);
       Alert.alert('Deleted', 'Your account has been deleted.');
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Could not delete. Check your credentials.');
     }
   };
 
-  const handleResend = async () => {
-    try {
-      await sendDeletionEmail(email);
-      Alert.alert('Sent', 'Deletion email resent.');
-    } catch {
-      Alert.alert('Error', 'Could not resend email.');
-    }
-  };
-
   return (
-    <GestureHandlerRootView style={{ flex:1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
         {/* Background blobs */}
-        <View style={styles.blob1} />
-        <View style={styles.blob2} />
-        <View style={styles.blob3} />
-        <View style={styles.blob4} />
+        <View style={styles.topRightBlob} />
+        <View style={styles.bottomLeftBlob} />
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS==='ios' ? 'padding' : undefined}
-          style={styles.inner}
+        {/* Diagonal image & overlay */}
+        <Image
+          source={{ uri: 'https://via.placeholder.com/800x800.png?text=Diagonal+Image' }}
+          style={styles.diagonalImage}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['rgba(248,248,248,0)', 'rgba(248,248,248,1)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.diagonalOverlay}
+        />
+
+        {/* Back button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => nav.goBack()}
         >
-          <Text style={styles.header}>Delete Account</Text>
+          <View style={styles.backCircle}>
+            <Ionicons name="chevron-back" size={scale(20)} color="#444" />
+          </View>
+        </TouchableOpacity>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#aaa"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+        {/* Main form */}
+        <View style={styles.content}>
+          <Text style={styles.header}>Don't Go!</Text>
 
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.inputFlex}
-              placeholder="Password"
-              placeholderTextColor="#aaa"
-              secureTextEntry={!visible}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <TouchableOpacity onPress={()=>setVisible(v=>!v)}>
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Email</Text>
+            <View style={styles.inputWrapper}>
               <Ionicons
-                name={visible?'eye':'eye-off'}
+                name="mail-outline"
                 size={scale(20)}
-                color="#aaa"
+                color="#888"
+                style={styles.inputIcon}
               />
-            </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor="#AAA"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
           </View>
 
-          <TouchableOpacity onPress={handleDelete} activeOpacity={0.85}>
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={scale(20)}
+                color="#888"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor="#AAA"
+                secureTextEntry={!visible}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setVisible(v => !v)}
+                style={{ marginLeft: scale(8) }}
+              >
+                <Ionicons
+                  name={visible ? 'eye-outline' : 'eye-off-outline'}
+                  size={scale(20)}
+                  color="#888"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Delete Button */}
+          <TouchableOpacity
+            onPress={handleDelete}
+            activeOpacity={0.8}
+            style={styles.deleteButton}
+          >
             <LinearGradient
-              colors={['#ff3b3b','#ff6b6b']}
-              style={styles.mainBtn}
+              colors={['#ff3b3b', '#ff6b6b']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.deleteGradient}
             >
-              <Text style={styles.mainText}>Delete Account</Text>
+              <Text style={styles.deleteText}>Delete Account</Text>
             </LinearGradient>
           </TouchableOpacity>
 
-    
-
-          <TouchableOpacity onPress={()=>nav.navigate('Login')}>
-            <Text style={styles.link}>Cancel and go back</Text>
+          {/* Cancel Link */}
+          <TouchableOpacity onPress={() => nav.navigate('Login')}>
+            <Text style={styles.cancelLink}>Cancel and go back</Text>
           </TouchableOpacity>
-        </KeyboardAvoidingView>
+        </View>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
 }
 
-const B = width * 0.8;
 const styles = StyleSheet.create({
-  container:{ flex:1, backgroundColor:PALETTE[0] },
-  blob1:{position:'absolute',top:-B*0.3,left:-B*0.3,width:B,height:B,backgroundColor:PALETTE[2],borderRadius:B/2},
-  blob2:{position:'absolute',top:-B*0.2,right:-B*0.4,width:B*1.2,height:B*1.2,backgroundColor:PALETTE[1],borderRadius:B*0.6},
-  blob3:{position:'absolute',bottom:-B*0.5,left:-B*0.5,width:B*1.4,height:B,backgroundColor:PALETTE[1],borderRadius:B/2},
-  blob4:{position:'absolute',bottom:-B*0.4,right:-B*0.2,width:B,height:B*0.8,backgroundColor:PALETTE[2],borderRadius:B*0.5},
-  inner:{flex:1,justifyContent:'center',padding:scale(20)},
-  header:{fontSize:scale(28),fontWeight:'700',color:PALETTE[3],textAlign:'center',marginBottom:vScale(24)},
-  input:{height:vScale(48),borderWidth:1,borderColor:PALETTE[2],borderRadius:scale(25),paddingHorizontal:scale(20),marginBottom:vScale(16),backgroundColor:PALETTE[0],fontSize:scale(16),color:PALETTE[3]},
-  passwordContainer:{flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:PALETTE[2],borderRadius:scale(25),paddingHorizontal:scale(20),marginBottom:vScale(16),height:vScale(48),backgroundColor:PALETTE[0]},
-  inputFlex:{flex:1,fontSize:scale(16),color:PALETTE[3]},
-  mainBtn:{borderRadius:scale(25),paddingVertical:vScale(14),alignItems:'center',shadowColor:'#ff6b6b',shadowOpacity:0.6,shadowOffset:{width:0,height:vScale(4)},shadowRadius:scale(6),elevation:6,marginBottom:vScale(12)},
-  mainText:{color:PALETTE[0],fontSize:scale(16),fontWeight:'700'},
-  resendLink:{alignItems:'center',marginBottom:vScale(24)},
-  resendText:{color:PALETTE[3],textDecorationLine:'underline',fontSize:scale(14)},
-  link:{color:PALETTE[3],textAlign:'center',fontSize:scale(16)},
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F8F8',
+  },
+
+  // Background blobs
+  topRightBlob: {
+    position: 'absolute',
+    top: -height * 0.15,
+    right: -width * 0.3,
+    width: width * 0.8,
+    height: width * 0.8,
+    borderRadius: (width * 0.8) / 2,
+    backgroundColor: 'rgba(200,230,255,0.3)',
+    zIndex: 0,
+  },
+  bottomLeftBlob: {
+    position: 'absolute',
+    bottom: -height * 0.15,
+    left: -width * 0.3,
+    width: width * 0.75,
+    height: width * 0.75,
+    borderRadius: (width * 0.75) / 2,
+    backgroundColor: 'rgba(255,230,200,0.3)',
+    zIndex: 0,
+  },
+
+  // Diagonal image & overlay
+  diagonalImage: {
+    position: 'absolute',
+    width: width * 1.4,
+    height: width * 1.4,
+    top: height * 0.2,
+    left: -width * 0.2,
+    opacity: 0.15,
+    transform: [{ rotate: '45deg' }],
+    zIndex: 1,
+  },
+  diagonalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 2,
+  },
+
+  // Back button
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? scale(30) : scale(50),
+    left: scale(20),
+    zIndex: 10,
+  },
+  backCircle: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  // Main form content
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: scale(30),
+    paddingTop: vScale(0),
+    zIndex: 3,
+  },
+  header: {
+    fontSize: scale(32),
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: vScale(40),
+    lineHeight: scale(40),
+  },
+
+  // Input fields
+  inputContainer: {
+    marginBottom: vScale(20),
+  },
+  inputLabel: {
+    fontSize: scale(14),
+    color: '#555',
+    marginBottom: vScale(6),
+    fontWeight: '500',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: scale(25),
+    paddingHorizontal: scale(16),
+    height: vScale(48),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputIcon: {
+    marginRight: scale(8),
+  },
+  input: {
+    flex: 1,
+    fontSize: scale(16),
+    color: '#333',
+    paddingVertical: 0,
+  },
+
+  // Delete button
+  deleteButton: {
+    marginBottom: vScale(20),
+  },
+  deleteGradient: {
+    borderRadius: scale(25),
+    height: vScale(50),
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#ff6b6b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  deleteText: {
+    color: '#FFF',
+    fontSize: scale(16),
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+
+  // Cancel link
+  cancelLink: {
+    color: '#666',
+    textAlign: 'center',
+    fontSize: scale(14),
+    textDecorationLine: 'underline',
+  },
 });

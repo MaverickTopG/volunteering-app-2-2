@@ -1,221 +1,379 @@
-import React, { useState, useRef, useContext, useMemo, useEffect } from 'react';
+// RegisterScreen.js
+
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   SafeAreaView,
-  KeyboardAvoidingView,
   StyleSheet,
   Dimensions,
   Platform,
-  ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from './AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// Helpers
-const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-const scale = s => (width / guidelineBaseWidth) * s;
-const vScale = s => (height / guidelineBaseHeight) * s;
-const PALETTE = ['#FFF6E7', '#FFF0D4', '#FFE8C9', '#333333'];
+const { width, height } = Dimensions.get('window');
+const scale  = (s) => (width  / guidelineBaseWidth)  * s;
+const vScale = (s) => (height / guidelineBaseHeight) * s;
 
 export default function RegisterScreen() {
   const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [stage, setStage] = useState('confirm'); // confirm | loading | done
-  const sheetRef = useRef(null);
-  const snapPoints = useMemo(() => ['45%', '80%'], []);
+  const [lastName,  setLastName]  = useState('');
+  const [email,     setEmail]     = useState('');
+  const [password,  setPassword]  = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+
   const { signUp } = useContext(AuthContext);
-  const navigation = useNavigation();
-  
-  const openSheet = () => {
-    setStage('confirm');
-    sheetRef.current?.snapToIndex(0);
-  };
+  const nav        = useNavigation();
 
-  const handleOk = async () => {
-    setStage('loading');
-    const ok = await signUp({ firstName, lastName, email, password });
-    setStage(ok ? 'done' : 'confirm');
-  };
-
-  const closeSheet = () => sheetRef.current?.close();
-
-  // Enable resend after 10s when done
-  const [canResend, setCanResend] = useState(false);
-  useEffect(() => {
-    if (stage === 'done') {
-      setCanResend(false);
-      const t = setTimeout(() => setCanResend(true), 10000);
-      return () => clearTimeout(t);
+  // Attempt to register
+  const handleRegister = async () => {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
+      return Alert.alert('Error', 'Please fill in all fields.');
     }
-  }, [stage]);
+    try {
+      await signUp({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), password });
+      Alert.alert('Success', 'Account created successfully.');
+    } catch {
+      Alert.alert('Error', 'Registration failed.');
+    }
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        {/* organic shapes */}
-        <View style={styles.blobA} />
-        <View style={styles.blobB} />
-        <View style={styles.blobC} />
-        <View style={styles.blobD} />
+        {/* ─────────────────────────────────────────────
+             BACKGROUND BLOBS
+        ───────────────────────────────────────────── */}
+        <View style={styles.topRightBlob} />
+        <View style={styles.bottomLeftBlob} />
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.inner}
+        {/* ─────────────────────────────────────────────
+             DIAGONAL IMAGE & OVERLAY
+        ───────────────────────────────────────────── */}
+        <Image
+          source={{ uri: 'https://via.placeholder.com/800x800.png?text=Diagonal+Image' }}
+          style={styles.diagonalImage}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['rgba(248,248,248,0)', 'rgba(248,248,248,1)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.diagonalOverlay}
+        />
+
+        {/* ─────────────────────────────────────────────
+             BACK BUTTON
+        ───────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => nav.goBack()}
         >
-          <LinearGradient
-            colors={['rgba(255,232,201,0.8)', 'rgba(255,240,212,0.8)']}
-            style={styles.header}
-          >
-            <Text style={styles.title}>Create Account</Text>
-          </LinearGradient>
+          <View style={styles.backCircle}>
+            <Ionicons name="chevron-back" size={scale(20)} color="#444" />
+          </View>
+        </TouchableOpacity>
 
-          <View style={styles.form}>
-            {[
-              { value: firstName, setter: setFirstName, placeholder: 'First Name' },
-              { value: lastName, setter: setLastName, placeholder: 'Last Name' },
-              { value: email, setter: setEmail, placeholder: 'Email', props: { keyboardType: 'email-address', autoCapitalize: 'none' } },
-              { value: password, setter: setPassword, placeholder: 'Password', props: { secureTextEntry: true } },
-            ].map((fld, i) => (
-              <View key={i} style={styles.inputBox}>
-                <TextInput
-                  value={fld.value}
-                  onChangeText={fld.setter}
-                  placeholder={fld.placeholder}
-                  placeholderTextColor="#aaa"
-                  style={styles.input}
-                  {...(fld.props || {})}
+        {/* ─────────────────────────────────────────────
+             MAIN REGISTER FORM
+        ───────────────────────────────────────────── */}
+        <View style={styles.content}>
+          <Text style={styles.header}>
+            Create your{'\n'}NexoLink account
+          </Text>
+
+          {/* First Name */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>First Name</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="person-outline"
+                size={scale(20)}
+                color="#888"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="John"
+                placeholderTextColor="#AAA"
+                autoCapitalize="words"
+                value={firstName}
+                onChangeText={setFirstName}
+              />
+            </View>
+          </View>
+
+          {/* Last Name */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Last Name</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="person-outline"
+                size={scale(20)}
+                color="#888"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Doe"
+                placeholderTextColor="#AAA"
+                autoCapitalize="words"
+                value={lastName}
+                onChangeText={setLastName}
+              />
+            </View>
+          </View>
+
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Email</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="mail-outline"
+                size={scale(20)}
+                color="#888"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor="#AAA"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
+          </View>
+
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={scale(20)}
+                color="#888"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor="#AAA"
+                secureTextEntry={!isVisible}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setIsVisible((v) => !v)}
+                style={{ marginLeft: scale(8) }}
+              >
+                <Ionicons
+                  name={isVisible ? 'eye-outline' : 'eye-off-outline'}
+                  size={scale(20)}
+                  color="#888"
                 />
-              </View>
-            ))}
+              </TouchableOpacity>
+            </View>
+          </View>
 
-            <TouchableOpacity activeOpacity={0.85} onPress={openSheet}>
-              <LinearGradient colors={[PALETTE[1], PALETTE[2]]} style={styles.submitBtn}>
-                <Text style={styles.submitText}>Sign Up</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+          {/* REGISTER Button */}
+          <TouchableOpacity
+            onPress={handleRegister}
+            activeOpacity={0.8}
+            style={styles.loginButton}
+          >
+            <Text style={styles.loginText}>REGISTER</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.link}>Already have an account? Log in</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('Delete')}>
-              <Text style={styles.link}>Delete Account</Text>
+          {/* Login + Delete Prompts */}
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>Already have an account?</Text>
+            <TouchableOpacity onPress={() => nav.navigate('Login')}>
+              <Text style={styles.signupLink}> Login</Text>
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
-
-        <BottomSheet
-          ref={sheetRef}
-          index={-1}
-          snapPoints={snapPoints}
-          enablePanDownToClose={stage !== 'loading'}
-          backgroundStyle={styles.sheetBackground}
-          handleIndicatorStyle={styles.handleIndicator}
-          backdropComponent={() => <View style={styles.backdrop} />}
-        >
-          <BottomSheetView style={styles.sheetContent}>
-            {stage === 'confirm' && (
-              <>
-                <Text style={styles.sheetTitle}>Hi {firstName || 'there'}!</Text>
-                <Text style={styles.sheetMsg}>
-                  Press OK to create your account. We’ll send a verification email to{' '}
-                  <Text style={{ fontWeight: '600' }}>{email}</Text>.
-                </Text>
-                <TouchableOpacity style={styles.okBtn} onPress={handleOk}>
-                  <Text style={[styles.submitText, { color: '#fff' }]}>OK</Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {stage === 'loading' && (
-              <View style={styles.loadingWrap}>
-                <ActivityIndicator size="large" color="#333" />
-                <Text style={styles.sheetMsg}>Creating your account…</Text>
-              </View>
-            )}
-            {stage === 'done' && (
-              <>
-                <Text style={styles.sheetTitle}>All Set!</Text>
-                <Text style={styles.sheetMsg}>
-                  We’ve emailed{' '}
-                  <Text style={{ fontWeight: '600' }}>{email}</Text>. Confirm it to start!
-                </Text>
-                {canResend && (
-                  <TouchableOpacity style={styles.resendBtn} onPress={handleOk}>
-                    <Text style={styles.resendText}>Resend Email</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity style={styles.submitBtn} onPress={closeSheet}>
-                  <Text style={styles.submitText}>Close</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </BottomSheetView>
-        </BottomSheet>
+          <TouchableOpacity onPress={() => nav.navigate('Delete')} style={styles.deleteLinkContainer}>
+            <Text style={styles.deleteLink}>Delete?</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
 }
 
-const B = width * 0.7;
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: PALETTE[0] },
-  blobA: { position: 'absolute', top: -B * 0.4, left: -B * 0.3, width: B, height: B, backgroundColor: PALETTE[2], borderRadius: B / 2 },
-  blobB: { position: 'absolute', top: -B * 0.2, right: -B * 0.4, width: B * 1.1, height: B * 1.1, backgroundColor: PALETTE[1], borderRadius: B * 0.55 },
-  blobC: { position: 'absolute', bottom: -B * 0.5, left: -B * 0.5, width: B * 1.4, height: B, backgroundColor: PALETTE[1], borderRadius: B / 2 },
-  blobD: { position: 'absolute', bottom: -B * 0.3, right: -B * 0.2, width: B, height: B * 0.8, backgroundColor: PALETTE[2], borderRadius: B * 0.5 },
-  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: scale(20) },
-  header: { marginBottom: vScale(30), paddingVertical: vScale(15), alignItems: 'center', borderRadius: scale(25) },
-  title: { fontSize: scale(28), fontWeight: '700', color: PALETTE[3] },
-  form: { marginTop: vScale(20) },
-  inputBox: { borderColor: PALETTE[2], borderWidth: 1, borderRadius: scale(25), backgroundColor: PALETTE[0], marginBottom: vScale(15) },
-  input: { height: vScale(48), paddingHorizontal: scale(20), fontSize: scale(16), color: PALETTE[3] },
-  submitBtn: { backgroundColor: PALETTE[2], borderRadius: scale(25), paddingVertical: vScale(14), alignItems: 'center', marginBottom: vScale(16) },
-  submitText: { fontSize: scale(16), fontWeight: '600', color: PALETTE[3] },
-  okBtn: { backgroundColor: '#333', borderRadius: scale(25), paddingVertical: vScale(14), alignItems: 'center', marginTop: vScale(16) },
-  link: { color: PALETTE[3], textAlign: 'center', fontSize: scale(14), marginBottom: vScale(10) },
-  // BottomSheet styles
-  sheetBackground: {
-    backgroundColor: PALETTE[1],
-    borderTopLeftRadius: scale(24),
-    borderTopRightRadius: scale(24),
-  },
-  handleIndicator: {
-    backgroundColor: '#ccc',
-    width: scale(80),
-    height: scale(6),
-    borderRadius: scale(3),
-  },
-  sheetContent: {
+  container: {
     flex: 1,
-    paddingHorizontal: scale(24),
-    paddingTop: vScale(16),
+    backgroundColor: '#F8F8F8',
   },
-  sheetInner: {
-    flexGrow: 1,
-    paddingBottom: vScale(32),
+
+  // ─── BACKGROUND BLOBS ───────────────────────────────────────────
+  topRightBlob: {
+    position: 'absolute',
+    top: -height * 0.15,
+    right: -width * 0.3,
+    width: width * 0.8,
+    height: width * 0.8,
+    borderRadius: (width * 0.8) / 2,
+    backgroundColor: 'rgba(200,230,255,0.3)',
+    zIndex: 0,
   },
-  sheetTitle: {
-    fontSize: scale(22),
+  bottomLeftBlob: {
+    position: 'absolute',
+    bottom: -height * 0.15,
+    left: -width * 0.3,
+    width: width * 0.75,
+    height: width * 0.75,
+    borderRadius: (width * 0.75) / 2,
+    backgroundColor: 'rgba(255,230,200,0.3)',
+    zIndex: 0,
+  },
+
+  // ─── DIAGONAL IMAGE & OVERLAY ─────────────────────────────────
+  diagonalImage: {
+    position: 'absolute',
+    width: width * 1.4,
+    height: width * 1.4,
+    top: height * 0.2,
+    left: -width * 0.2,
+    opacity: 0.15,
+    transform: [{ rotate: '45deg' }],
+    zIndex: 1,
+  },
+  diagonalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 2,
+  },
+
+  // ─── BACK BUTTON ───────────────────────────────────────────────
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? scale(30) : scale(50),
+    left: scale(20),
+    zIndex: 10,
+  },
+  backCircle: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  // ─── MAIN FORM CONTENT ──────────────────────────────────────
+  content: {
+    flex: 1,
+    justifyContent: 'flex-start',        // moved content up
+    paddingHorizontal: scale(30),
+    paddingTop: vScale(120),               // reduced top padding
+    zIndex: 3,
+  },
+  header: {
+    fontSize: scale(32),
     fontWeight: '700',
+    color: '#333',
     textAlign: 'center',
-    marginBottom: vScale(12),
+    marginBottom: vScale(30),
+    lineHeight: scale(40),
   },
-  sheetMsg: {
+
+  // ─── INPUT FIELDS ─────────────────────────────────────────────
+  inputContainer: {
+    marginBottom: vScale(20),
+  },
+  inputLabel: {
+    fontSize: scale(14),
+    color: '#555',
+    marginBottom: vScale(6),
+    fontWeight: '500',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: scale(25),
+    paddingHorizontal: scale(16),
+    height: vScale(48),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputIcon: {
+    marginRight: scale(8),
+  },
+  input: {
+    flex: 1,
     fontSize: scale(16),
-    textAlign: 'center',
-    marginBottom: vScale(16),
+    color: '#333',
+    paddingVertical: 0,
   },
-  loadingWrap: { alignItems: 'center', marginTop: vScale(20) },
-  resendBtn: { alignSelf: 'center', padding: vScale(8), marginBottom: vScale(16) },
-  resendText: { color: PALETTE[3], textDecorationLine: 'underline', fontSize: scale(14) },
+
+  // ─── REGISTER BUTTON (styled same as LOGIN) ─────────────────────
+  loginButton: {
+    backgroundColor: '#333',
+    borderRadius: scale(25),
+    height: vScale(50),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: vScale(20),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  loginText: {
+    color: '#FFF',
+    fontSize: scale(16),
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+
+  // ─── LOGIN PROMPT ────────────────────────────────────────────
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  signupText: {
+    color: '#666',
+    fontSize: scale(14),
+  },
+  signupLink: {
+    color: '#333',
+    fontSize: scale(14),
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+
+  // ─── DELETE LINK ─────────────────────────────────────────────
+  deleteLinkContainer: {
+    marginTop: vScale(10),
+    alignItems: 'center',
+  },
+  deleteLink: {
+    color: '#FF4444',
+    fontSize: scale(14),
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
 });

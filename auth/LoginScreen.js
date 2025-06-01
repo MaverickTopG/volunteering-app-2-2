@@ -1,4 +1,6 @@
-import React, { useState, useContext, useRef, useMemo, useEffect } from 'react';
+// LoginScreen.js
+
+import React, { useState, useContext, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,199 +12,331 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { AuthContext } from './AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
-// scaling helpers
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
-const scale  = s => (width  / guidelineBaseWidth)  * s;
-const vScale = s => (height / guidelineBaseHeight) * s;
-const PALETTE = ['#FFF6E7', '#FFF0D4', '#FFE8C9', '#333333'];
+const scale  = (s) => (width  / guidelineBaseWidth)  * s;
+const vScale = (s) => (height / guidelineBaseHeight) * s;
 
 export default function LoginScreen() {
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
   const [isVisible, setIsVisible] = useState(false);
 
-  const [fpStage, setFpStage]   = useState('form');
-  const [fpEmail, setFpEmail]   = useState('');
-  const [canResend, setCanResend] = useState(false);
-  const fpSheetRef = useRef(null);
-  const fpSnapPts = useMemo(() => ['45%', '100%'], []);
+  const { signIn } = useContext(AuthContext);
+  const nav        = useNavigation();
 
-  const { signIn, resetPassword } = useContext(AuthContext);
-  const nav = useNavigation();
-
-  // Resend timer
-  useEffect(() => {
-    if (fpStage === 'done') {
-      setCanResend(false);
-      const timer = setTimeout(() => setCanResend(true), 10000);
-      return () => clearTimeout(timer);
-    }
-  }, [fpStage]);
-
+  // Attempt to sign in
   const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      return Alert.alert('Error', 'Please enter both email and password.');
+    }
     try {
-      await signIn(email, password);
+      await signIn(email.trim(), password);
       Alert.alert('Success', 'Logged in successfully.');
     } catch {
       Alert.alert('Error', 'Invalid credentials.');
     }
   };
 
-  const openForgot = () => {
-    setFpStage('form');
-    setFpEmail('');
-    fpSheetRef.current?.snapToIndex(0);
-  };
-
-  const sendReset = async () => {
-    if (!fpEmail) return Alert.alert('Error', 'Please enter email.');
-    setFpStage('loading');
-    const ok = await resetPassword(fpEmail);
-    if (!ok) {
-      Alert.alert('Error', 'Failed to send. Please try again.');
-      setFpStage('form');
-    } else {
-      setFpStage('done');
-    }
-  };
-
-  const closeSheet = () => fpSheetRef.current?.close();
-
   return (
-    <GestureHandlerRootView style={{ flex:1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        {/* four organic blobs */}
-        <View style={styles.blob1} />
-        <View style={styles.blob2} />
-        <View style={styles.blob3} />
-        <View style={styles.blob4} />
+        {/* ─────────────────────────────────────────────
+             BACKGROUND BLOBS
+        ───────────────────────────────────────────── */}
+        <View style={styles.topRightBlob} />
+        <View style={styles.bottomLeftBlob} />
 
+        {/* ─────────────────────────────────────────────
+             DIAGONAL IMAGE & OVERLAY
+        ───────────────────────────────────────────── */}
+        <Image
+          source={{ uri: 'https://via.placeholder.com/800x800.png?text=Diagonal+Image' }}
+          style={styles.diagonalImage}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={['rgba(248,248,248,0)', 'rgba(248,248,248,1)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.diagonalOverlay}
+        />
+
+        {/* ─────────────────────────────────────────────
+             BACK BUTTON
+        ───────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => nav.goBack()}
+        >
+          <View style={styles.backCircle}>
+            <Ionicons name="chevron-back" size={scale(20)} color="#444" />
+          </View>
+        </TouchableOpacity>
+
+        {/* ─────────────────────────────────────────────
+             MAIN LOGIN FORM
+        ───────────────────────────────────────────── */}
         <View style={styles.content}>
-          <Text style={styles.header}>Login</Text>
+          <Text style={styles.header}>
+            Welcome back{'\n'}to NexoLink
+          </Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#aaa"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.inputFlex}
-              placeholder="Password"
-              placeholderTextColor="#aaa"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!isVisible}
-            />
-            <TouchableOpacity onPress={() => setIsVisible(v=>!v)}>
-              <Ionicons name={isVisible?'eye':'eye-off'} size={scale(20)} color="#aaa" />
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Email</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="mail-outline"
+                size={scale(20)}
+                color="#888"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor="#AAA"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
+          </View>
+
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Password</Text>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={scale(20)}
+                color="#888"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor="#AAA"
+                secureTextEntry={!isVisible}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setIsVisible((v) => !v)}
+                style={{ marginLeft: scale(8) }}
+              >
+                <Ionicons
+                  name={isVisible ? 'eye-outline' : 'eye-off-outline'}
+                  size={scale(20)}
+                  color="#888"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* LOGIN Button */}
+          <TouchableOpacity
+            onPress={handleLogin}
+            activeOpacity={0.8}
+            style={styles.loginButton}
+          >
+            <Text style={styles.loginText}>LOGIN</Text>
+          </TouchableOpacity>
+
+          {/* Signup Prompt */}
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>New to NexoLink?</Text>
+            <TouchableOpacity onPress={() => nav.navigate('Register')}>
+              <Text style={styles.signupLink}> Sign up</Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={handleLogin} activeOpacity={0.85}>
-            <LinearGradient colors={[PALETTE[1],PALETTE[2]]} style={styles.submitBtn}>
-              <Text style={styles.submitText}>Submit</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={openForgot}>
-            <Text style={styles.link}>Forgot Password?</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => nav.navigate('Register')}>
-            <Text style={styles.link}>Don't have an account? Sign up</Text>
+          {/* Delete Button */}
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => nav.navigate('Delete')}
+          >
+            <Text style={styles.deleteText}>Delete Account</Text>
           </TouchableOpacity>
         </View>
-
-        <BottomSheet
-          ref={fpSheetRef}
-          index={-1}
-          snapPoints={fpSnapPts}
-          enablePanDownToClose={fpStage!=='loading'}
-          backgroundStyle={{ backgroundColor: PALETTE[1] }}
-        >
-          <BottomSheetView style={styles.sheet}>
-            <KeyboardAwareScrollView contentContainerStyle={styles.sheetInner}>
-              {fpStage==='form' && (
-                <>                
-                  <Text style={styles.sheetTitle}>Reset Password</Text>
-                  <Text style={styles.sheetMsg}>Enter your email and we'll send a link.</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor="#aaa"
-                    value={fpEmail}
-                    onChangeText={setFpEmail}
-                    onFocus={()=>fpSheetRef.current?.snapToIndex(1)}
-                    onBlur={()=>fpSheetRef.current?.snapToIndex(0)}
-                  />
-                  <TouchableOpacity style={styles.submitBtn} onPress={sendReset}>
-                    <Text style={styles.submitText}>Send</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-              {fpStage==='loading' && (
-                <View style={styles.loadingWrap}>
-                  <ActivityIndicator size="large" color="#333" />
-                  <Text style={styles.sheetMsg}>Sending...</Text>
-                </View>
-              )}
-              {fpStage==='done' && (
-                <>                
-                  <Text style={styles.sheetTitle}>Check your inbox!</Text>
-                  <Text style={styles.sheetMsg}>A link was sent to <Text style={{fontWeight:'600'}}>{fpEmail}</Text>.</Text>
-                  {canResend && (
-                    <TouchableOpacity style={styles.resendBtn} onPress={sendReset}>
-                      <Text style={styles.resendText}>Resend Email</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity style={styles.submitBtn} onPress={closeSheet}>
-                    <Text style={styles.submitText}>Close</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </KeyboardAwareScrollView>
-          </BottomSheetView>
-        </BottomSheet>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
 }
 
-const BLOB = width * 0.8;
 const styles = StyleSheet.create({
-  container: { flex:1, backgroundColor:PALETTE[0] },
-  blob1:{position:'absolute',top:-BLOB*0.3,left:-BLOB*0.3,width:BLOB,height:BLOB,backgroundColor:PALETTE[2],borderRadius:BLOB/2},
-  blob2:{position:'absolute',top:-BLOB*0.4,right:-BLOB*0.4,width:BLOB*1.2,height:BLOB*1.2,backgroundColor:PALETTE[1],borderRadius:BLOB*0.6},
-  blob3:{position:'absolute',bottom:-BLOB*0.5,left:-BLOB*0.5,width:BLOB*1.5,height:BLOB,backgroundColor:PALETTE[1],borderRadius:BLOB/2},
-  blob4:{position:'absolute',bottom:-BLOB*0.4,right:-BLOB*0.3,width:BLOB,height:BLOB*0.8,backgroundColor:PALETTE[2],borderRadius:BLOB*0.5},
-  content:{flex:1,justifyContent:'center',padding:scale(20)},
-  header:{fontSize:scale(28),fontWeight:'700',color:PALETTE[3],textAlign:'center',marginBottom:vScale(24)},
-  input:{height:vScale(48),backgroundColor:PALETTE[0],borderColor:PALETTE[2],borderWidth:1,paddingHorizontal:scale(16),borderRadius:scale(24),fontSize:scale(16),color:PALETTE[3],marginBottom:vScale(16)},
-  passwordContainer:{flexDirection:'row',alignItems:'center',borderWidth:1,borderColor:PALETTE[2],borderRadius:scale(24),paddingHorizontal:scale(16),marginBottom:vScale(16),height:vScale(48),backgroundColor:PALETTE[0]},
-  inputFlex:{flex:1,fontSize:scale(16),color:PALETTE[3]},
-  submitBtn:{borderRadius:scale(24),paddingVertical:vScale(14),alignItems:'center',backgroundColor:PALETTE[2],marginBottom:vScale(16)},
-  submitText:{color:PALETTE[3],fontSize:scale(16),fontWeight:'600'},
-  link:{color:PALETTE[3],textAlign:'center',fontSize:scale(14),marginBottom:vScale(8)},
-  sheet:{flex:1,backgroundColor:PALETTE[1]},
-  sheetInner:{flexGrow:1,padding:scale(20)},
-  sheetTitle:{fontSize:scale(22),fontWeight:'700',color:PALETTE[3],marginBottom:vScale(12)},
-  sheetMsg:{fontSize:scale(16),color:PALETTE[3],marginBottom:vScale(16)},
-  loadingWrap:{alignItems:'center',marginTop:vScale(20)},
-  resendBtn:{alignSelf:'center',padding:vScale(8),marginBottom:vScale(16)},
-  resendText:{color:PALETTE[3],textDecorationLine:'underline',fontSize:scale(14)},
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F8F8',
+  },
+
+  // ─── BACKGROUND BLOBS ───────────────────────────────────────────
+  topRightBlob: {
+    position: 'absolute',
+    top: -height * 0.15,
+    right: -width * 0.3,
+    width: width * 0.8,
+    height: width * 0.8,
+    borderRadius: (width * 0.8) / 2,
+    backgroundColor: 'rgba(200,230,255,0.3)',
+    zIndex: 0,
+  },
+  bottomLeftBlob: {
+    position: 'absolute',
+    bottom: -height * 0.15,
+    left: -width * 0.3,
+    width: width * 0.75,
+    height: width * 0.75,
+    borderRadius: (width * 0.75) / 2,
+    backgroundColor: 'rgba(255,230,200,0.3)',
+    zIndex: 0,
+  },
+
+  // ─── DIAGONAL IMAGE & OVERLAY ─────────────────────────────────
+  diagonalImage: {
+    position: 'absolute',
+    width: width * 1.4,
+    height: width * 1.4,
+    top: height * 0.2,
+    left: -width * 0.2,
+    opacity: 0.15,
+    transform: [{ rotate: '45deg' }],
+    zIndex: 1,
+  },
+  diagonalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 2,
+  },
+
+  // ─── BACK BUTTON ───────────────────────────────────────────────
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? scale(30) : scale(50),
+    left: scale(20),
+    zIndex: 10,
+  },
+  backCircle: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  // ─── MAIN FORM CONTENT ──────────────────────────────────────
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: scale(30),
+    paddingTop: vScale(0),
+    zIndex: 3, // keep above diagonal overlays
+  },
+  header: {
+    fontSize: scale(32),
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: vScale(40),
+    lineHeight: scale(40),
+  },
+
+  // ─── INPUT FIELDS ─────────────────────────────────────────────
+  inputContainer: {
+    marginBottom: vScale(20),
+  },
+  inputLabel: {
+    fontSize: scale(14),
+    color: '#555',
+    marginBottom: vScale(6),
+    fontWeight: '500',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: scale(25),
+    paddingHorizontal: scale(16),
+    height: vScale(48),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputIcon: {
+    marginRight: scale(8),
+  },
+  input: {
+    flex: 1,
+    fontSize: scale(16),
+    color: '#333',
+    paddingVertical: 0,
+  },
+
+  // ─── LOGIN BUTTON ─────────────────────────────────────────────
+  loginButton: {
+    backgroundColor: '#333',
+    borderRadius: scale(25),
+    height: vScale(50),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: vScale(20),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  loginText: {
+    color: '#FFF',
+    fontSize: scale(16),
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+
+  // ─── SIGNUP PROMPT ────────────────────────────────────────────
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  signupText: {
+    color: '#666',
+    fontSize: scale(14),
+  },
+  signupLink: {
+    color: '#333',
+    fontSize: scale(14),
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+
+  // ─── DELETE BUTTON ─────────────────────────────────────────────
+  deleteButton: {
+    marginTop: vScale(10),
+    alignSelf: 'center',
+  },
+  deleteText: {
+    color: '#FF4444',
+    fontSize: scale(14),
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
 });

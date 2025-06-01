@@ -98,7 +98,7 @@ const defaultTrips = [
 ];
 
 // Replace with your own secure mechanism
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "<YOUR_API_KEY_HERE>";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 
 export default function SearchScreen() {
   const navigation = useNavigation();
@@ -680,7 +680,7 @@ export default function SearchScreen() {
                   multiline
                   maxLength={500}
                   onSubmitEditing={sendMessage}
-                  keyboardAppearance="light"
+                  keyboardAppearance="dark"
                 />
                 <TouchableOpacity
                   style={[
@@ -1066,6 +1066,8 @@ const styles = StyleSheet.create({
     color: "#333",
     paddingVertical: 8,
     paddingHorizontal: 16,
+    top:0,
+    marginBottom:13
   },
   sendButton: {
     width: 40,
@@ -1075,6 +1077,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,
+    marginBottom:10
   },
   sendButtonActive: {
     backgroundColor: "#007AFF",

@@ -28,6 +28,8 @@ import RegisterScreen from "../../auth/RegisterScreen";
 import DeleteScreen from "../../auth/deleteScreen";
 import MapScreen from "../screens/MapScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import NexolinkLoginScreen from "../../auth/selectscreen";
+import AccountStackNavigator from "../screens/AccountScreen";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -96,6 +98,7 @@ const VolunteerLogsStack = () => {
         <Stack.Screen name="VolunteerLogs" component={VolunteerLogs} />
       ) : (
         <>
+          <Stack.Screen name="Inital" component={NexolinkLoginScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Delete" component={DeleteScreen} />
@@ -112,22 +115,7 @@ const VolunteerLogsStack = () => {
 /**
  * AccountStack: if user is logged in, show Profile; otherwise show Login/Register/Delete
  */
-const AccountStack = () => {
-  const { user } = useContext(AuthContext);
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {user ? (
-        <Stack.Screen name="Profile" component={ProfileScreen} />
-      ) : (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="Delete" component={DeleteScreen} />
-        </>
-      )}
-    </Stack.Navigator>
-  );
-};
+
 
 // ─── BOTTOM‐TAB CONFIGURATION ────────────────────────────────────────
 // We give each tab a “route” name that must exactly match what you call in navigation.navigate().
@@ -136,7 +124,7 @@ const TabArr = [
   { route: "Search",    icon: "home",       component: HomeStack },
   { route: "Volunteer", icon: "team",       component: VolunteerLogsStack },
   { route: "Map",       icon: "enviromento", component: MapScreen },
-  { route: "Account",   icon: "user",       component: AccountStack },
+  { route: "Account",   icon: "user",       component: AccountStackNavigator },
 ];
 
 // Helper: find index of a route name in the tab state
