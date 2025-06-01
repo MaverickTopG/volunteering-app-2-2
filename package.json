@@ -48,6 +48,8 @@
     "faker": "^5.5.3",
     "firebase": "^11.6.0",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.511.0",
+    "lucide-react-native": "^0.511.0",
     "memory-cache": "^0.2.0",
     "metro": "^0.81.0",
     "metro-config": "^0.81.0",
