@@ -1,531 +1,927 @@
-// VolunteerLogs.js
-import React, { useState, useEffect, useContext, useRef } from 'react';
+// VolunteerDashboard.js
+
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import {
   View,
   Text,
-  Modal,
   TouchableOpacity,
   StyleSheet,
+  Dimensions,
+  SafeAreaView,
+  Modal,
+  TextInput,
+  ActivityIndicator,
   FlatList,
   Alert,
-  ActivityIndicator,
-  SafeAreaView,
-  Dimensions,
-  Animated,
-  Easing,
-  TextInput,
+  ScrollView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Progress from 'react-native-progress';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Circle } from 'react-native-progress';
 import { AuthContext } from '../../auth/AuthContext';
 import { db } from '../../auth/firebase';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import { useNavigation } from '@react-navigation/native';
-import { useFocusEffect } from '@react-navigation/native';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+} from 'firebase/firestore';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// <-- pull from your shop file -->
-import { themePacks, seasonal } from '../screens/shop';
+const { width } = Dimensions.get('window');
+const CARD_PADDING = 16;
+const CARD_BORDER_RADIUS = 24;
+const CHART_HEIGHT = 120;
+const BAR_SPACING = 4;
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-const { width, height } = Dimensions.get('window');
-const guidelineBaseWidth = 428;
-const guidelineBaseHeight = 926;
-const scale = size => (width  / guidelineBaseWidth)  * size;
-const verticalScale = size => (height / guidelineBaseHeight) * size;
+/**
+ * Helper: Given a Date, returns ISO weekday index: 1=Mon … 7=Sun
+ */
+function isoWeekdayIndex(date) {
+  const d = new Date(date);
+  let day = d.getDay();
+  if (day === 0) day = 7;
+  return day;
+}
 
-const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+/**
+ * Helper: Returns array of Dates (Mon→Sun) for current week
+ */
+function getCurrentWeekDates() {
+  const today = new Date();
+  const idx = isoWeekdayIndex(today); // 1..7
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (idx - 1));
+  const week = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    week.push(d);
+  }
+  return week;
+}
 
-// default color palette (bg, gradient1, gradient2, text)
-const DEFAULT_PALETTE = [
-  '#fff6e7',
-  '#fff0d4',
-  '#ffe8c9',
-  '#333333',
-];
+/**
+ * Helper: Format Date to "M/D/YYYY"
+ */
+function formatMMDDYYYY(date) {
+  const d = new Date(date);
+  const m = d.getMonth() + 1;
+  const dd = d.getDate();
+  const yyyy = d.getFullYear();
+  return `${m}/${dd}/${yyyy}`;
+}
 
-// ring constants (unchanged)
-const BLACK   = '#000';
-const BRONZE  = '#cd7f32';
-const SILVER  = '#c0c0c0';
-const GOLD    = '#FFD700';
-const ORIGINAL_THICKNESS = 20;
-
-const baseSize = scale(200);
-const blackSize = baseSize;
-const expandedBlackSize   = scale(350);
-const expandedBronzeSize  = expandedBlackSize + 2*(30/4);
-const expandedSilverSize  = expandedBlackSize + 2*(30/4)*2;
-const expandedGoldSize    = expandedBlackSize + 2*(30/4)*3;
-
-export default function VolunteerLogs() {
+/**
+ * Main Volunteer Dashboard Screen
+ */
+export default function VolunteerDashboard() {
   const { user, signOut } = useContext(AuthContext);
   const navigation = useNavigation();
 
-  const [palette, setPalette] = useState(DEFAULT_PALETTE);
-  const [loading, setLoading] = useState(true);
+  // ─── State ───────────────────────────────────────────────────────────
+  // Firestore logs: { id, site, hours, date: "M/D/YYYY", time }
+  const [logs, setLogs] = useState([]);
+  const [loadingLogs, setLoadingLogs] = useState(true);
 
-  const loadActiveTheme = async () => {
-    if (!user) {
-      setPalette(DEFAULT_PALETTE);
-      setLoading(false);
-      return;
-    }
-    try {
-      const key = `@shop/active-${user.uid}`;
-      const id  = await AsyncStorage.getItem(key);
-      if (id) {
-        const pack =
-          themePacks.find(t => t.id === id) ||
-          seasonal.find(s => s.id === id);
-        if (pack?.colors) {
-          const c = pack.colors;
-          // fill out exactly 4 slots
-          setPalette([
-            c[0] ?? DEFAULT_PALETTE[0],
-            c[1] ?? DEFAULT_PALETTE[1],
-            c[2] ?? DEFAULT_PALETTE[2],
-            c[3] ?? DEFAULT_PALETTE[3],
-          ]);
-          return;
-        }
-      }
-      // no active theme found
-      setPalette(DEFAULT_PALETTE);
-    } catch (e) {
-      console.warn('Failed loading active theme', e);
-      setPalette(DEFAULT_PALETTE);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Modal for adding a session
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [newSite, setNewSite] = useState('');
+  const [newHours, setNewHours] = useState('');
 
-  // run on mount...
-  useEffect(() => { loadActiveTheme(); }, [user]);
-  // ...and every time screen regains focus
+  // Dropdown to switch Week/Month/Year (we’ll implement only “Week” for now)
+  const [rangeDropdownVisible, setRangeDropdownVisible] = useState(false);
+  const [currentRange, setCurrentRange] = useState('Week');
+  const [dateRangeLabel, setDateRangeLabel] = useState('');
+
+  // Logging‐in and user metadata
+  const [accountCreatedAt, setAccountCreatedAt] = useState(null);
+
+  // Today’s metrics
+  const [todayHours, setTodayHours] = useState(0);
+  const [weeklyTotal, setWeeklyTotal] = useState(0);
+  const [monthlyTotal, setMonthlyTotal] = useState(0);
+  const [yearlyTotal, setYearlyTotal] = useState(0);
+
+  // Daily goal (e.g. 8 hrs/day)
+  const DAILY_GOAL = 8;
+
+  // Date calculations
+  const weekDates = useMemo(() => getCurrentWeekDates(), []);
+  const weekStrings = useMemo(
+    () => weekDates.map((d) => formatMMDDYYYY(d)),
+    [weekDates]
+  );
+  const todayString = useMemo(() => formatMMDDYYYY(new Date()), []);
+
+  // ─── Fetch Logs from Firestore ──────────────────────────────────────
+  // Whenever screen gains focus or user changes
   useFocusEffect(
     React.useCallback(() => {
-      loadActiveTheme();
+      if (!user) {
+        navigation.navigate('Login');
+        return;
+      }
+      // Grab account creation time from Firebase metadata
+      const created = user.metadata?.creationTime
+        ? new Date(user.metadata.creationTime)
+        : new Date();
+      setAccountCreatedAt(created);
+      fetchLogs();
     }, [user])
   );
-  // ────────────────────────────────────────────────────────────
 
-  // Data & loading
-  const [logs,       setLogs]       = useState([]);
-  const [totalHours, setTotalHours] = useState(0);
-
-  // Weekly goal state
-  const [weeklyGoal,  setWeeklyGoal]  = useState(10);
-  const [goalSetTime, setGoalSetTime] = useState(Date.now());
-  const [showGoalModal, setShowGoalModal] = useState(false);
-  const [tempGoal,      setTempGoal]      = useState('');
-
-  // Log-hours modal
-  const [addHoursModal, setAddHoursModal] = useState(false);
-  const [newHours,      setNewHours]      = useState('');
-  const [newSite,       setNewSite]       = useState('');
-
-  // header toggle animation
-  const [showWeekly, setShowWeekly] = useState(true);
-  const textOpacityHeader   = useRef(new Animated.Value(1)).current;
-  const textOpacityExpanded = useRef(new Animated.Value(1)).current;
-
-  // circle blink animation
-  const circleOpacity = useRef(new Animated.Value(1)).current;
-
-  // fetch on mount / user change
-  useEffect(() => {
-    if (!user) navigation.navigate('Login');
-    else fetchLogs();
-  }, [user]);
-
-  // reset weekly goal each week
-  useEffect(() => {
-    const now = Date.now();
-    if (now - goalSetTime >= ONE_WEEK_MS) {
-      setTotalHours(0);
-      setGoalSetTime(now);
-      Alert.alert('Weekly Goal Reset', 'A new week has started. Your goal has been reset!');
-    }
-  }, [goalSetTime]);
-
-  // blink circle twice
-  useEffect(() => {
-    Animated.sequence([
-      Animated.timing(circleOpacity, { toValue:0.3, duration:500, useNativeDriver:true }),
-      Animated.timing(circleOpacity, { toValue:1,   duration:500, useNativeDriver:true }),
-      Animated.timing(circleOpacity, { toValue:0.3, duration:500, useNativeDriver:true }),
-      Animated.timing(circleOpacity, { toValue:1,   duration:500, useNativeDriver:true }),
-    ]).start();
-  }, []);
-
-  // toggle header text every 5s
-  useEffect(() => {
-    const iv = setInterval(() => {
-      Animated.timing(textOpacityHeader, { toValue:0, duration:300, useNativeDriver:true }).start(() => {
-        setShowWeekly(w => !w);
-        Animated.timing(textOpacityHeader, { toValue:1, duration:300, useNativeDriver:true }).start();
-      });
-    }, 5000);
-    return () => clearInterval(iv);
-  }, []);
-
-  const headerText = showWeekly
-    ? `Weekly Goal: ${weeklyGoal} hrs`
-    : `Total Hours: ${totalHours}`;
-
-  // fetch from Firestore
   const fetchLogs = async () => {
-    setLoading(true);
+    setLoadingLogs(true);
     try {
       const q = query(
-        collection(db,'volunteer_logs'),
-        where('user_id','==',user.uid)
+        collection(db, 'volunteer_logs'),
+        where('user_id', '==', user.uid)
       );
       const snap = await getDocs(q);
-      let arr = [], tot = 0;
-      snap.forEach(docSnap => {
-        const d = docSnap.data();
-        arr.push({ id: docSnap.id, ...d });
-        tot += d.hours_contributed;
+      const arr = [];
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        arr.push({
+          id: docSnap.id,
+          site: data.site,
+          hours: data.hours_contributed,
+          date: data.date,
+          time: data.time,
+        });
       });
       setLogs(arr);
-      setTotalHours(tot);
-    } catch(e) {
-      Alert.alert('Error', e.message);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to load logs: ' + err.message);
     } finally {
-      setLoading(false);
+      setLoadingLogs(false);
     }
   };
 
-  // save new hours
-  const handleSaveHours = async () => {
-    if (!newSite||!newHours) {
-      return Alert.alert('Error','Please fill both site and hours');
+  // ─── Compute Aggregates ────────────────────────────────────────────
+  // 1) Weekly totals (array of 7 numbers), 2) today’s hours, 3) monthly, 4) yearly
+  const weeklyTotals = useMemo(() => {
+    // initialize 7 zeros
+    const out = [0, 0, 0, 0, 0, 0, 0];
+    logs.forEach((entry) => {
+      const idx = weekStrings.indexOf(entry.date);
+      if (idx !== -1) {
+        out[idx] += Number(entry.hours);
+      }
+    });
+    return out;
+  }, [logs, weekStrings]);
+
+  useEffect(() => {
+    // Today's hours
+    const t = logs.reduce((sum, entry) => {
+      return entry.date === todayString ? sum + Number(entry.hours) : sum;
+    }, 0);
+    setTodayHours(t);
+
+    // Weekly total: just sum weeklyTotals
+    const wSum = weeklyTotals.reduce((a, b) => a + b, 0);
+    setWeeklyTotal(wSum);
+
+    // Monthly total: sum logs whose month matches current month
+    const now = new Date();
+    const monthStr = `${now.getMonth() + 1}/${now.getFullYear()}`; // e.g. "6/2025"
+    const mSum = logs.reduce((sum, entry) => {
+      const [m, d, y] = entry.date.split('/').map(Number);
+      if (m === now.getMonth() + 1 && y === now.getFullYear()) {
+        return sum + Number(entry.hours);
+      }
+      return sum;
+    }, 0);
+    setMonthlyTotal(mSum);
+
+    // Yearly total: sum logs from accountCreatedAt up to now
+    if (accountCreatedAt) {
+      const start = accountCreatedAt.getTime();
+      const ySum = logs.reduce((sum, entry) => {
+        const eDate = new Date(entry.date);
+        if (eDate.getTime() >= start && eDate.getTime() <= Date.now()) {
+          return sum + Number(entry.hours);
+        }
+        return sum;
+      }, 0);
+      setYearlyTotal(ySum);
+    } else {
+      setYearlyTotal(0);
     }
+  }, [logs, accountCreatedAt, weeklyTotals, todayString]);
+
+  // ─── Save New Session ─────────────────────────────────────────────
+  const handleSaveSession = async () => {
+    if (!newSite.trim() || !newHours.trim()) {
+      return Alert.alert('Missing Fields', 'Enter both site and hours.');
+    }
+    const hrs = parseFloat(newHours);
+    if (isNaN(hrs) || hrs <= 0) {
+      return Alert.alert('Invalid Hours', 'Enter a positive number.');
+    }
+    setLoadingLogs(true);
     try {
-      await addDoc(collection(db,'volunteer_logs'),{
+      await addDoc(collection(db, 'volunteer_logs'), {
         user_id: user.uid,
-        site: newSite,
-        hours_contributed: parseFloat(newHours),
-        date: new Date().toLocaleDateString(),
+        site: newSite.trim(),
+        hours_contributed: hrs,
+        date: formatMMDDYYYY(new Date()),
         time: new Date().toLocaleTimeString(),
       });
-      setAddHoursModal(false);
+      setAddModalVisible(false);
       setNewSite('');
       setNewHours('');
-      fetchLogs();
-    } catch(e) {
-      Alert.alert('Error', e.message);
+      await fetchLogs();
+    } catch (err) {
+      Alert.alert('Error', 'Could not save session: ' + err.message);
+      setLoadingLogs(false);
     }
   };
 
-  // ring fractions
-  const frac = (got, goal) => goal>0?Math.min(got/goal,1):0;
-  const fB = frac(totalHours, weeklyGoal);
-  const fR = totalHours>weeklyGoal ? frac(totalHours-weeklyGoal, weeklyGoal) : 0;
-  const fS = totalHours>2*weeklyGoal ? frac(totalHours-2*weeklyGoal, weeklyGoal) : 0;
-  const fG = totalHours>3*weeklyGoal ? frac(totalHours-3*weeklyGoal, weeklyGoal) : 0;
-
-  // settings & signout
-  const openGoalModal = () => {
-    setTempGoal(String(weeklyGoal));
-    setShowGoalModal(true);
-  };
-  const saveNewGoal = () => {
-    const v = parseFloat(tempGoal);
-    if (!v||v<0) return Alert.alert('Invalid goal','Please enter a valid number.');
-    setWeeklyGoal(v);
-    setGoalSetTime(Date.now());
-    setShowGoalModal(false);
-  };
-  const doSignOut = () => {
-    signOut();
-    navigation.navigate('NexoLink');
-  };
-
-  // render a single log
-  const renderLogItem = ({item}) => (
-    <View style={[styles.logItem,{backgroundColor:palette[0]}]}>
-      <Text style={[styles.logText,{color:palette[3]}]}>Site: {item.site}</Text>
-      <Text style={[styles.logText,{color:palette[3]}]}>Hours: {item.hours_contributed}</Text>
-      <Text style={[styles.logText,{color:palette[3]}]}>Date: {item.date}</Text>
-      <Text style={[styles.logText,{color:palette[3]}]}>Time: {item.time}</Text>
+  // ─── Render Volunteer Log Item ───────────────────────────────────
+  const renderLogItem = ({ item }) => (
+    <View style={styles.logItem}>
+      <Text style={styles.logSite}>{item.site}</Text>
+      <View style={styles.logMetaRow}>
+        <Text style={styles.logMetaText}>{item.hours} hrs</Text>
+        <Text style={styles.logMetaText}>{item.date}</Text>
+        <Text style={styles.logMetaText}>{item.time}</Text>
+      </View>
     </View>
   );
 
+  // ─── Year/Month/Week Dropdown UI ─────────────────────────────────
+  const renderRangeDropdown = () => (
+    <Modal
+      transparent
+      animationType="fade"
+      visible={rangeDropdownVisible}
+      onRequestClose={() => setRangeDropdownVisible(false)}
+    >
+      <View style={styles.dropdownOverlay}>
+        <View style={styles.dropdownCard}>
+          {['Week', 'Month', 'Year'].map((r) => (
+            <TouchableOpacity
+              key={r}
+              style={styles.dropdownOption}
+              onPress={() => {
+                setCurrentRange(r);
+                setRangeDropdownVisible(false);
+                // In a real app, you would also recalc `dateRangeLabel` for month/year
+              }}
+            >
+              <Text
+                style={[
+                  styles.dropdownOptionText,
+                  r === currentRange && { fontWeight: '700' },
+                ]}
+              >
+                {r}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // ─── Weekly Date Range Label ─────────────────────────────────────
+  useEffect(() => {
+    // For “Week,” show e.g. “Jul 16 – 24” based on weekDates
+    if (currentRange === 'Week') {
+      const start = weekDates[0];
+      const end = weekDates[6];
+      const opts = { month: 'short', day: 'numeric' };
+      const sStr = start.toLocaleDateString(undefined, opts); // e.g. “Jul 16”
+      const eStr = end.toLocaleDateString(undefined, opts);   // e.g. “Jul 24”
+      setDateRangeLabel(`${sStr} – ${eStr}`);
+    } else {
+      // Placeholder for Month/Year labels
+      setDateRangeLabel(currentRange);
+    }
+  }, [currentRange, weekDates]);
+
   return (
-    <SafeAreaView style={[styles.container,{backgroundColor:palette[0]}]}>
-      {/* weekly‐goal modal */}
-      <Modal visible={showGoalModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.goalModal,{backgroundColor:palette[0]}]}>
-            <Text style={[styles.modalTitle,{color:palette[3]}]}>
-              Set Weekly Goal
-            </Text>
-            <TextInput
-              style={[styles.modalInput,{borderColor:palette[3],color:palette[3]}]}
-              placeholder="Enter weekly goal"
-              placeholderTextColor={palette[3]}
-              keyboardType="numeric"
-              value={tempGoal}
-              onChangeText={setTempGoal}
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        {/* Header Bar */}
+        <View style={styles.headerBar}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.headerIcon}
+          >
+            <Ionicons name="chevron-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Volunteer Dashboard</Text>
+          <TouchableOpacity
+            style={styles.headerIcon}
+            onPress={() => setAddModalVisible(true)}
+          >
+            <Ionicons name="add" size={28} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Weekly Bar Chart Card ─────────────────────────────────────── */}
+        <View style={styles.card}>
+          {/* Date Range + Arrows + Dropdown */}
+          <View style={styles.rangeHeader}>
+            <TouchableOpacity style={styles.rangeArrow}>
+              <Ionicons name="chevron-back" size={20} color="#FFF" />
+            </TouchableOpacity>
+
+            <Text style={styles.rangeLabel}>{dateRangeLabel}</Text>
+
+            <TouchableOpacity style={styles.rangeArrow}>
+              <Ionicons name="chevron-forward" size={20} color="#FFF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.rangeDropdown}
+              onPress={() => setRangeDropdownVisible(true)}
+            >
+              <Text style={styles.rangeDropdownText}>{currentRange} </Text>
+              <Ionicons name="chevron-down" size={14} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Bar Chart Area */}
+          <View style={styles.chartContainer}>
+            {/* Horizontal dashed grid lines at 100% and 50% */}
+            <View style={[styles.dashedLine, { top: 0 }]} />
+            <View
+              style={[styles.dashedLine, { top: CHART_HEIGHT / 2 }]}
             />
-            <View style={styles.modalBtnRow}>
-              <TouchableOpacity
-                style={[styles.modalButton,{backgroundColor:palette[3]}]}
-                onPress={saveNewGoal}
-              >
-                <Text style={[styles.modalButtonText,{color:palette[0]}]}>
-                  Save
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton,{backgroundColor:palette[2]}]}
-                onPress={()=>setShowGoalModal(false)}
-              >
-                <Text style={[styles.modalButtonText,{color:palette[3]}]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
+
+            <View style={styles.barsRow}>
+              {weeklyTotals.map((val, idx) => {
+                const maxVal = Math.max(...weeklyTotals, 1);
+                const rawHeight = (val / maxVal) * (CHART_HEIGHT - 16);
+                const barHeight = Math.max(rawHeight, 8);
+
+                return (
+                  <View key={idx} style={styles.barWrapper}>
+                    {/* Background bar (semi-transparent white) */}
+                    <View style={styles.barBackground} />
+
+                    {/* Filled bar (solid white) */}
+                    <View
+                      style={[
+                        styles.barFill,
+                        { height: barHeight },
+                      ]}
+                    />
+
+                    {/* Tooltip if selected (Thursday when idx===3) */}
+                    {idx === 3 && (
+                      <View
+                        style={[
+                          styles.tooltip,
+                          { bottom: barHeight + 24 },
+                        ]}
+                      >
+                        <Text style={styles.tooltipText}>{val}</Text>
+                        <View style={styles.tooltipArrow} />
+                      </View>
+                    )}
+
+                    <Text style={styles.barDayLabel}>{DAYS[idx]}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         </View>
-      </Modal>
 
-      {/* log‐hours modal */}
-      <Modal visible={addHoursModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.goalModal,{backgroundColor:palette[0]}]}>
-            <Text style={[styles.modalTitle,{color:palette[3]}]}>
-              Log Hours
-            </Text>
-            <TextInput
-              style={[styles.modalInput,{borderColor:palette[3],color:palette[3]}]}
-              placeholder="Site name"
-              placeholderTextColor={palette[3]}
-              value={newSite} onChangeText={setNewSite}
+        {renderRangeDropdown()}
+
+        {/* ── Today’s Volunteering Card ───────────────────────────────── */}
+        <View style={styles.card}>
+          <View style={styles.scoreHeader}>
+            <Text style={styles.scoreTitle}>Today’s Volunteering</Text>
+            <TouchableOpacity onPress={() => { /* optional details */ }}>
+              <Text style={styles.learnMoreText}>Details</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Circular Progress (Today’s hours vs DAILY_GOAL) */}
+          <View style={styles.circleWrapper}>
+            <Circle
+              size={120}
+              progress={todayHours / DAILY_GOAL}
+              thickness={12}
+              color="#FFF"
+              unfilledColor="rgba(255,255,255,0.2)"
+              borderWidth={0}
+              showsText={false}
+              strokeCap="round"
+              direction="clockwise"
             />
-            <TextInput
-              style={[styles.modalInput,{borderColor:palette[3],color:palette[3]}]}
-              placeholder="Hours"
-              placeholderTextColor={palette[3]}
-              keyboardType="numeric"
-              value={newHours} onChangeText={setNewHours}
-            />
-            <View style={styles.modalBtnRow}>
-              <TouchableOpacity
-                style={[styles.modalButton,{backgroundColor:palette[3]}]}
-                onPress={handleSaveHours}
-              >
-                <Text style={[styles.modalButtonText,{color:palette[0]}]}>
-                  Save
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton,{backgroundColor:palette[2]}]}
-                onPress={()=>setAddHoursModal(false)}
-              >
-                <Text style={[styles.modalButtonText,{color:palette[3]}]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.circleCenter}>
+              <Text style={styles.circleNumber}>{todayHours}h</Text>
             </View>
           </View>
-        </View>
-      </Modal>
 
-      {/* header */}
-      <View style={styles.header}>
-        <Animated.Text style={[
-          styles.headerTitle,
-          { opacity: textOpacityHeader, color: palette[3] }
-        ]}>
-          {headerText}
-        </Animated.Text>
-        <View style={{ flexDirection:'row' }}>
-          <TouchableOpacity onPress={openGoalModal} style={{marginRight:scale(20)}}>
-            <Ionicons name="settings-outline" size={scale(24)} color={palette[3]} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={doSignOut}>
-            <Ionicons name="log-out-outline" size={scale(24)} color={palette[3]} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* main circle */}
-      <Animated.View style={[
-        styles.circleWrapper,
-        { opacity: circleOpacity }
-      ]}>
-        <Progress.Circle
-          size={blackSize}
-          progress={fB}
-          thickness={ORIGINAL_THICKNESS}
-          color={BLACK}
-          unfilledColor="transparent"
-          borderWidth={0}
-          strokeCap="round"
-          rotation={270}
-          style={styles.absoluteCircle}
-        />
-        {fR>0 && <Progress.Circle
-          size={blackSize}
-          progress={fR}
-          thickness={ORIGINAL_THICKNESS/4}
-          color={BRONZE}
-          unfilledColor="transparent"
-          borderWidth={0}
-          strokeCap="round"
-          rotation={270}
-          style={styles.absoluteCircle}
-        />}
-        {fS>0 && <Progress.Circle
-          size={blackSize}
-          progress={fS}
-          thickness={ORIGINAL_THICKNESS/4}
-          color={SILVER}
-          unfilledColor="transparent"
-          borderWidth={0}
-          strokeCap="round"
-          rotation={270}
-          style={styles.absoluteCircle}
-        />}
-        {fG>0 && <Progress.Circle
-          size={blackSize}
-          progress={fG}
-          thickness={ORIGINAL_THICKNESS/4}
-          color={GOLD}
-          unfilledColor="transparent"
-          borderWidth={0}
-          strokeCap="round"
-          rotation={270}
-          style={styles.absoluteCircle}
-        />}
-        <View style={styles.centerHoursContainer} pointerEvents="none">
-          <Text style={[styles.centerHours,{color:palette[3]}]}>{totalHours}</Text>
-          <Text style={[styles.centerLabel,{color:palette[3]}]}>hours</Text>
-        </View>
-      </Animated.View>
-
-      {/* logs list */}
-      <View style={styles.logsContainer}>
-        {loading ? (
-          <ActivityIndicator size="large" color={palette[3]} style={{flex:1}}/>
-        ) : logs.length===0 ? (
-          <View style={styles.noLogsContainer}>
-            <Text style={[styles.noLogsText,{color:palette[3]}]}>
-              Time to start racking those points up!
-            </Text>
+          {/* Sub‐Metrics: Hours This Week / This Month / Total Hours */}
+          <View style={styles.sliderRow}>
+            <Ionicons name="calendar-outline" size={20} color="#FFF" />
+            <Text style={styles.sliderLabel}>Hours This Week</Text>
+            <View style={styles.sliderBarBg}>
+              <View
+                style={[
+                  styles.sliderBarFill,
+                  {
+                    width: `${
+                      weeklyTotal / (DAILY_GOAL * 7) * 100 > 100
+                        ? 100
+                        : (weeklyTotal / (DAILY_GOAL * 7)) * 100
+                    }%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.sliderValue}>{weeklyTotal}h</Text>
           </View>
-        ) : (
-          <FlatList
-            data={logs}
-            keyExtractor={i=>i.id}
-            renderItem={renderLogItem}
-            contentContainerStyle={styles.logsListContent}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
 
-      {/* log hours button */}
-      <TouchableOpacity
-        style={[styles.logHoursButton,{backgroundColor:palette[3]}]}
-        onPress={()=>setAddHoursModal(true)}
+          <View style={styles.sliderRow}>
+            <Ionicons name="time-outline" size={20} color="#FFF" />
+            <Text style={styles.sliderLabel}>Hours This Month</Text>
+            <View style={styles.sliderBarBg}>
+              <View
+                style={[
+                  styles.sliderBarFill,
+                  {
+                    width: `${
+                      monthlyTotal / (DAILY_GOAL * 30) * 100 > 100
+                        ? 100
+                        : (monthlyTotal / (DAILY_GOAL * 30)) * 100
+                    }%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.sliderValue}>{monthlyTotal}h</Text>
+          </View>
+
+          <View style={styles.sliderRow}>
+            <Ionicons name="trophy-outline" size={20} color="#FFF" />
+            <Text style={styles.sliderLabel}>Total Hours</Text>
+            <View style={styles.sliderBarBg}>
+              <View
+                style={[
+                  styles.sliderBarFill,
+                  {
+                    width: `${
+                      yearlyTotal / (DAILY_GOAL * 365) * 100 > 100
+                        ? 100
+                        : (yearlyTotal / (DAILY_GOAL * 365)) * 100
+                    }%`,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={styles.sliderValue}>{yearlyTotal}h</Text>
+          </View>
+        </View>
+
+        {/* ── Volunteer Logs List ─────────────────────────────────────── */}
+        <View style={styles.logsContainer}>
+          <Text style={styles.logsHeader}>Volunteer Sessions</Text>
+          {loadingLogs ? (
+            <ActivityIndicator size="large" color="#000" />
+          ) : logs.length === 0 ? (
+            <Text style={styles.emptyLogsText}>
+              No sessions logged yet.
+            </Text>
+          ) : (
+            <FlatList
+              data={logs.sort(
+                (a, b) =>
+                  new Date(b.date + ' ' + b.time) -
+                  new Date(a.date + ' ' + a.time)
+              )}
+              keyExtractor={(item) => item.id}
+              renderItem={renderLogItem}
+              contentContainerStyle={{ paddingBottom: 24 }}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
+      </ScrollView>
+
+      {/* ── Add Session Modal ───────────────────────────────────────── */}
+      <Modal
+        visible={addModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAddModalVisible(false)}
       >
-        <Text style={[styles.logHoursButtonText,{color:palette[0]}]}>
-          Log Hours
-        </Text>
-      </TouchableOpacity>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Add Volunteer Session</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Site Name"
+              placeholderTextColor="#666"
+              value={newSite}
+              onChangeText={setNewSite}
+            />
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Hours (e.g. 2.5)"
+              placeholderTextColor="#666"
+              keyboardType="numeric"
+              value={newHours}
+              onChangeText={setNewHours}
+            />
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalSaveButton]}
+                onPress={handleSaveSession}
+              >
+                <Text style={styles.modalButtonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalCancelButton]}
+                onPress={() => setAddModalVisible(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: '#000' }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container:        { flex:1 },
-  header: {
-    paddingTop:verticalScale(20),
-    paddingBottom:verticalScale(10),
-    paddingHorizontal:scale(20),
-    flexDirection:'row',
-    justifyContent:'space-between',
-    alignItems:'center',
-    elevation:3,
-    zIndex:1,
+  // ── Screen Container ───────────────────────────────────────────
+  container: {
+    flex: 1,
+    backgroundColor: '#FFF', // white background
   },
-  headerTitle:      { fontSize:scale(18), fontWeight:'bold' },
-  circleWrapper:    {
-    alignSelf:'center',
-    marginTop:verticalScale(10),
-    width:blackSize,
-    height:blackSize,
-    justifyContent:'center',
-    alignItems:'center',
-  },
-  absoluteCircle:   { position:'absolute' },
-  centerHoursContainer:{ position:'absolute', justifyContent:'center', alignItems:'center' },
-  centerHours:      { fontSize:scale(22), fontWeight:'bold' },
-  centerLabel:      { fontSize:scale(14), marginTop:verticalScale(2) },
-  logsContainer:    { flex:1, paddingHorizontal:scale(20), marginTop:verticalScale(10) },
-  logsListContent:  { paddingBottom:verticalScale(80) },
-  noLogsContainer:  { flex:1, justifyContent:'center', alignItems:'center' },
-  noLogsText:       { fontSize:scale(16) },
-  logItem: {
-    borderRadius:scale(20),
-    marginVertical:verticalScale(5),
-    padding:scale(15),
-    elevation:2,
-  },
-  logText:          { fontSize:scale(14), marginBottom:verticalScale(4) },
-  logHoursButton:   {
-    position:'absolute',
-    bottom:verticalScale(770),
-    right:scale(10),
-    borderRadius:scale(20),
-    paddingVertical:verticalScale(10),
-    paddingHorizontal:scale(15),
-    zIndex:10,
-  },
-  logHoursButtonText:{ fontSize:scale(16), fontWeight:'bold' },
 
-  // modals
-  modalOverlay:     {
-    flex:1,
-    backgroundColor:'rgba(0,0,0,0.4)',
-    justifyContent:'center',
-    alignItems:'center',
-    padding:scale(20),
+  // ── Header Bar ─────────────────────────────────────────────────
+  headerBar: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
   },
-  goalModal:        {
-    width:'90%',
-    borderRadius:scale(20),
-    padding:scale(30),
-    alignItems:'center',
+  headerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#000', // black circle behind icon
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  modalTitle:       {
-    fontSize:scale(20),
-    fontWeight:'bold',
-    marginBottom:verticalScale(15),
-    textAlign:'center',
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
   },
-  modalInput:       {
-    width:'100%',
-    height:verticalScale(45),
-    borderWidth:1,
-    borderRadius:scale(15),
-    paddingHorizontal:scale(15),
-    marginBottom:verticalScale(10),
+
+  // ── Card Style (both chart and circle card) ────────────────────
+  card: {
+    marginHorizontal: 16,
+    backgroundColor: '#000', // black card
+    borderRadius: CARD_BORDER_RADIUS,
+    padding: CARD_PADDING,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  modalBtnRow:      {
-    flexDirection:'row',
-    justifyContent:'space-around',
-    width:'100%',
-    marginTop:verticalScale(10),
+
+  // ── Weekly Range Header (arrows + date + dropdown) ─────────────
+  rangeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  modalButton:      {
-    borderRadius:scale(15),
-    paddingVertical:verticalScale(10),
-    paddingHorizontal:scale(20),
+  rangeArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  modalButtonText:  { fontSize:scale(16), fontWeight:'bold', textAlign:'center' },
+  rangeLabel: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  rangeDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+  },
+  rangeDropdownText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000',
+  },
+
+  // ── Bar Chart Area ─────────────────────────────────────────────
+  chartContainer: {
+    height: CHART_HEIGHT,
+    position: 'relative',
+    marginBottom: 8,
+  },
+  dashedLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    borderBottomColor: 'rgba(255,255,255,0.2)',
+    borderBottomWidth: 1,
+    borderStyle: 'dashed',
+  },
+  barsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    flex: 1,
+  },
+  barWrapper: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  barBackground: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    height: CHART_HEIGHT - 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 4,
+  },
+  barFill: {
+    width: '100%',
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    position: 'absolute',
+    bottom: 0,
+  },
+  barDayLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#FFF',
+  },
+  barValue: {
+    fontSize: 12,
+    color: '#FFF',
+    marginBottom: 4,
+  },
+
+  // Tooltip for selected bar
+  tooltip: {
+    position: 'absolute',
+    backgroundColor: '#FFF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 10,
+  },
+  tooltipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#000',
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: -6,
+    left: '50%',
+    marginLeft: -6,
+    width: 0,
+    height: 0,
+    borderTopWidth: 6,
+    borderTopColor: '#FFF',
+    borderLeftWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightWidth: 6,
+    borderRightColor: 'transparent',
+  },
+
+  // ── “Today’s Volunteering” Header ─────────────────────────────
+  scoreHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  scoreTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  learnMoreText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFF',
+  },
+
+  // ── Circular Progress for Today’s Hours ────────────────────────
+  circleWrapper: {
+    alignSelf: 'center',
+    marginVertical: 12,
+  },
+  circleCenter: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  circleNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+
+  // ── Sub‐Metrics Sliders ─────────────────────────────────────────
+  sliderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sliderLabel: {
+    flex: 1,
+    marginLeft: 8,
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  sliderBarBg: {
+    flex: 2,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 3,
+    marginHorizontal: 8,
+    overflow: 'hidden',
+  },
+  sliderBarFill: {
+    height: 6,
+    backgroundColor: '#FFF',
+  },
+  sliderValue: {
+    width: 48,
+    textAlign: 'right',
+    fontSize: 12,
+    color: '#FFF',
+  },
+
+  // ── Volunteer Logs List ────────────────────────────────────────
+  logsContainer: {
+    marginHorizontal: 16,
+    marginTop: 24,
+  },
+  logsHeader: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+  },
+  emptyLogsText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginVertical: 16,
+  },
+  logItem: {
+    backgroundColor: '#FFF',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#EEE',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  logSite: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  logMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  logMetaText: {
+    fontSize: 12,
+    color: '#666',
+  },
+
+  // ── Add Session Modal ──────────────────────────────────────────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    width: '100%',
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  modalInput: {
+    width: '100%',
+    height: 44,
+    borderWidth: 1,
+    borderColor: '#CCC',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: '#000',
+    marginBottom: 12,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  modalSaveButton: {
+    backgroundColor: '#000',
+  },
+  modalCancelButton: {
+    backgroundColor: '#EEE',
+  },
+  modalButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+
+  // ── Range Dropdown Modal ───────────────────────────────────────
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    width: width * 0.5,
+    paddingVertical: 8,
+  },
+  dropdownOption: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  dropdownOptionText: {
+    fontSize: 16,
+    color: '#000',
+  },
+
+  // ── Loading Overlay ───────────────────────────────────────────
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
 });

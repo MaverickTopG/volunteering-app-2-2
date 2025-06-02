@@ -34,28 +34,16 @@ const STATE_MAP = {
 
 // Category → header image URLs
 const CATEGORY_IMAGES = {
-  Animal:
-    'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?auto=format&fit=crop&w=1000&q=80',
-  Arts:
-    'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1000&q=80',
-  Education:
-    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1000&q=80',
-  Environment:
-    'https://images.unsplash.com/photo-1505483531331-7a6f89990147?auto=format&fit=crop&w=1000&q=80',
-  Family:
-    'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=1000&q=80',
-  Hospital:
-    'https://images.unsplash.com/photo-1580281657528-675e542ccf4e?auto=format&fit=crop&w=1000&q=80',
-  Library:
-    'https://images.unsplash.com/photo-1510936111840-3b9c0f7a5f34?auto=format&fit=crop&w=1000&q=80',
-  Seniors:
-    'https://images.unsplash.com/photo-1519241047957-be31d7379a5d?auto=format&fit=crop&w=1000&q=80',
-  Tech:
-    'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1000&q=80',
+  Animal: require('../../assets/animal.png'),
+  Arts:    require('../../assets/art.png'),
+  Education: require('../../assets/education.png'),
+  Environment: require('../../assets/enviroment.png'),
+  Family:  require('../../assets/family.png'),
+  Hospital: require('../../assets/hospital.png'),
+  Library: require('../../assets/library.png'),
+  Seniors: require('../../assets/seniors.png'),
+  Tech:    require('../../assets/tech.png'),
 };
-const DEFAULT_HEADER_IMAGE =
-  'https://images.unsplash.com/photo-1491975474562-1f4e30bc9468?auto=format&fit=crop&w=1000&q=80';
-
 // Compute status‐bar height (Android vs. iOS)
 const STATUS_BAR_HEIGHT =
   Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44;
@@ -128,7 +116,7 @@ export default function ShowScreen() {
 
       {/* ─── HEADER IMAGE ────────────────────────────────────── */}
       <ImageBackground
-        source={{ uri: headerBgImage }}
+        source={ headerBgImage }
         style={[
           styles.headerImage,
           { width: width, height: TOTAL_HEADER_HEIGHT },

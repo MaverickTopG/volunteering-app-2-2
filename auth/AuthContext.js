@@ -1,32 +1,42 @@
+// AuthContext.js
+
 import React, { createContext, useState, useEffect } from 'react';
 import {
-  Alert, ActivityIndicator, View, Text, StyleSheet, Image,
+  Alert,
+  ActivityIndicator,
+  View,
+  StyleSheet,
   Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Keychain from 'react-native-keychain';
 import { auth } from './firebase';
 import {
-  signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  signOut, onAuthStateChanged, deleteUser,
-  sendPasswordResetEmail, sendEmailVerification, updateProfile,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  deleteUser,
+  sendPasswordResetEmail,
+  updateProfile,
 } from 'firebase/auth';
 
 export const AuthContext = createContext();
 
 /* ── scaling helpers ─────────────────────────────── */
 const { width, height } = Dimensions.get('window');
-const refW = 428, refH = 926;
-const scale  = (s)=> (width  / refW) * s;
-const vScale = (s)=> (height / refH) * s;
+const refW = 428,
+  refH = 926;
+const scale = (s) => (width / refW) * s;
+const vScale = (s) => (height / refH) * s;
 
 /* constants */
 const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
 
 /* ----------------------------------------------------------------- */
 export function AuthProvider({ children }) {
-  const [user,    setUser]  = useState(null);
-  const [loading, setLoad]  = useState(true);
+  const [user, setUser] = useState(null);
+  const [loading, setLoad] = useState(true);
 
   /* ---------- auto-login on mount ---------- */
   useEffect(() => {
@@ -44,11 +54,13 @@ export function AuthProvider({ children }) {
         const creds = await Keychain.getGenericPassword();
         if (!creds) return;
 
+        // Attempt to sign in using stored credentials
         const { user: u } = await signInWithEmailAndPassword(
-          auth, creds.username, creds.password,
+          auth,
+          creds.username,
+          creds.password
         );
-
-        if (u.emailVerified) setUser(u);
+        setUser(u);
       } catch (e) {
         console.error('Auto-login error:', e);
       } finally {
@@ -59,9 +71,10 @@ export function AuthProvider({ children }) {
 
   /* ---------- global auth listener ---------- */
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, current =>
-      setUser(current?.emailVerified ? current : null)
-    );
+    const unsub = onAuthStateChanged(auth, (current) => {
+      // No longer filtering by emailVerified; any signed-in user is allowed
+      setUser(current);
+    });
     return unsub;
   }, []);
 
@@ -69,13 +82,9 @@ export function AuthProvider({ children }) {
   const signIn = async (email, password) => {
     try {
       setLoad(true);
-      const { user: u } = await signInWithEmailAndPassword(auth, email, password);
 
-      if (!u.emailVerified) {
-        await signOut(auth);
-        Alert.alert('Verify First', 'Please confirm your email before logging in.');
-        return;
-      }
+      const { user: u } = await signInWithEmailAndPassword(auth, email, password);
+      // No more check on u.emailVerified
       await AsyncStorage.setItem('loginTime', Date.now().toString());
       await Keychain.setGenericPassword(email, password);
       setUser(u);
@@ -89,11 +98,18 @@ export function AuthProvider({ children }) {
   const signUp = async ({ email, password, firstName, lastName }) => {
     try {
       setLoad(true);
+
+      // Create user with email & password
       const { user: u } = await createUserWithEmailAndPassword(auth, email, password);
+
+      // Set displayName
       await updateProfile(u, { displayName: `${firstName} ${lastName}` });
-      await sendEmailVerification(u);
+
+      // NO sendEmailVerification(u) HERE, so no verification email is sent
+      // Immediately sign out to clear any internal state (optional)
       await signOut(auth);
-      Alert.alert('Almost there…', 'We sent a verification link. Please verify, then log in.');
+
+      Alert.alert('Success', 'Account created successfully. You can now log in.');
       return true;
     } catch (e) {
       Alert.alert('Sign-up Error', e.message);
@@ -127,8 +143,11 @@ export function AuthProvider({ children }) {
   const deleteAccount = async (email, password) => {
     try {
       setLoad(true);
+
+      // Reauthenticate then delete
       const cred = await signInWithEmailAndPassword(auth, email, password);
       await deleteUser(cred.user);
+
       await AsyncStorage.removeItem('loginTime');
       await Keychain.resetGenericPassword();
       Alert.alert('Success', 'Account deleted.');
@@ -142,21 +161,20 @@ export function AuthProvider({ children }) {
   /* ---------- render ---------- */
   return (
     <AuthContext.Provider
-      value={{ user, signIn, signUp, resetPassword, signOut: signOutUser, deleteAccount }}
+      value={{
+        user,
+        signIn,
+        signUp,
+        resetPassword,
+        signOut: signOutUser,
+        deleteAccount,
+      }}
     >
       {children}
 
-      {/* splash overlay */}
+      {/* splash overlay: plain white background + loading spinner */}
       {loading && (
-        <View style={styles.splash} pointerEvents="none">
-          <Image
-            source={require('../assets/spaceship.png')}
-            style={{ width: scale(150), height: scale(150), marginBottom: vScale(20) }}
-            resizeMode="contain"
-          />
-          <Text style={{ fontSize: scale(18), color: '#333', marginBottom: vScale(12) }}>
-            Preparing for launch…
-          </Text>
+        <View style={styles.splash}>
           <ActivityIndicator size="large" color="#333" />
         </View>
       )}
@@ -166,10 +184,15 @@ export function AuthProvider({ children }) {
 
 /* ---------- styles ---------- */
 const styles = StyleSheet.create({
-  splash:{
-    position:'absolute',top:0,left:0,right:0,bottom:0,
-    backgroundColor:'#fff6e7',
-    alignItems:'center',justifyContent:'center',
-    zIndex:999,
+  splash: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
   },
 });

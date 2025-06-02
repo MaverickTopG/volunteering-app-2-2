@@ -80,22 +80,15 @@ const defaultTrips = [
   {
     id: "CA",
     name: "California",
-    image:
-      "https://images.unsplash.com/photo-1500048993953-cfaebf7bf6f3?auto=format&fit=crop&w=800&q=60",
+    image: require('../../assets/california.png'),
   },
   {
-    id: "2",
-    name: "Paris",
-    image:
-      "https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?auto=format&fit=crop&w=800&q=60",
-  },
-  {
-    id: "3",
-    name: "Tokyo",
-    image:
-      "https://images.unsplash.com/photo-1568817410669-212e17f42d20?auto=format&fit=crop&w=800&q=60",
+    id: "SOON",
+    name: "Coming Soon!",
+    image: require('../../assets/bg4.png'),
   },
 ];
+
 
 // Replace with your own secure mechanism
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
@@ -444,7 +437,7 @@ export default function SearchScreen() {
     return (
       <View style={[styles.cardContainer, { marginRight: CARD_GAP }]}>
         <ImageBackground
-          source={{ uri: item.image }}
+          source={ item.image }
           style={styles.cardImage}
           imageStyle={styles.cardImageStyle}
         >

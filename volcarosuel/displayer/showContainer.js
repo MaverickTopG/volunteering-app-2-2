@@ -42,27 +42,16 @@ const TOTAL_HEADER_HEIGHT = HEADER_IMAGE_HEIGHT + STATUS_BAR_HEIGHT;
 
 const BOTTOM_SHEET_HEIGHT = height * 0.77;
 const CATEGORY_IMAGES = {
-  Animals:
-    'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?auto=format&fit=crop&w=1000&q=80',
-  Arts:
-    'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1000&q=80',
-  Education:
-    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1000&q=80',
-  Environment:
-    'https://images.unsplash.com/photo-1505483531331-7a6f89990147?auto=format&fit=crop&w=1000&q=80',
-  Family:
-    'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=1000&q=80',
-  Hospital:
-    'https://images.unsplash.com/photo-1580281657528-675e542ccf4e?auto=format&fit=crop&w=1000&q=80',
-  Library:
-    'https://images.unsplash.com/photo-1510936111840-3b9c0f7a5f34?auto=format&fit=crop&w=1000&q=80',
-  Seniors:
-    'https://images.unsplash.com/photo-1519241047957-be31d7379a5d?auto=format&fit=crop&w=1000&q=80',
-  Tech:
-    'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1000&q=80',
+  Animal: require('../../assets/animal.png'),
+  Arts:    require('../../assets/art.png'),
+  Education: require('../../assets/education.png'),
+  Environment: require('../../assets/enviroment.png'),
+  Family:  require('../../assets/family.png'),
+  Hospital: require('../../assets/hospital.png'),
+  Library: require('../../assets/library.png'),
+  Seniors: require('../../assets/seniors.png'),
+  Tech:    require('../../assets/tech.png'),
 };
-const DEFAULT_HEADER_IMAGE =
-  'https://images.unsplash.com/photo-1491975474562-1f4e30bc9468?auto=format&fit=crop&w=1000&q=80';
 
 export default function VolunteerCarousel() {
   const navigation = useNavigation();
@@ -176,7 +165,7 @@ export default function VolunteerCarousel() {
   }
 
   // Pick header background image based on category, fallback if missing
-  const headerBgImage = CATEGORY_IMAGES[reference] || DEFAULT_HEADER_IMAGE;
+  const headerBgImage = CATEGORY_IMAGES[reference]
 
   return (
     <View style={styles.container}>
@@ -188,7 +177,7 @@ export default function VolunteerCarousel() {
 
       {/* Full‐width Header Image (behind status bar, no tint) */}
       <ImageBackground
-        source={{ uri: headerBgImage }}
+       source={headerBgImage}  
         style={[
           styles.headerImage,
           { width: width, height: TOTAL_HEADER_HEIGHT },

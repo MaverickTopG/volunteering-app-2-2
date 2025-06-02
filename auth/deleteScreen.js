@@ -54,12 +54,12 @@ export default function DeleteScreen() {
 
         {/* Diagonal image & overlay */}
         <Image
-          source={{ uri: 'https://via.placeholder.com/800x800.png?text=Diagonal+Image' }}
+          source={require('../assets/bg3.png')}
           style={styles.diagonalImage}
           resizeMode="cover"
         />
         <LinearGradient
-          colors={['rgba(248,248,248,0)', 'rgba(248,248,248,1)']}
+          colors={['rgba(248,248,248,0)', 'rgba(248,248,248,0)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.diagonalOverlay}
@@ -189,10 +189,10 @@ const styles = StyleSheet.create({
   // Diagonal image & overlay
   diagonalImage: {
     position: 'absolute',
-    width: width * 1.4,
+    width: width * 2.4,
     height: width * 1.4,
-    top: height * 0.2,
-    left: -width * 0.2,
+    top: height * 0.8,
+    left: width * 0.2,
     opacity: 0.15,
     transform: [{ rotate: '45deg' }],
     zIndex: 1,

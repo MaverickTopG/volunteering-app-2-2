@@ -9,17 +9,24 @@ import {
   Animated,
   SafeAreaView,
   Image,
+  ImageBackground,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
-const spaceshipImage = require('../assets/spaceship.png');
 
-// Floating Particle Component (white, subtle)
+// Replace these with your actual asset paths:
+const spaceshipImage = require('../assets/spaceship.png');
+const backgroundImage = require('../assets/bg.png');
+
+/**
+ * FloatingParticle:
+ * A small white circle that drifts around ever so slightly.
+ */
 const FloatingParticle = ({ delay, duration, size }) => {
   const translateY = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0.1)).current;
+  const opacity    = useRef(new Animated.Value(0.1)).current;
 
   useEffect(() => {
     const animate = () => {
@@ -137,14 +144,14 @@ const NexolinkLoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = () => {
-    navigation.navigate('Login'); // Navigate to Login screen
+    navigation.navigate('Login');
   };
 
   const handleSignup = () => {
-    navigation.navigate('Register'); // Navigate to Register screen
+    navigation.navigate('Register');
   };
 
-  // Generate particles data
+  // Generate data for 25 drifting particles
   const particles = Array.from({ length: 25 }, (_, i) => ({
     id: i,
     size: Math.random() * 6 + 3,
@@ -155,65 +162,76 @@ const NexolinkLoginScreen = ({ navigation }) => {
   }));
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
+    <ImageBackground
+      source={backgroundImage}
+      style={styles.backgroundImage}
+      imageStyle={{ resizeMode: 'cover' }}
+    >
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" />
 
-      {/* White Particles */}
-      <View style={styles.particlesContainer}>
-        {particles.map((particle) => (
-          <View
-            key={particle.id}
-            style={[
-              styles.particleWrapper,
-              {
-                left: particle.left,
-                top: particle.top,
-              },
-            ]}
-          >
-            <FloatingParticle
-              delay={particle.delay}
-              duration={particle.duration}
-              size={particle.size}
-            />
-          </View>
-        ))}
-      </View>
+        {/* Floating white particles */}
+        <View style={styles.particlesContainer}>
+          {particles.map((p) => (
+            <View
+              key={p.id}
+              style={[
+                styles.particleWrapper,
+                { left: p.left, top: p.top },
+              ]}
+            >
+              <FloatingParticle
+                delay={p.delay}
+                duration={p.duration}
+                size={p.size}
+              />
+            </View>
+          ))}
+        </View>
 
-      {/* Logo & Title (shifted up by 15%) */}
-      <View style={[styles.logoSection, { marginTop: -(height * 0.15) }]}>
-        {/* Replace source URI with your own logo path */}
-        <Image source={spaceshipImage} style={styles.logoImage} />
+        {/* Logo & Title (shifted up by 15% of screen height) */}
+        <View style={[styles.logoSection, { marginTop: -(height * 0.15) }]}>
+          <Image
+            source={spaceshipImage}
+            style={[styles.logoImage, { tintColor: '#FFF' }]}
+            resizeMode="contain"
+          />
+          <Text style={styles.appTitle}>NEXOLINK</Text>
+        </View>
 
-        <Text style={styles.appTitle}>NEXOLINK</Text>
-      </View>
-
-      {/* Bottom Section (fully stretched down) */}
-      <View style={styles.bottomSection}>
-        {/* Signup as a tappable header */}
-        <TouchableOpacity onPress={handleSignup} activeOpacity={0.8}>
-          <Text style={styles.headerButtonText}>SIGNUP</Text>
-        </TouchableOpacity>
-
-        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-          <TouchableOpacity
-            style={[styles.button, styles.loginButton]}
-            onPress={() => handleButtonPress(handleLogin)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.loginButtonText}>LOGIN</Text>
+        {/* Bottom section */}
+        <View style={styles.bottomSection}>
+          <TouchableOpacity onPress={handleSignup} activeOpacity={0.8}>
+            <Text style={styles.headerButtonText}>SIGNUP</Text>
           </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </SafeAreaView>
+
+          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            <TouchableOpacity
+              style={[styles.button, styles.loginButton]}
+              onPress={() => handleButtonPress(handleLogin)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.loginButtonText}>LOGIN</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  // This ImageBackground wraps the entire screen, allowing no overflow restrictions
+  backgroundImage: {
+    flex: 1,
+  },
+
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: 'transparent', // let the background image show through
   },
+
+  // Particles container covers entire screen
   particlesContainer: {
     position: 'absolute',
     top: 0,
@@ -228,6 +246,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderRadius: 50,
   },
+
+  // Logo & App Title
   logoSection: {
     flex: 1,
     justifyContent: 'center',
@@ -238,22 +258,24 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 120,
     height: 120,
-    borderRadius: 20,
     marginBottom: 20,
+    // The tintColor '#FFF' in the component will turn this white
   },
   appTitle: {
     fontSize: 48,
     fontWeight: '700',
-    color: '#333',
+    color: '#FFF',        // White text
     letterSpacing: 2,
     textAlign: 'center',
   },
+
+  // Bottom Section
   bottomSection: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFF',
+    backgroundColor: 'transparent', // allow background image behind
     paddingHorizontal: 30,
     paddingTop: 20,
     paddingBottom: 40,
@@ -261,10 +283,12 @@ const styles = StyleSheet.create({
   },
   headerButtonText: {
     fontSize: 20,
-    color: '#333',
+    color: '#FFF',       // White “SIGNUP” text
     fontWeight: '600',
     marginBottom: 40,
   },
+
+  // White button with black text
   button: {
     width: width - 60,
     maxWidth: 300,
@@ -279,13 +303,13 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   loginButton: {
-    backgroundColor: '#000',
-    marginBottom:90
+    backgroundColor: '#FFF',  // White background
+    marginBottom: 90,
   },
   loginButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFF',
+    color: '#000',           // Black text inside button
     letterSpacing: 1,
   },
 });
