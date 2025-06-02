@@ -27,18 +27,13 @@ import {
   addDoc,
 } from 'firebase/firestore';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
-const CARD_PADDING = 16;
-const CARD_BORDER_RADIUS = 24;
-const CHART_HEIGHT = 120;
-const BAR_SPACING = 4;
+const CARD_PADDING = 20;
+const CARD_BORDER_RADIUS = 16;
+const CHART_HEIGHT = 140;
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-/**
- * Helper: Given a Date, returns ISO weekday index: 1=Mon … 7=Sun
- */
 function isoWeekdayIndex(date) {
   const d = new Date(date);
   let day = d.getDay();
@@ -46,9 +41,6 @@ function isoWeekdayIndex(date) {
   return day;
 }
 
-/**
- * Helper: Returns array of Dates (Mon→Sun) for current week
- */
 function getCurrentWeekDates() {
   const today = new Date();
   const idx = isoWeekdayIndex(today); // 1..7
@@ -63,9 +55,6 @@ function getCurrentWeekDates() {
   return week;
 }
 
-/**
- * Helper: Format Date to "M/D/YYYY"
- */
 function formatMMDDYYYY(date) {
   const d = new Date(date);
   const m = d.getMonth() + 1;
@@ -74,41 +63,35 @@ function formatMMDDYYYY(date) {
   return `${m}/${dd}/${yyyy}`;
 }
 
-/**
- * Main Volunteer Dashboard Screen
- */
 export default function VolunteerDashboard() {
   const { user, signOut } = useContext(AuthContext);
   const navigation = useNavigation();
 
   // ─── State ───────────────────────────────────────────────────────────
-  // Firestore logs: { id, site, hours, date: "M/D/YYYY", time }
   const [logs, setLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
 
-  // Modal for adding a session
+  // Add‐session modal
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newSite, setNewSite] = useState('');
   const [newHours, setNewHours] = useState('');
 
-  // Dropdown to switch Week/Month/Year (we’ll implement only “Week” for now)
-  const [rangeDropdownVisible, setRangeDropdownVisible] = useState(false);
-  const [currentRange, setCurrentRange] = useState('Week');
-  const [dateRangeLabel, setDateRangeLabel] = useState('');
+  // Goal‐setting modal
+  const [goalModalVisible, setGoalModalVisible] = useState(false);
+  const [tempGoal, setTempGoal] = useState(''); // for TextInput
+  const [dailyGoal, setDailyGoal] = useState(8); // default 8h
 
-  // Logging‐in and user metadata
+  // Account creation time
   const [accountCreatedAt, setAccountCreatedAt] = useState(null);
 
-  // Today’s metrics
+  // Computed metrics
   const [todayHours, setTodayHours] = useState(0);
-  const [weeklyTotal, setWeeklyTotal] = useState(0);
+  const [weeklyTotals, setWeeklyTotals] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [weeklyTotalSum, setWeeklyTotalSum] = useState(0);
   const [monthlyTotal, setMonthlyTotal] = useState(0);
   const [yearlyTotal, setYearlyTotal] = useState(0);
 
-  // Daily goal (e.g. 8 hrs/day)
-  const DAILY_GOAL = 8;
-
-  // Date calculations
+  // Date arrays
   const weekDates = useMemo(() => getCurrentWeekDates(), []);
   const weekStrings = useMemo(
     () => weekDates.map((d) => formatMMDDYYYY(d)),
@@ -117,14 +100,12 @@ export default function VolunteerDashboard() {
   const todayString = useMemo(() => formatMMDDYYYY(new Date()), []);
 
   // ─── Fetch Logs from Firestore ──────────────────────────────────────
-  // Whenever screen gains focus or user changes
   useFocusEffect(
     React.useCallback(() => {
       if (!user) {
         navigation.navigate('Login');
         return;
       }
-      // Grab account creation time from Firebase metadata
       const created = user.metadata?.creationTime
         ? new Date(user.metadata.creationTime)
         : new Date();
@@ -161,33 +142,29 @@ export default function VolunteerDashboard() {
   };
 
   // ─── Compute Aggregates ────────────────────────────────────────────
-  // 1) Weekly totals (array of 7 numbers), 2) today’s hours, 3) monthly, 4) yearly
-  const weeklyTotals = useMemo(() => {
-    // initialize 7 zeros
-    const out = [0, 0, 0, 0, 0, 0, 0];
+  useEffect(() => {
+    // 1) Build array of 7 daily totals for current week
+    const dailyArr = [0, 0, 0, 0, 0, 0, 0];
     logs.forEach((entry) => {
       const idx = weekStrings.indexOf(entry.date);
       if (idx !== -1) {
-        out[idx] += Number(entry.hours);
+        dailyArr[idx] += Number(entry.hours);
       }
     });
-    return out;
-  }, [logs, weekStrings]);
+    setWeeklyTotals(dailyArr);
 
-  useEffect(() => {
-    // Today's hours
+    // 2) Today's hours
     const t = logs.reduce((sum, entry) => {
       return entry.date === todayString ? sum + Number(entry.hours) : sum;
     }, 0);
     setTodayHours(t);
 
-    // Weekly total: just sum weeklyTotals
-    const wSum = weeklyTotals.reduce((a, b) => a + b, 0);
-    setWeeklyTotal(wSum);
+    // 3) Weekly total sum
+    const wSum = dailyArr.reduce((a, b) => a + b, 0);
+    setWeeklyTotalSum(wSum);
 
-    // Monthly total: sum logs whose month matches current month
+    // 4) Monthly total
     const now = new Date();
-    const monthStr = `${now.getMonth() + 1}/${now.getFullYear()}`; // e.g. "6/2025"
     const mSum = logs.reduce((sum, entry) => {
       const [m, d, y] = entry.date.split('/').map(Number);
       if (m === now.getMonth() + 1 && y === now.getFullYear()) {
@@ -197,12 +174,12 @@ export default function VolunteerDashboard() {
     }, 0);
     setMonthlyTotal(mSum);
 
-    // Yearly total: sum logs from accountCreatedAt up to now
+    // 5) Yearly total (from accountCreatedAt to now)
     if (accountCreatedAt) {
       const start = accountCreatedAt.getTime();
       const ySum = logs.reduce((sum, entry) => {
-        const eDate = new Date(entry.date);
-        if (eDate.getTime() >= start && eDate.getTime() <= Date.now()) {
+        const eDate = new Date(entry.date).getTime();
+        if (eDate >= start && eDate <= Date.now()) {
           return sum + Number(entry.hours);
         }
         return sum;
@@ -211,7 +188,13 @@ export default function VolunteerDashboard() {
     } else {
       setYearlyTotal(0);
     }
-  }, [logs, accountCreatedAt, weeklyTotals, todayString]);
+  }, [logs, accountCreatedAt, weekStrings, todayString]);
+
+  // ─── Filter logs to current week for sessions list ────────────────
+  const filteredWeekLogs = useMemo(
+    () => logs.filter((entry) => weekStrings.includes(entry.date)),
+    [logs, weekStrings]
+  );
 
   // ─── Save New Session ─────────────────────────────────────────────
   const handleSaveSession = async () => {
@@ -241,152 +224,107 @@ export default function VolunteerDashboard() {
     }
   };
 
+  // ─── Save New Goal ────────────────────────────────────────────────
+  const handleSaveGoal = () => {
+    const num = parseFloat(tempGoal);
+    if (isNaN(num) || num <= 0) {
+      return Alert.alert('Invalid Goal', 'Enter a positive number.');
+    }
+    setDailyGoal(num);
+    setGoalModalVisible(false);
+    setTempGoal('');
+  };
+
   // ─── Render Volunteer Log Item ───────────────────────────────────
   const renderLogItem = ({ item }) => (
     <View style={styles.logItem}>
-      <Text style={styles.logSite}>{item.site}</Text>
-      <View style={styles.logMetaRow}>
-        <Text style={styles.logMetaText}>{item.hours} hrs</Text>
-        <Text style={styles.logMetaText}>{item.date}</Text>
-        <Text style={styles.logMetaText}>{item.time}</Text>
+      <View style={styles.logHeader}>
+        <View style={styles.logInfo}>
+          <Text style={styles.logSite}>{item.site}</Text>
+          <Text style={styles.logDate}>{item.date}</Text>
+        </View>
+        <View style={styles.logTimeContainer}>
+          <Text style={styles.logHours}>{item.hours} hrs</Text>
+          <Text style={styles.logTime}>{item.time}</Text>
+        </View>
       </View>
     </View>
   );
 
-  // ─── Year/Month/Week Dropdown UI ─────────────────────────────────
-  const renderRangeDropdown = () => (
-    <Modal
-      transparent
-      animationType="fade"
-      visible={rangeDropdownVisible}
-      onRequestClose={() => setRangeDropdownVisible(false)}
-    >
-      <View style={styles.dropdownOverlay}>
-        <View style={styles.dropdownCard}>
-          {['Week', 'Month', 'Year'].map((r) => (
-            <TouchableOpacity
-              key={r}
-              style={styles.dropdownOption}
-              onPress={() => {
-                setCurrentRange(r);
-                setRangeDropdownVisible(false);
-                // In a real app, you would also recalc `dateRangeLabel` for month/year
-              }}
-            >
-              <Text
-                style={[
-                  styles.dropdownOptionText,
-                  r === currentRange && { fontWeight: '700' },
-                ]}
-              >
-                {r}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </Modal>
-  );
-
-  // ─── Weekly Date Range Label ─────────────────────────────────────
-  useEffect(() => {
-    // For “Week,” show e.g. “Jul 16 – 24” based on weekDates
-    if (currentRange === 'Week') {
-      const start = weekDates[0];
-      const end = weekDates[6];
-      const opts = { month: 'short', day: 'numeric' };
-      const sStr = start.toLocaleDateString(undefined, opts); // e.g. “Jul 16”
-      const eStr = end.toLocaleDateString(undefined, opts);   // e.g. “Jul 24”
-      setDateRangeLabel(`${sStr} – ${eStr}`);
-    } else {
-      // Placeholder for Month/Year labels
-      setDateRangeLabel(currentRange);
-    }
-  }, [currentRange, weekDates]);
-
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Header Bar */}
-        <View style={styles.headerBar}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.headerIcon}
-          >
-            <Ionicons name="chevron-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Volunteer Dashboard</Text>
-          <TouchableOpacity
-            style={styles.headerIcon}
-            onPress={() => setAddModalVisible(true)}
-          >
-            <Ionicons name="add" size={28} color="#FFF" />
-          </TouchableOpacity>
-        </View>
+      {/* ── Static Header Bar ─────────────────────────────────────────── */}
+      <View style={styles.headerBar}>
+        {/* Sign Out Icon */}
+        <TouchableOpacity onPress={() => signOut()} style={styles.logoutContainer}>
+          <Ionicons name="log-out-outline" size={24} color="#000" />
+        </TouchableOpacity>
 
+        <Text style={styles.headerTitle}>Volunteer Dashboard</Text>
+
+        {/* + icon → Open Add Session Modal */}
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setAddModalVisible(true)}
+        >
+          <Ionicons name="add" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Content (ScrollView) ──────────────────────────────────────── */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ── Weekly Bar Chart Card ─────────────────────────────────────── */}
-        <View style={styles.card}>
-          {/* Date Range + Arrows + Dropdown */}
+        <View style={styles.chartCard}>
+          {/* Date Range Label */}
           <View style={styles.rangeHeader}>
-            <TouchableOpacity style={styles.rangeArrow}>
-              <Ionicons name="chevron-back" size={20} color="#FFF" />
-            </TouchableOpacity>
-
-            <Text style={styles.rangeLabel}>{dateRangeLabel}</Text>
-
-            <TouchableOpacity style={styles.rangeArrow}>
-              <Ionicons name="chevron-forward" size={20} color="#FFF" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.rangeDropdown}
-              onPress={() => setRangeDropdownVisible(true)}
-            >
-              <Text style={styles.rangeDropdownText}>{currentRange} </Text>
-              <Ionicons name="chevron-down" size={14} color="#FFF" />
-            </TouchableOpacity>
+            <Text style={styles.rangeLabel}>
+              {`${weekDates[0].toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })} – ${weekDates[6].toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })}`}
+            </Text>
           </View>
 
           {/* Bar Chart Area */}
           <View style={styles.chartContainer}>
-            {/* Horizontal dashed grid lines at 100% and 50% */}
-            <View style={[styles.dashedLine, { top: 0 }]} />
-            <View
-              style={[styles.dashedLine, { top: CHART_HEIGHT / 2 }]}
-            />
-
             <View style={styles.barsRow}>
               {weeklyTotals.map((val, idx) => {
-                const maxVal = Math.max(...weeklyTotals, 1);
-                const rawHeight = (val / maxVal) * (CHART_HEIGHT - 16);
-                const barHeight = Math.max(rawHeight, 8);
+                // Fill ratio vs dailyGoal
+                const ratio = Math.min(val / dailyGoal, 1);
+                const fullBarHeight = CHART_HEIGHT - 40;
+                const fillHeight = ratio * fullBarHeight;
+                const isOver = val > dailyGoal;
 
                 return (
                   <View key={idx} style={styles.barWrapper}>
-                    {/* Background bar (semi-transparent white) */}
-                    <View style={styles.barBackground} />
-
-                    {/* Filled bar (solid white) */}
+                    {/* Grey background bar */}
                     <View
                       style={[
-                        styles.barFill,
-                        { height: barHeight },
+                        styles.barBackground,
+                        { height: fullBarHeight },
                       ]}
                     />
 
-                    {/* Tooltip if selected (Thursday when idx===3) */}
-                    {idx === 3 && (
-                      <View
-                        style={[
-                          styles.tooltip,
-                          { bottom: barHeight + 24 },
-                        ]}
-                      >
-                        <Text style={styles.tooltipText}>{val}</Text>
-                        <View style={styles.tooltipArrow} />
-                      </View>
-                    )}
+                    {/* Filled bar */}
+                    <View
+                      style={[
+                        styles.barFill,
+                        {
+                          height: fillHeight,
+                          backgroundColor: isOver ? '#FFD700' : '#000',
+                        },
+                      ]}
+                    >
+                      {val > 0 && <Text style={styles.barFillText}>{val}</Text>}
+                    </View>
 
+                    {/* Day label */}
                     <Text style={styles.barDayLabel}>{DAYS[idx]}</Text>
                   </View>
                 );
@@ -395,161 +333,240 @@ export default function VolunteerDashboard() {
           </View>
         </View>
 
-        {renderRangeDropdown()}
-
-        {/* ── Today’s Volunteering Card ───────────────────────────────── */}
-        <View style={styles.card}>
-          <View style={styles.scoreHeader}>
-            <Text style={styles.scoreTitle}>Today’s Volunteering</Text>
-            <TouchableOpacity onPress={() => { /* optional details */ }}>
-              <Text style={styles.learnMoreText}>Details</Text>
+        {/* ── Today's Volunteering Card ──────────────────────────────── */}
+        <View style={styles.progressCard}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressTitle}>Today's Volunteering</Text>
+            {/* Settings (gear) icon to change daily goal */}
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={() => {
+                setTempGoal(String(dailyGoal));
+                setGoalModalVisible(true);
+              }}
+            >
+              <Ionicons name="settings-outline" size={20} color="#666" />
             </TouchableOpacity>
           </View>
 
-          {/* Circular Progress (Today’s hours vs DAILY_GOAL) */}
-          <View style={styles.circleWrapper}>
-            <Circle
-              size={120}
-              progress={todayHours / DAILY_GOAL}
-              thickness={12}
-              color="#FFF"
-              unfilledColor="rgba(255,255,255,0.2)"
-              borderWidth={0}
-              showsText={false}
-              strokeCap="round"
-              direction="clockwise"
-            />
-            <View style={styles.circleCenter}>
-              <Text style={styles.circleNumber}>{todayHours}h</Text>
+          {/* Circle Progress */}
+          <View style={styles.circleSection}>
+            <View style={styles.circleWrapper}>
+              <Circle
+                size={100}
+                progress={Math.min(todayHours / dailyGoal, 1)}
+                thickness={8}
+                color="#000"
+                unfilledColor="#DDD"
+                borderWidth={0}
+                showsText={false}
+                strokeCap="round"
+                direction="clockwise"
+              />
+              <View style={styles.circleCenter}>
+                <Text style={styles.circleNumber}>{todayHours}h</Text>
+                <Text style={styles.circleGoal}>of {dailyGoal}h</Text>
+              </View>
             </View>
           </View>
 
-          {/* Sub‐Metrics: Hours This Week / This Month / Total Hours */}
-          <View style={styles.sliderRow}>
-            <Ionicons name="calendar-outline" size={20} color="#FFF" />
-            <Text style={styles.sliderLabel}>Hours This Week</Text>
-            <View style={styles.sliderBarBg}>
-              <View
-                style={[
-                  styles.sliderBarFill,
-                  {
-                    width: `${
-                      weeklyTotal / (DAILY_GOAL * 7) * 100 > 100
-                        ? 100
-                        : (weeklyTotal / (DAILY_GOAL * 7)) * 100
-                    }%`,
-                  },
-                ]}
-              />
+          {/* Sub‐Metrics: Week / Month / Year */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Week Total</Text>
+              <View style={styles.statProgressBar}>
+                <View
+                  style={[
+                    styles.statProgressFill,
+                    {
+                      width: `${
+                        Math.min((weeklyTotalSum / (dailyGoal * 7)) * 100, 100)
+                      }%`,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.statValue}>{weeklyTotalSum} h</Text>
             </View>
-            <Text style={styles.sliderValue}>{weeklyTotal}h</Text>
-          </View>
 
-          <View style={styles.sliderRow}>
-            <Ionicons name="time-outline" size={20} color="#FFF" />
-            <Text style={styles.sliderLabel}>Hours This Month</Text>
-            <View style={styles.sliderBarBg}>
-              <View
-                style={[
-                  styles.sliderBarFill,
-                  {
-                    width: `${
-                      monthlyTotal / (DAILY_GOAL * 30) * 100 > 100
-                        ? 100
-                        : (monthlyTotal / (DAILY_GOAL * 30)) * 100
-                    }%`,
-                  },
-                ]}
-              />
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Month Total</Text>
+              <View style={styles.statProgressBar}>
+                <View
+                  style={[
+                    styles.statProgressFill,
+                    {
+                      width: `${
+                        Math.min((monthlyTotal / (dailyGoal * 30)) * 100, 100)
+                      }%`,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.statValue}>{monthlyTotal} h</Text>
             </View>
-            <Text style={styles.sliderValue}>{monthlyTotal}h</Text>
-          </View>
 
-          <View style={styles.sliderRow}>
-            <Ionicons name="trophy-outline" size={20} color="#FFF" />
-            <Text style={styles.sliderLabel}>Total Hours</Text>
-            <View style={styles.sliderBarBg}>
-              <View
-                style={[
-                  styles.sliderBarFill,
-                  {
-                    width: `${
-                      yearlyTotal / (DAILY_GOAL * 365) * 100 > 100
-                        ? 100
-                        : (yearlyTotal / (DAILY_GOAL * 365)) * 100
-                    }%`,
-                  },
-                ]}
-              />
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Year Total</Text>
+              <View style={styles.statProgressBar}>
+                <View
+                  style={[
+                    styles.statProgressFill,
+                    {
+                      width: `${
+                        Math.min((yearlyTotal / (dailyGoal * 365)) * 100, 100)
+                      }%`,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.statValue}>{yearlyTotal} h</Text>
             </View>
-            <Text style={styles.sliderValue}>{yearlyTotal}h</Text>
           </View>
         </View>
 
-        {/* ── Volunteer Logs List ─────────────────────────────────────── */}
+        {/* ── Volunteer Sessions List ─────────────────────────────────── */}
         <View style={styles.logsContainer}>
-          <Text style={styles.logsHeader}>Volunteer Sessions</Text>
-          {loadingLogs ? (
-            <ActivityIndicator size="large" color="#000" />
-          ) : logs.length === 0 ? (
-            <Text style={styles.emptyLogsText}>
-              No sessions logged yet.
+          <View style={styles.logsHeaderRow}>
+            <Text style={styles.logsHeader}>Volunteer Sessions</Text>
+            <Text style={styles.logsCount}>
+              {filteredWeekLogs.length} sessions
             </Text>
+          </View>
+
+          {loadingLogs ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#000" />
+              <Text style={styles.loadingText}>Loading sessions…</Text>
+            </View>
+          ) : filteredWeekLogs.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>No sessions this week</Text>
+              <Text style={styles.emptySubtitle}>
+                Tap the + button to log a volunteer session
+              </Text>
+            </View>
           ) : (
             <FlatList
-              data={logs.sort(
+              data={filteredWeekLogs.sort(
                 (a, b) =>
                   new Date(b.date + ' ' + b.time) -
                   new Date(a.date + ' ' + a.time)
               )}
               keyExtractor={(item) => item.id}
               renderItem={renderLogItem}
-              contentContainerStyle={{ paddingBottom: 24 }}
               showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
             />
           )}
         </View>
+
+        {/* Extra bottom padding so the bottom tab bar does not overlap */}
+        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* ── Add Session Modal ───────────────────────────────────────── */}
       <Modal
         visible={addModalVisible}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setAddModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Add Volunteer Session</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Site Name"
-              placeholderTextColor="#666"
-              value={newSite}
-              onChangeText={setNewSite}
-            />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Hours (e.g. 2.5)"
-              placeholderTextColor="#666"
-              keyboardType="numeric"
-              value={newHours}
-              onChangeText={setNewHours}
-            />
-            <View style={styles.modalButtonsRow}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Volunteer Session</Text>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalSaveButton]}
-                onPress={handleSaveSession}
+                onPress={() => setAddModalVisible(false)}
+                style={styles.modalClose}
               >
-                <Text style={styles.modalButtonText}>Save</Text>
+                <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Organization/Site</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Enter site name"
+                  placeholderTextColor="#999"
+                  value={newSite}
+                  onChangeText={setNewSite}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Hours Volunteered</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g. 2.5"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                  value={newHours}
+                  onChangeText={setNewHours}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalCancelButton]}
+                style={styles.modalCancelButton}
                 onPress={() => setAddModalVisible(false)}
               >
-                <Text style={[styles.modalButtonText, { color: '#000' }]}>
-                  Cancel
-                </Text>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSaveButton}
+                onPress={handleSaveSession}
+              >
+                <Text style={styles.modalSaveText}>Save Session</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Change Daily Goal Modal ──────────────────────────────────── */}
+      <Modal
+        visible={goalModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setGoalModalVisible(false)}
+      >
+        <View style={styles.dropdownOverlay}>
+          <View style={styles.dropdownCard}>
+            <View style={styles.dropdownHeader}>
+              <Text style={styles.dropdownTitle}>Set Daily Goal (hrs)</Text>
+              <TouchableOpacity
+                onPress={() => setGoalModalVisible(false)}
+                style={styles.dropdownClose}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalBody}>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Enter hours (e.g. 8)"
+                placeholderTextColor="#999"
+                keyboardType="numeric"
+                value={tempGoal}
+                onChangeText={setTempGoal}
+              />
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setGoalModalVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSaveButton}
+                onPress={handleSaveGoal}
+              >
+                <Text style={styles.modalSaveText}>Save Goal</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -563,97 +580,80 @@ const styles = StyleSheet.create({
   // ── Screen Container ───────────────────────────────────────────
   container: {
     flex: 1,
-    backgroundColor: '#FFF', // white background
+    backgroundColor: '#F8F9FA',
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 120, // ensure bottom tab does not overlap
   },
 
   // ── Header Bar ─────────────────────────────────────────────────
   headerBar: {
-    height: 56,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF',
     paddingHorizontal: 16,
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
-  },
-  headerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#000', // black circle behind icon
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-
-  // ── Card Style (both chart and circle card) ────────────────────
-  card: {
-    marginHorizontal: 16,
-    backgroundColor: '#000', // black card
-    borderRadius: CARD_BORDER_RADIUS,
-    padding: CARD_PADDING,
-    marginTop: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-
-  // ── Weekly Range Header (arrows + date + dropdown) ─────────────
-  rangeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  rangeArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  logoutContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rangeLabel: {
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
     flex: 1,
     textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
   },
-  rangeDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    height: 32,
-    borderRadius: 16,
+  addButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFF',
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  rangeDropdownText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
+
+  // ── Chart Card ─────────────────────────────────────────────────
+  chartCard: {
+    backgroundColor: '#FFF',
+    borderRadius: CARD_BORDER_RADIUS,
+    padding: CARD_PADDING,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  // ── Weekly Range Header ────────────────────────────────────────
+  rangeHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  rangeLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
   },
 
   // ── Bar Chart Area ─────────────────────────────────────────────
   chartContainer: {
     height: CHART_HEIGHT,
-    position: 'relative',
-    marginBottom: 8,
-  },
-  dashedLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    borderBottomColor: 'rgba(255,255,255,0.2)',
-    borderBottomWidth: 1,
-    borderStyle: 'dashed',
+    justifyContent: 'flex-end',
   },
   barsRow: {
     flexDirection: 'row',
@@ -664,169 +664,218 @@ const styles = StyleSheet.create({
   barWrapper: {
     flex: 1,
     alignItems: 'center',
+    marginHorizontal: 2,
   },
   barBackground: {
+    width: '80%',
+    backgroundColor: '#E0E0E0',
+    borderRadius: 6,
     position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    height: CHART_HEIGHT - 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 4,
+    bottom: 24,
   },
   barFill: {
-    width: '100%',
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
+    width: '80%',
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
     position: 'absolute',
-    bottom: 0,
-  },
-  barDayLabel: {
-    marginTop: 4,
-    fontSize: 12,
-    color: '#FFF',
-  },
-  barValue: {
-    fontSize: 12,
-    color: '#FFF',
-    marginBottom: 4,
-  },
-
-  // Tooltip for selected bar
-  tooltip: {
-    position: 'absolute',
-    backgroundColor: '#FFF',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    zIndex: 10,
-  },
-  tooltipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000',
-  },
-  tooltipArrow: {
-    position: 'absolute',
-    bottom: -6,
-    left: '50%',
-    marginLeft: -6,
-    width: 0,
-    height: 0,
-    borderTopWidth: 6,
-    borderTopColor: '#FFF',
-    borderLeftWidth: 6,
-    borderLeftColor: 'transparent',
-    borderRightWidth: 6,
-    borderRightColor: 'transparent',
-  },
-
-  // ── “Today’s Volunteering” Header ─────────────────────────────
-  scoreHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  scoreTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  learnMoreText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFF',
-  },
-
-  // ── Circular Progress for Today’s Hours ────────────────────────
-  circleWrapper: {
-    alignSelf: 'center',
-    marginVertical: 12,
-  },
-  circleCenter: {
-    position: 'absolute',
+    bottom: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  circleNumber: {
-    fontSize: 20,
-    fontWeight: '700',
+  barFillText: {
     color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  barDayLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+    position: 'absolute',
+    bottom: 4,
   },
 
-  // ── Sub‐Metrics Sliders ─────────────────────────────────────────
-  sliderRow: {
+  // ── Progress Card ──────────────────────────────────────────────
+  progressCard: {
+    backgroundColor: '#FFF',
+    borderRadius: CARD_BORDER_RADIUS,
+    padding: CARD_PADDING,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  sliderLabel: {
-    flex: 1,
-    marginLeft: 8,
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '500',
+  progressTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
   },
-  sliderBarBg: {
-    flex: 2,
-    height: 6,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 3,
-    marginHorizontal: 8,
-    overflow: 'hidden',
-  },
-  sliderBarFill: {
-    height: 6,
-    backgroundColor: '#FFF',
-  },
-  sliderValue: {
-    width: 48,
-    textAlign: 'right',
-    fontSize: 12,
-    color: '#FFF',
+  settingsButton: {
+    padding: 4,
   },
 
-  // ── Volunteer Logs List ────────────────────────────────────────
+  // ── Circular Progress ──────────────────────────────────────────
+  circleSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  circleWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circleCenter: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circleNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+  },
+  circleGoal: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+
+  // ── Stats Container ────────────────────────────────────────────
+  statsContainer: {
+    gap: 16,
+  },
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  statProgressBar: {
+    width: 80,
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  statProgressFill: {
+    height: '100%',
+    backgroundColor: '#000',
+    borderRadius: 3,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    minWidth: 40,
+    textAlign: 'right',
+  },
+
+  // ── Volunteer Logs Container ───────────────────────────────────
   logsContainer: {
-    marginHorizontal: 16,
-    marginTop: 24,
+    backgroundColor: '#FFF',
+    borderRadius: CARD_BORDER_RADIUS,
+    padding: CARD_PADDING,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  logsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   logsHeader: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 12,
+    color: '#333',
   },
-  emptyLogsText: {
+  logsCount: {
     fontSize: 14,
     color: '#666',
-    textAlign: 'center',
-    marginVertical: 16,
+    fontWeight: '500',
   },
+
+  // ── Loading State ──────────────────────────────────────────────
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
+  },
+
+  // ── Empty State ────────────────────────────────────────────────
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#666',
+    marginTop: 16,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+
+  // ── Log Item ───────────────────────────────────────────────────
   logItem: {
-    backgroundColor: '#FFF',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#EEE',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  logHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logInfo: {
+    flex: 1,
   },
   logSite: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  logDate: {
+    fontSize: 12,
+    color: '#666',
+  },
+  logTimeContainer: {
+    alignItems: 'flex-end',
+  },
+  logHours: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  logMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  logMetaText: {
+  logTime: {
     fontSize: 12,
     color: '#666',
   },
@@ -834,94 +883,136 @@ const styles = StyleSheet.create({
   // ── Add Session Modal ──────────────────────────────────────────
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 20,
   },
   modalCard: {
-    width: '100%',
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#DDD',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
-    textAlign: 'center',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
   },
   modalInput: {
-    width: '100%',
-    height: 44,
+    height: 50,
     borderWidth: 1,
-    borderColor: '#CCC',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: '#000',
-    marginBottom: 12,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#333',
+    backgroundColor: '#F8F9FA',
   },
-  modalButtonsRow: {
+  modalActions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 12,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 8,
-  },
-  modalSaveButton: {
-    backgroundColor: '#000',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    gap: 12,
   },
   modalCancelButton: {
-    backgroundColor: '#EEE',
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  modalButtonText: {
-    fontSize: 14,
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  modalSaveButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalSaveText: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
   },
 
-  // ── Range Dropdown Modal ───────────────────────────────────────
+  // ── Change Goal Modal ───────────────────────────────────────────
   dropdownOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   dropdownCard: {
     backgroundColor: '#FFF',
-    borderRadius: 12,
-    width: width * 0.5,
-    paddingVertical: 8,
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  dropdownOption: {
-    paddingVertical: 12,
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  dropdownOptionText: {
-    fontSize: 16,
-    color: '#000',
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
   },
-
-  // ── Loading Overlay ───────────────────────────────────────────
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+  dropdownClose: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10,
   },
 });
