@@ -30,6 +30,9 @@ import MapScreen from "../screens/MapScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import NexolinkLoginScreen from "../../auth/selectscreen";
 import AccountStackNavigator from "../screens/AccountScreen";
+import LeaderboardScreen from "../screens/LeaderBoardScreen";
+import StatsScreen from "../screens/AccountScreen";
+import BadgesScreen from "../screens/badges";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -116,7 +119,27 @@ const VolunteerLogsStack = () => {
  * AccountStack: if user is logged in, show Profile; otherwise show Login/Register/Delete
  */
 
+const AccountStack = ({ route }: any) => {
+  const navigation = useNavigation();
 
+  // Whenever the “Search” tab regains focus, force it back to SearchScreen:
+  useFocusEffect(
+    React.useCallback(() => {
+      navigation.reset({ index: 0, routes: [{ name: "leaderboard" }] });
+    }, [navigation])
+  );
+
+  return (
+    <Stack.Navigator
+      initialRouteName="leaderboard"
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+      <Stack.Screen name="Badges" component={BadgesScreen} />
+      <Stack.Screen name="Stats" component={AccountStackNavigator} />
+    </Stack.Navigator>
+  );
+};
 // ─── BOTTOM‐TAB CONFIGURATION ────────────────────────────────────────
 // We give each tab a “route” name that must exactly match what you call in navigation.navigate().
 // The very first tab is now named "Search" so that navigating to "Search" will work.
@@ -124,7 +147,7 @@ const TabArr = [
   { route: "Search",    icon: "home",       component: HomeStack },
   { route: "Volunteer", icon: "team",       component: VolunteerLogsStack },
   { route: "Map",       icon: "enviromento", component: MapScreen },
-  { route: "Account",   icon: "user",       component: AccountStackNavigator },
+  { route: "Account",   icon: "user",       component: AccountStack },
 ];
 
 // Helper: find index of a route name in the tab state

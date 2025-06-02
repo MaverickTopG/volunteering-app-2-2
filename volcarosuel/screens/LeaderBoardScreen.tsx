@@ -1,333 +1,406 @@
-// LeaderboardScreen.tsx
-import React, { useEffect, useState, useContext } from 'react';
+// /src/screens/LeaderboardScreen.js
+
+import React from 'react';
 import {
   View,
   Text,
-  FlatList,
-  ActivityIndicator,
   StyleSheet,
-  Dimensions,
+  SafeAreaView,
+  TouchableOpacity,
+  StatusBar,
+  Image,
+  FlatList,
 } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { onSnapshot, collection } from 'firebase/firestore';
-import { User as FirebaseUser } from 'firebase/auth';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-import { AuthContext } from '../../auth/AuthContext';
-import { themePacks, seasonal } from '../screens/shop';
-import { db, auth } from '../../auth/firebase';
-import { useFocusEffect } from '@react-navigation/native';
-
-const { width, height } = Dimensions.get('window');
-const refW = 428, refH = 926;
-const scale  = (s: number) => (width  / refW) * s;
-const vScale = (s: number) => (height / refH) * s;
-const ms     = (s: number, f = 0.5) => s + (scale(s) - s) * f;
-
-// default 4-color palette
-const DEFAULT_PALETTE = ['#FFF6E7', '#FFF0D4', '#FFF6E7', '#000'];
-
-interface Player { uid: string; name: string; hours: number }
-
-// 100 humorous placeholders
-const FUNNY_NAMES = [
-  "Mystery Hero","Secret Agent","Ninja Volunteer","Phantom Giver","Invisible Samaritan",
-  "Undercover Helper","Time-Traveler","Rogue Robin Hood","Masked Do-Gooder","Cloaked Contributor",
-  "Stealth Goodwill","Whimsical Warrior","Ghost Helper","Quiet Crusader","Masked Philanthropist",
-  "Hidden Hand","Camouflage Caregiver","Shadow Samaritan","Wandering Benefactor","Silent Sower",
-  "Sneaky Supporter","Covert Kindness","Subtle Samaritan","Midnight Mentor","Hidden Heart",
-  "Secret Support","Stealth Steward","Anonymous Ally","Invisible Ivy","Phantom Philanthropist",
-  "Dusty Do-Gooder","Muted Mentor","Blind Benefactor","Hidden Herald","Secret Shepherd",
-  "Sly Samaritan","Hushed Helper","Guerilla Goodwill","Cloaked Crusader","Secret Smile",
-  "Undercover Uplifter","Stealth Steward","Masked Mentor","Unknown Uplifter","Quiet Quartermaster",
-  "Cloaked Captain","Midnight Medic","Invisible Inspirer","Phantom Philomath","Ghostly Guide",
-  "Hidden Healer","Subterranean Samaritan","Low-key Leader","Secret Sentinel","Quiet Questor",
-  "Masked Maverick","Obscure Oracle","Silent Samaritan","Undercover Umpire","Shadow Shepherd",
-  "Veiled Volunteer","Mystic Mentor","Covert Guide","Sneaky Samaritan","Hidden Handshake",
-  "Subtle Samaritan","Camouflaged Caregiver","Masked Medic","Cloaked Coach","Invisible Instructor",
-  "Phantom Partner","Ghostly Giver","Secret Supporter","Shy Samaritan","Shadowy Samaritan",
-  "Stealthy Spreader","Masked Motivator","Undercover Underdog","Quiet Quester","Hidden Helper",
-  "Mystery Motivator","Phantom Philomath","Ghost Giver","Cloaked Contributor","Subtle Supporter",
-  "Secret Sailor","Silent Sailor","Stealth Scholar","Camouflage Coach","Invisible Icon",
-  "Masked Mastermind","Shadow Shaper","Undercover Umpire","Buried Benefactor","Quiet Queller",
-  "Hidden Harmonizer","Stealth Sprite","Phantom Friend"
+// Dummy “All Leaderboards” data array
+const LEADERBOARD_DATA = [
+  {
+    id: '1',
+    rank: 1,
+    avatar:
+      'https://images.unsplash.com/photo-1603415526960-f4e04fc1c5b3?&w=100&h=100',
+    name: 'Azunyan U. Wu',
+    points: '118,487 pts',
+    level: 'Lvl 10',
+    badgeNumber: 80,
+  },
+  {
+    id: '2',
+    rank: 2,
+    avatar:
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?&w=100&h=100',
+    name: 'Charlotte S. Nova',
+    points: '113,210 pts',
+    level: 'Lvl 9',
+    badgeNumber: 75,
+  },
+  {
+    id: '3',
+    rank: 3,
+    avatar:
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?&w=100&h=100',
+    name: 'The Infiltrator',
+    points: '4,878 pts',
+    level: 'Lvl 5',
+    badgeNumber: 50,
+  },
+  {
+    id: '4',
+    rank: 4,
+    avatar:
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?&w=100&h=100',
+    name: 'Skyler J. Trent',
+    points: '3,540 pts',
+    level: 'Lvl 4',
+    badgeNumber: 40,
+  },
+  // …add more if needed…
 ];
 
-function pickFunnyName(uid: string): string {
-  let hash = 0;
-  for (let i = 0; i < uid.length; i++) {
-    hash = uid.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return FUNNY_NAMES[Math.abs(hash) % FUNNY_NAMES.length];
-}
+const LeaderboardScreen = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
 
-export default function LeaderboardScreen() {
-  const insets = useSafeAreaInsets();
-  const meUid  = (auth.currentUser as FirebaseUser | null)?.uid;
-
-  
-  const [players, setPlayers]             = useState<Player[]>([]);
-  const [loadingPlayers, setLoadingPlayers] = useState(true);
-
-  const { user } = useContext(AuthContext);
-  const [palette, setPalette] = useState(DEFAULT_PALETTE);
-  const [loading, setLoading] = useState(true);
-
-  const loadActiveTheme = async () => {
-    if (!user) {
-      setPalette(DEFAULT_PALETTE);
-      setLoading(false);
-      return;
-    }
-    try {
-      const key = `@shop/active-${user.uid}`;
-      const id  = await AsyncStorage.getItem(key);
-      if (id) {
-        const pack =
-          themePacks.find(t => t.id === id) ||
-          seasonal.find(s => s.id === id);
-        if (pack?.colors) {
-          const c = pack.colors;
-          // fill out exactly 4 slots
-          setPalette([
-            c[0] ?? DEFAULT_PALETTE[0],
-            c[1] ?? DEFAULT_PALETTE[1],
-            c[2] ?? DEFAULT_PALETTE[2],
-            c[3] ?? DEFAULT_PALETTE[3],
-          ]);
-          return;
-        }
-      }
-      // no active theme found
-      setPalette(DEFAULT_PALETTE);
-    } catch (e) {
-      console.warn('Failed loading active theme', e);
-      setPalette(DEFAULT_PALETTE);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // run on mount...
-  useEffect(() => { loadActiveTheme(); }, [user]);
-  // ...and every time screen regains focus
-  useFocusEffect(
-    React.useCallback(() => {
-      loadActiveTheme();
-    }, [user])
-  );
-
-  // subscribe volunteer_logs
-  useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, 'volunteer_logs'),
-      snap => {
-        const map: Record<string, Player> = {};
-        snap.forEach(doc => {
-          const { user_id, hours_contributed = 0, user_name = 'Unknown' } =
-            doc.data() as any;
-          if (!map[user_id]) {
-            map[user_id] = { uid: user_id, name: user_name, hours: 0 };
+  // Tab button that bubbles up to parent navigator
+  const TabButton = ({ title }) => {
+    const isActive = route.name === title;
+    return (
+      <TouchableOpacity
+        style={[styles.tabButton, isActive && styles.activeTabButton]}
+        onPress={() => {
+          if (!isActive) {
+            navigation.getParent()?.navigate(title);
           }
-          map[user_id].hours += +hours_contributed;
-        });
-        setPlayers(Object.values(map).sort((a,b)=>b.hours - a.hours));
-        setLoadingPlayers(false);
-      },
-      err => {
-        console.warn('Leaderboard error', err);
-        setLoadingPlayers(false);
-      }
+        }}
+      >
+        <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+          {title}
+        </Text>
+      </TouchableOpacity>
     );
-    return unsub;
-  }, []);
-
-
-
-  const [BG, ROWBG, CARDBG, TEXTCOL] = palette;
-  const BORDER = TEXTCOL;
-  const ACCENT = BG;
-
-  const podium = players.slice(0,3);
-  const rest   = players.slice(3);
-
-  // Avatar same as before
-  const iconFor = (uid: string) => {
-    const ICONS = [
-      'happy-outline','paw-outline','leaf-outline','planet-outline',
-      'fish-outline','sunny-outline','rocket-outline','ice-cream-outline',
-      'balloon-outline','cafe-outline','bug-outline','bulb-outline',
-      'flame-outline','cloudy-night-outline','game-controller-outline',
-      'heart-outline','musical-notes-outline','pizza-outline',
-      'rainy-outline','snow-outline','star-outline','water-outline',
-      'wine-outline','tennisball-outline',
-    ];
-    let h = 0;
-    for (const c of uid) h = c.charCodeAt(0) + ((h<<5)-h);
-    return ICONS[Math.abs(h) % ICONS.length];
   };
-  const Avatar = ({ p, rank, size }: { p: Player; rank: number; size:number }) => (
-    <View style={{ alignItems:'center' }}>
-      <View style={[
-        styles.avatar,
-        {
-          width: size + scale(6),
-          height: size + scale(6),
-          borderRadius: (size+scale(6))/2,
-          borderColor: BORDER,
-          backgroundColor: TEXTCOL
-        }
-      ]}>
-        <Ionicons name={iconFor(p.uid)} size={size*0.65} color={BG} />
+
+  // Renders each row in “All Leaderboards”
+  const renderRow = ({ item }) => (
+    <View style={styles.lbRow}>
+      <View style={styles.lbRankCircle}>
+        <Text style={styles.lbRankText}>{item.rank}</Text>
       </View>
-      <View style={[
-        styles.chip,
-        { backgroundColor: ACCENT, borderColor: BORDER }
-      ]}>
-        <Text style={[styles.chipTxt,{ color: BORDER }]}>{rank}</Text>
+      <Image source={{ uri: item.avatar }} style={styles.lbAvatar} />
+      <View style={{ flex: 1, marginLeft: 10 }}>
+        <Text style={styles.lbName}>{item.name}</Text>
+        <Text style={styles.lbPointsLvl}>
+          {item.points} · {item.level}
+        </Text>
+      </View>
+      <View style={styles.lbBadgeWrapper}>
+        <View style={styles.lbBadge}>
+          <Text style={styles.lbBadgeText}>{item.badgeNumber}</Text>
+        </View>
       </View>
     </View>
   );
-
-  const Row = ({ item, index }: { item:Player; index:number }) => {
-    const rank = index + 4;
-    const mine = item.uid === meUid;
-    const name = item.name === 'Unknown' ? pickFunnyName(item.uid) : item.name;
-    return (
-      <View style={[
-        styles.row,
-        { backgroundColor: mine ? ACCENT : ROWBG, borderColor: BORDER }
-      ]}>
-        <View style={styles.rowLeft}>
-          <Text style={[styles.rankNo,{ color: BORDER }]}>{rank}</Text>
-          <Avatar p={item} rank={rank} size={scale(34)} />
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.rowName,
-              mine && { color: BORDER, fontWeight:'700' }
-            ]}
-          >{name}</Text>
-        </View>
-        <View style={{ flexDirection:'row', alignItems:'center' }}>
-          <Ionicons
-            name="trophy-outline"
-            size={scale(16)}
-            color={mine ? BORDER : TEXTCOL}
-            style={{ marginRight: scale(4) }}
-          />
-          <Text style={[styles.hoursTxt, mine && { color: BORDER, fontWeight:'700' }]}>
-            {item.hours}
-          </Text>
-        </View>
-      </View>
-    );
-  };
 
   return (
-    <View style={[styles.container,{ backgroundColor: BG }]}>
-      <Text style={[
-        styles.title,
-        { marginTop: insets.top + vScale(-50), color: TEXTCOL }
-      ]}>
-        Leaderboard
-      </Text>
+    <SafeAreaView style={styles.container}>
+      {/* White status bar */}
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      <View style={styles.podium}>
-        {[1,0,2].map(idx => {
-          const p = players[idx];
-          if (!p) return null;
-          const rank = idx+1;
-          const size = rank===1 ? scale(96) : scale(76);
-          const name = p.name === 'Unknown' ? pickFunnyName(p.uid) : p.name;
-          return (
-            <View key={p.uid} style={styles.podiumItem}>
-              <Avatar p={p} rank={rank} size={size} />
-              <Text numberOfLines={1}
-                style={[styles.podiumName,{ width:size+scale(20), color: TEXTCOL }]}
-              >{name}</Text>
-              <View style={{flexDirection:'row',alignItems:'center'}}>
-                <Ionicons name="trophy-outline" size={scale(14)} color={TEXTCOL}/>
-                <Text style={[styles.podiumHours,{ color: TEXTCOL }]}>
-                  {' '}{p.hours} hrs
-                </Text>
-              </View>
-            </View>
-          );
-        })}
+      {/* ─── HEADER ────────────────────────────────────────────────────────── */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.headerButtonText}>‹</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>Achievements</Text>
+
+        <TouchableOpacity style={styles.headerButton}>
+          <Text style={styles.headerButtonText}>⚙</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={[styles.card,{ backgroundColor: CARDBG }]}>
+      {/* ─── TAB NAVIGATION ─────────────────────────────────────────────────── */}
+      <View style={styles.tabContainer}>
+        <TabButton title="Badges" />
+        <TabButton title="Leaderboard" />
+        <TabButton title="Stats" />
+      </View>
+
+      {/* ─── MAIN CONTENT ───────────────────────────────────────────────────── */}
+      <View style={styles.content}>
+        {/* Top section: small trophy icon, avatar circle, small chart icon */}
+        <View style={styles.topSection}>
+          <TouchableOpacity style={styles.smallCircleBtn}>
+            <Ionicons name="trophy-outline" size={24} color="#333333" />
+          </TouchableOpacity>
+
+          <View style={styles.avatarWrapper}>
+            <Image
+              source={{
+                uri:
+                  'https://images.unsplash.com/photo-1502735088834-7b5e9c8046d4?&w=200&h=200',
+              }}
+              style={styles.avatarImage}
+            />
+          </View>
+
+          <TouchableOpacity style={styles.smallCircleBtn}>
+            <Ionicons name="bar-chart-outline" size={24} color="#333333" />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.largeScore}>4,878</Text>
+        <View style={styles.scoreSubtitleRow}>
+          <Text style={styles.scoreSubtitle}>The Infiltrator</Text>
+          <Ionicons
+            name="trophy-outline"
+            size={16}
+            color="#FF6B35"
+            style={{ marginHorizontal: 6 }}
+          />
+          <Text style={[styles.scoreSubtitle, { color: '#FF6B35' }]}>
+            3rd Place
+          </Text>
+        </View>
+
+        <TouchableOpacity style={styles.viewStatsButton}>
+          <Ionicons name="bar-chart" size={16} color="#FFFFFF" />
+          <Text style={styles.viewStatsText}> View Stats</Text>
+        </TouchableOpacity>
+
+        {/* ─── “All Leaderboards” HEADER ──────────────────────────────────── */}
+        <View style={styles.allLbHeader}>
+          <Text style={styles.allLbTitle}>All Leaderboards</Text>
+          <TouchableOpacity>
+            <Text style={styles.allLbSeeAll}>See All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ─── LIST (FlatList) ────────────────────────────────────────────── */}
         <FlatList
-          data={rest}
-          keyExtractor={p=>p.uid}
-          renderItem={Row}
+          data={LEADERBOARD_DATA}
+          keyExtractor={(item) => item.id}
+          renderItem={renderRow}
+          ItemSeparatorComponent={() => (
+            <View style={styles.separator} />
+          )}
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={()=> <View style={{height:1,backgroundColor: BORDER+'33'}}/>}
-          contentContainerStyle={{ paddingBottom: vScale(20) }}
+          contentContainerStyle={{ paddingBottom: 40 }}
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
-}
+};
+
+export default LeaderboardScreen;
 
 const styles = StyleSheet.create({
-  container:{ flex:1, paddingHorizontal: scale(20) },
-  title:{
-    textAlign:'center',
-    fontSize: ms(24),
-    fontWeight:'700',
-    marginBottom: vScale(92),
-    top:vScale(60)
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  podium:{
-    flexDirection:'row',
-    justifyContent:'space-between',
-    marginBottom: vScale(24),
-  },
-  podiumItem:{ alignItems:'center', flex:1 },
-  avatar:{
-    borderWidth: scale(3),
-    justifyContent:'center',
-    alignItems:'center',
-  },
-  chip:{
-    position:'absolute',
-    bottom:-scale(28)/2,
-    width: scale(28),
-    height: scale(28),
-    borderRadius: scale(28)/2,
-    alignItems:'center',
-    justifyContent:'center',
-    borderWidth: scale(2),
-  },
-  chipTxt:{ fontWeight:'700', fontSize: ms(12) },
-  podiumName:{ fontWeight:'600', marginTop: vScale(14), fontSize: ms(14), textAlign:'center' },
-  podiumHours:{ fontSize: ms(12) },
 
-  card:{
-    flex:1,
-    borderRadius: scale(20),
-    paddingVertical: vScale(8),
-    paddingHorizontal: scale(12),
+  // Header
+  header: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  row:{
-    flexDirection:'row',
-    alignItems:'center',
-    paddingVertical: vScale(12),
-    paddingHorizontal: scale(10),
-    borderRadius: scale(14),
-    borderWidth: 1,
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F8F8F8',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  rowLeft:{ flexDirection:'row', alignItems:'center', flex:1 },
-  rankNo:{
-    width: scale(24),
-    textAlign:'center',
-    fontWeight:'700',
-    marginRight: scale(10),
-    fontSize: ms(14),
+  headerButtonText: {
+    fontSize: 24,
+    color: '#333333',
+    fontWeight: '300',
   },
-  rowName:{ flex:1, marginLeft: scale(10), fontSize: ms(15), fontWeight:'600' },
-  hoursTxt:{ fontSize: ms(15), fontWeight:'600' },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+  },
+
+  // Tabs
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    justifyContent: 'space-between',
+  },
+  tabButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    backgroundColor: 'transparent',
+  },
+  activeTabButton: {
+    backgroundColor: '#000000',
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  activeTabText: {
+    color: '#FFFFFF',
+  },
+
+  // Main content wrapper
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+
+  // Top section: icons + avatar
+  topSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  smallCircleBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarWrapper: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: '#FF6B35',
+    overflow: 'hidden',
+    alignSelf: 'center',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  largeScore: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  scoreSubtitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  scoreSubtitle: {
+    fontSize: 14,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  viewStatsButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FF6B35',
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginTop: 12,
+  },
+  viewStatsText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  allLbHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 30,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  allLbTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  allLbSeeAll: {
+    fontSize: 14,
+    color: '#FF6B35',
+    fontWeight: '500',
+  },
+
+  // Each leaderboard row
+  lbRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  lbRankCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#F8F8F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lbRankText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  lbAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginLeft: 10,
+  },
+  lbName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000000',
+  },
+  lbPointsLvl: {
+    fontSize: 12,
+    color: '#666666',
+    marginTop: 2,
+  },
+  lbBadgeWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lbBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lbBadgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+  },
+
+  separator: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 4,
+  },
 });

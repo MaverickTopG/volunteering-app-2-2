@@ -1,250 +1,256 @@
-// AccountScreen.js
-import React, { useState, useEffect, useContext } from 'react';
+// /src/screens/StatsScreen.js
+
+import React from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
   StyleSheet,
-  Dimensions,
-  Linking,
+  SafeAreaView,
+  TouchableOpacity,
+  StatusBar,
+  ScrollView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-import { AuthContext } from '../../auth/AuthContext';
-// Make sure your shop file exports these two arrays:
-import { themePacks, seasonal } from './shop';
-
-const { width, height } = Dimensions.get('window');
-const guidelineBaseWidth = 428;
-const guidelineBaseHeight = 926;
-const scale = s => (width  / guidelineBaseWidth)  * s;
-const vScale= s => (height / guidelineBaseHeight) * s;
-
-// Your original default light/pink palette:
-const DEFAULT_PALETTE = [
-  '#FFF6E7', // background
-  '#FFF0D4', // header gradient start
-  '#FFE8C9', // header gradient end
-  '#333333'  // text/icons
+// Dummy stats cards data
+const STATS_DATA = [
+  {
+    id: '1',
+    label: 'Total Days',
+    value: '9',
+    icon: 'calendar-outline',
+    backgroundColor: '#FF6B35', // orange
+    textColor: '#FFFFFF',
+  },
+  {
+    id: '2',
+    label: 'Exercises Done',
+    value: '88',
+    icon: 'barbell-outline',
+    backgroundColor: '#4285F4', // blue
+    textColor: '#FFFFFF',
+  },
+  {
+    id: '3',
+    label: 'Activities',
+    value: '225',
+    icon: 'walk-outline',
+    backgroundColor: '#888888', // gray
+    textColor: '#FFFFFF',
+  },
+  {
+    id: '4',
+    label: 'Calories',
+    value: '1,578',
+    icon: 'flame-outline',
+    backgroundColor: '#A259FF', // purple
+    textColor: '#FFFFFF',
+  },
 ];
 
-function AccountScreen() {
-  const { user } = useContext(AuthContext);
-  const nav      = useNavigation();
-  const [palette, setPalette] = useState(DEFAULT_PALETTE);
-  const [loading, setLoading] = useState(true);
+const StatsScreen = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
 
-  const loadActiveTheme = async () => {
-    if (!user) {
-      setPalette(DEFAULT_PALETTE);
-      setLoading(false);
-      return;
-    }
-    try {
-      const key = `@shop/active-${user.uid}`;
-      const id  = await AsyncStorage.getItem(key);
-      if (id) {
-        const pack =
-          themePacks.find(t => t.id === id) ||
-          seasonal.find(s => s.id === id);
-        if (pack?.colors) {
-          const c = pack.colors;
-          // fill out exactly 4 slots
-          setPalette([
-            c[0] ?? DEFAULT_PALETTE[0],
-            c[1] ?? DEFAULT_PALETTE[1],
-            c[2] ?? DEFAULT_PALETTE[2],
-            c[3] ?? DEFAULT_PALETTE[3],
-          ]);
-          return;
-        }
-      }
-      // no active theme found
-      setPalette(DEFAULT_PALETTE);
-    } catch (e) {
-      console.warn('Failed loading active theme', e);
-      setPalette(DEFAULT_PALETTE);
-    } finally {
-      setLoading(false);
-    }
+  // Tab button navigates via parent
+  const TabButton = ({ title }) => {
+    const isActive = route.name === title;
+    return (
+      <TouchableOpacity
+        style={[styles.tabButton, isActive && styles.activeTabButton]}
+        onPress={() => {
+          if (!isActive) {
+            navigation.getParent()?.navigate(title);
+          }
+        }}
+      >
+        <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+          {title}
+        </Text>
+      </TouchableOpacity>
+    );
   };
 
-  // run on mount...
-  useEffect(() => { loadActiveTheme(); }, [user]);
-  // ...and every time screen regains focus
-  useFocusEffect(
-    React.useCallback(() => {
-      loadActiveTheme();
-    }, [user])
-  );
-
-  // not logged in
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.locked}>
-        <Text style={styles.lockedTxt}>
-          You must be logged in to view your account.
-        </Text>
-      </SafeAreaView>
-    );
-  }
-
-  // still waiting on AsyncStorage
-  if (loading) {
-    return (
-      <View style={[styles.loading, { backgroundColor: palette[0] }]}>
-        <ActivityIndicator size="large" color={palette[3]} />
-      </View>
-    );
-  }
-
-  // finally: render with dynamic palette
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: palette[0] }]}>
-      {/* pill header */}
-      <View style={styles.headerWrapper}>
-        <LinearGradient
-          colors={[palette[1], palette[2]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerPill}
+    <SafeAreaView style={styles.container}>
+      {/* Use dark‐content on white BG */}
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* ─── HEADER ───────────────────────────────────────────────────── */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.goBack()}
         >
-          <Text style={[styles.headerTitle, { color: palette[3] }]}>
-            Account
-          </Text>
-        </LinearGradient>
+          <Text style={styles.headerButtonText}>‹</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>Achievements</Text>
+
+        <TouchableOpacity style={styles.headerButton}>
+          <Text style={styles.headerButtonText}>⚙</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <TouchableOpacity
-          style={[styles.row, { backgroundColor: palette[1] }]}
-          onPress={() =>
-            Linking.openURL('https://mavericktopg.github.io/privacy_policy.html')
-          }
-        >
-          <Text style={[styles.rowText, { color: palette[3] }]}>
-            Privacy Policy
-          </Text>
+      {/* ─── TAB NAVIGATION ───────────────────────────────────────────────── */}
+      <View style={styles.tabContainer}>
+        <TabButton title="Badges" />
+        <TabButton title="Leaderboard" />
+        <TabButton title="Stats" />
+      </View>
+
+      {/* ─── STATS GRID + MONTH DROPDOWN ────────────────────────────────────── */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.statsGrid}>
+          {STATS_DATA.map((stat) => (
+            <View
+              key={stat.id}
+              style={[
+                styles.statCard,
+                { backgroundColor: stat.backgroundColor },
+              ]}
+            >
+              <Ionicons name={stat.icon} size={24} color={stat.textColor} />
+              <Text
+                style={[
+                  styles.statValue,
+                  { color: stat.textColor },
+                ]}
+              >
+                {stat.value}
+              </Text>
+              <Text
+                style={[
+                  styles.statLabel,
+                  { color: stat.textColor },
+                ]}
+              >
+                {stat.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Month dropdown pill */}
+        <TouchableOpacity style={styles.monthDropdown}>
+          <Ionicons name="calendar-outline" size={16} color="#333333" />
+          <Text style={styles.monthText}> January 2025</Text>
           <Ionicons
-            name="chevron-forward"
-            size={scale(20)}
-            color={palette[3]}
+            name="chevron-down-outline"
+            size={16}
+            color="#333333"
+            style={{ marginLeft: 4 }}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.row, { backgroundColor: palette[1] }]}
-          onPress={() => nav.navigate('AboutNexolink')}
-        >
-          <Text style={[styles.rowText, { color: palette[3] }]}>
-            About Nexolink
-          </Text>
-          <Ionicons
-            name="chevron-forward"
-            size={scale(20)}
-            color={palette[3]}
-          />
-        </TouchableOpacity>
+        <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
   );
-}
+};
 
-function AboutNexolinkScreen({ navigation }) {
-  return (
-    <SafeAreaView style={aboutStyles.container}>
-      <TouchableOpacity
-        style={aboutStyles.backButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Ionicons name="arrow-back" size={scale(24)} color="#333" />
-      </TouchableOpacity>
-      <ScrollView contentContainerStyle={aboutStyles.scrollContent}>
-        <Text style={aboutStyles.header}>About Nexolink</Text>
-        <Text style={aboutStyles.bodyText}>
-          Welcome to Nexolink! We believe that volunteering is the heart of
-          community connection. Nexolink is dedicated to bridging passionate
-          volunteers with organizations that need them most. Our mission is to
-          create a vibrant network where every act of kindness makes a
-          difference. Thank you for joining us in making the world a better
-          place.
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const Stack = createStackNavigator();
-export default function AccountStackNavigator() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Account"       component={AccountScreen} />
-      <Stack.Screen name="AboutNexolink" component={AboutNexolinkScreen} />
-    </Stack.Navigator>
-  );
-}
+export default StatsScreen;
 
 const styles = StyleSheet.create({
-  container:     { flex: 1 },
-  loading:       { flex:1,justifyContent:'center',alignItems:'center' },
-  locked:        {
-    flex:1,justifyContent:'center',alignItems:'center',
-    backgroundColor:'#FFF6E7'
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  lockedTxt:     { fontSize:scale(18),color:'#333' },
+  header: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F8F8F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerButtonText: {
+    fontSize: 24,
+    color: '#333333',
+    fontWeight: '300',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+  },
 
-  headerWrapper: {
-    alignItems:'center',
-    marginTop:vScale(10),
-    marginBottom:vScale(10)
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    justifyContent: 'space-between',
   },
-  headerPill:    {
-    width:'90%',
-    paddingVertical:vScale(14),
-    borderRadius:scale(50),
-    alignItems:'center'
+  tabButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    backgroundColor: 'transparent',
   },
-  headerTitle:   {
-    fontSize:scale(22),
-    fontWeight:'700'
+  activeTabButton: {
+    backgroundColor: '#000000',
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  activeTabText: {
+    color: '#FFFFFF',
   },
 
-  scrollContent: { paddingHorizontal:scale(16) },
-  row:           {
-    flexDirection:'row',
-    justifyContent:'space-between',
-    alignItems:'center',
-    borderRadius:scale(12),
-    padding:scale(12),
-    marginBottom:vScale(12)
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
-  rowText:       { fontSize:scale(14),fontWeight:'500' },
-});
 
-const aboutStyles = StyleSheet.create({
-  container:     { flex:1, backgroundColor:'#fff6e7' },
-  backButton:    {
-    position:'absolute',top:vScale(112),left:scale(10),
-    zIndex:1,padding:scale(10)
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
   },
-  scrollContent: {
-    padding:scale(20),
-    paddingTop:vScale(60)
+  statCard: {
+    width: '48%',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'center',
   },
-  header:        {
-    fontSize:scale(26),fontWeight:'bold',
-    color:'#333',marginBottom:vScale(20),
-    textAlign:'center'
+  statValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginTop: 8,
   },
-  bodyText:      {
-    fontSize:scale(16),color:'#333',
-    lineHeight:scale(24),textAlign:'center'
+  statLabel: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+
+  monthDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 25,
+  },
+  monthText: {
+    fontSize: 14,
+    color: '#333333',
+    fontWeight: '500',
   },
 });
