@@ -101,7 +101,7 @@ function App() {
       {showSplash && (
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]}>
           <Image
-            source={require("./assets/splashscreen.jpg")}
+            source={require("./assets/splash2.png")}
             style={styles.splashImage}
           />
         </Animated.View>

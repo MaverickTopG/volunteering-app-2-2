@@ -17,7 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import Svg, { Circle } from 'react-native-svg';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-import { auth, db } from '../../auth/firebase'; // Adjust this import if your Firebase setup lives elsewhere
+import { auth, db } from '../../auth/firebase';
 import {
   collection,
   query,
@@ -34,32 +34,33 @@ const { width } = Dimensions.get('window');
 
 // ─── Exactly 10 badge thresholds (cumulative volunteer hours) ───────
 const BADGE_DEFINITIONS = [
-  { id: 'badge_1',  title: 'First Step',         target: 1,   icon: 'time-outline',            type: 'circle' },
-  { id: 'badge_5',  title: 'Committed',          target: 5,   icon: 'flash-outline',           type: 'circle' },
-  { id: 'badge_10', title: 'Champion',           target: 10,  icon: 'trophy-outline',          type: 'shield' },
-  { id: 'badge_15', title: 'Hero',               target: 15,  icon: 'medal-outline',           type: 'circle' },
-  { id: 'badge_20', title: 'Superstar',          target: 20,  icon: 'star-outline',            type: 'shield' },
-  { id: 'badge_25', title: 'Legend',             target: 25,  icon: 'ribbon-outline',          type: 'banner' },
-  { id: 'badge_30', title: 'Guardian',           target: 30,  icon: 'heart-outline',           type: 'circle' },
-  { id: 'badge_40', title: 'Community Leader',   target: 40,  icon: 'people-outline',          type: 'shield' },
-  { id: 'badge_50', title: 'Diamond Volunteer',  target: 50,  icon: 'diamond-outline',         type: 'banner' },
-  { id: 'badge_75', title: 'Master Volunteer',   target: 75,  icon: 'checkmark-circle-outline', type: 'shield' },
+  { id: 'badge_1', title: 'First Step', target: 1, icon: 'time-outline', type: 'circle' },
+  { id: 'badge_5', title: 'Committed', target: 5, icon: 'flash-outline', type: 'circle' },
+  { id: 'badge_10', title: 'Champion', target: 10, icon: 'trophy-outline', type: 'shield' },
+  { id: 'badge_15', title: 'Hero', target: 15, icon: 'medal-outline', type: 'circle' },
+  { id: 'badge_20', title: 'Superstar', target: 20, icon: 'star-outline', type: 'shield' },
+  { id: 'badge_25', title: 'Legend', target: 25, icon: 'ribbon-outline', type: 'banner' },
+  { id: 'badge_30', title: 'Guardian', target: 30, icon: 'heart-outline', type: 'circle' },
+  { id: 'badge_40', title: 'Community Leader', target: 40, icon: 'people-outline', type: 'shield' },
+  { id: 'badge_50', title: 'Diamond Volunteer', target: 50, icon: 'diamond-outline', type: 'banner' },
+  { id: 'badge_75', title: 'Master Volunteer', target: 75, icon: 'checkmark-circle-outline', type: 'shield' },
 ];
 const BADGE_IDS = BADGE_DEFINITIONS.map((b) => b.id);
 
 // Firestore doc IDs:
-const CLAIMED_DOC_ID   = 'status'; // users/{uid}/claimedBadges/status
-const FAVORITES_DOC_ID = 'list';   // users/{uid}/favorites/list
+const CLAIMED_DOC_ID = 'status'; // users/{uid}/claimedBadges/status
+const FAVORITES_DOC_ID = 'list'; // users/{uid}/favorites/list
 
 export default function VolunteerBadgesScreen() {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // ───── App State ───────────────────────────────────────────────────
-  const [totalHours, setTotalHours]       = useState(0);
+  // ─── STATE & REFS ─────────────────────────────────────────────────
+  const [authUser, setAuthUser] = useState(null);
+  const [totalHours, setTotalHours] = useState(0);
   const [claimedStatus, setClaimedStatus] = useState({}); // { badge_1: boolean, … }
-  const [favorites, setFavorites]         = useState([]); // up to 3 badge IDs
-  const [loading, setLoading]             = useState(true);
+  const [favorites, setFavorites] = useState([]); // up to 3 badge IDs
+  const [loading, setLoading] = useState(true);
   const [showAllProgress, setShowAllProgress] = useState(false);
 
   // Animated “pulse” values, one per badge
@@ -72,25 +73,37 @@ export default function VolunteerBadgesScreen() {
     animatedValuesRef.current = vals;
   }, []);
 
-  // ───── On mount / auth change: load hours, claimed badges, and favorites ──
+  // ─── AUTH LISTENER ─────────────────────────────────────────────────
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        await loadTotalHours(user.uid);
-        await loadClaimedStatus(user.uid);
-        await loadFavorites(user.uid);
-      } else {
-        // If not signed in, reset
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+      if (!user) {
+        // Reset badge state on logout
         setTotalHours(0);
-        const emptyMap = {};
-        BADGE_IDS.forEach((id) => (emptyMap[id] = false));
-        setClaimedStatus(emptyMap);
+        const resetMap = {};
+        BADGE_IDS.forEach((id) => (resetMap[id] = false));
+        setClaimedStatus(resetMap);
         setFavorites([]);
         setLoading(false);
       }
     });
     return () => unsubscribe();
   }, []);
+
+  // ─── LOAD USER DATA WHEN authUser CHANGES ──────────────────────────
+  useEffect(() => {
+    if (!authUser) return;
+
+    const loadData = async () => {
+      setLoading(true);
+      await loadTotalHours(authUser.uid);
+      await loadClaimedStatus(authUser.uid);
+      await loadFavorites(authUser.uid);
+      setLoading(false);
+    };
+
+    loadData();
+  }, [authUser]);
 
   /**
    * Sum up all hours_contributed from volunteer_logs for this user.
@@ -119,7 +132,6 @@ export default function VolunteerBadgesScreen() {
    * If missing, write all flags false.
    */
   const loadClaimedStatus = async (uid) => {
-    setLoading(true);
     try {
       const ref = doc(db, 'users', uid, 'claimedBadges', CLAIMED_DOC_ID);
       const snap = await getDoc(ref);
@@ -138,8 +150,6 @@ export default function VolunteerBadgesScreen() {
       const fallback = {};
       BADGE_IDS.forEach((id) => (fallback[id] = false));
       setClaimedStatus(fallback);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -148,7 +158,6 @@ export default function VolunteerBadgesScreen() {
    * If missing, write list: [].
    */
   const loadFavorites = async (uid) => {
-    setLoading(true);
     try {
       const ref = doc(db, 'users', uid, 'favorites', FAVORITES_DOC_ID);
       const snap = await getDoc(ref);
@@ -163,8 +172,6 @@ export default function VolunteerBadgesScreen() {
       console.error('▶︎ loadFavorites error:', e);
       Alert.alert('Error', 'Could not load favorite badges.');
       setFavorites([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -193,9 +200,7 @@ export default function VolunteerBadgesScreen() {
     setFavorites(newList);
 
     try {
-      const user = auth.currentUser;
-      if (!user) return;
-      const ref = doc(db, 'users', user.uid, 'favorites', FAVORITES_DOC_ID);
+      const ref = doc(db, 'users', authUser.uid, 'favorites', FAVORITES_DOC_ID);
       await updateDoc(ref, { list: newList });
     } catch (e) {
       console.error('▶︎ toggleFavorite error:', e);
@@ -213,21 +218,27 @@ export default function VolunteerBadgesScreen() {
       Alert.alert('Not Ready', `You need ${target} hours to unlock this badge.`);
       return;
     }
-    const user = auth.currentUser;
-    if (!user) return;
 
     // Animate pulse
     const animVal = animatedValuesRef.current[badgeId];
     if (animVal) {
       Animated.sequence([
-        Animated.timing(animVal, { toValue: 1, duration: 300, useNativeDriver: true }),
-        Animated.timing(animVal, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(animVal, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animVal, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
       ]).start();
     }
 
     // Update Firestore
     try {
-      const ref = doc(db, 'users', user.uid, 'claimedBadges', CLAIMED_DOC_ID);
+      const ref = doc(db, 'users', authUser.uid, 'claimedBadges', CLAIMED_DOC_ID);
       await updateDoc(ref, { [badgeId]: true });
       setClaimedStatus((prev) => ({ ...prev, [badgeId]: true }));
       Alert.alert('Badge Claimed!', 'Congratulations on unlocking a new badge!');
@@ -237,12 +248,34 @@ export default function VolunteerBadgesScreen() {
     }
   };
 
-  // If still loading, show spinner:
-  if (loading) {
+  // ─── RENDER LOGIC ───────────────────────────────────────────────────
+
+  // If still loading (either auth or data), show spinner:
+  if (loading || authUser === null) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color="#FF6B35" />
       </View>
+    );
+  }
+
+  // If not logged in, show prompt to login
+  if (!authUser) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.notLoggedInContainer}>
+          <View style={styles.iconStack}>
+            <Ionicons name="trophy-outline" size={80} color="#FF6B35" />
+            <Ionicons
+              name="badge-outline"
+              size={40}
+              color="#FF6B35"
+              style={styles.innerBadgeIcon}
+            />
+          </View>
+          <Text style={styles.notLoggedInText}>Login to access badges</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -252,25 +285,20 @@ export default function VolunteerBadgesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* ─── HEADER ───────────────────────────────────────────────────────── */}
-      
-      
       <View style={styles.header}>
-  {/* Left spacer (width 40) */}
-  <View style={{ width: 40 }} />
-
-  {/* Centered title */}
-  <Text style={styles.headerTitle}>My Badges</Text>
-
-  {/* Right spacer (width 40) */}
-  <View style={{ width: 40 }} />
-</View>
-     
+        {/* Left spacer (width 40) */}
+        <View style={{ width: 40 }} />
+        {/* Centered title */}
+        <Text style={styles.headerTitle}>My Badges</Text>
+        {/* Right spacer (width 40) */}
+        <View style={{ width: 40 }} />
+      </View>
 
       {/* ─── TAB NAVIGATION ───────────────────────────────────────────────── */}
       <View style={styles.tabContainer}>
         <TabButton title="Badges" navigation={navigation} />
         <TabButton title="Leaderboard" navigation={navigation} />
-        <TabButton title="Stats" navigation={navigation} />
+        <TabButton title="Account" navigation={navigation} />
       </View>
 
       {/* ─── MAIN SCROLLABLE CONTENT ───────────────────────────────────────── */}
@@ -292,11 +320,7 @@ export default function VolunteerBadgesScreen() {
               return (
                 <View key={favId} style={styles.featuredBadgeContainer}>
                   <View style={styles.featuredBadgeBorder}>
-                    <Ionicons
-                      name={info.icon}
-                      size={32}
-                      color="#FF6B35"
-                    />
+                    <Ionicons name={info.icon} size={32} color="#FF6B35" />
                   </View>
                   <Text style={styles.featuredBadgeTitle}>{info.title}</Text>
                 </View>
@@ -308,11 +332,7 @@ export default function VolunteerBadgesScreen() {
             {Array.from({ length: 3 - favorites.length }).map((_, idx) => (
               <View key={'empty-fav-' + idx} style={styles.featuredBadgeContainer}>
                 <View style={styles.featuredBadgeBorder}>
-                  <Ionicons
-                    name="help-circle-outline"
-                    size={32}
-                    color="#D1D5DB"
-                  />
+                  <Ionicons name="help-circle-outline" size={32} color="#D1D5DB" />
                 </View>
                 <Text style={[styles.featuredBadgeTitle, { color: '#9CA3AF' }]}>
                   Favorite
@@ -334,43 +354,45 @@ export default function VolunteerBadgesScreen() {
           </View>
 
           <View style={styles.nextBadgeList}>
-            {(showAllProgress ? BADGE_DEFINITIONS : BADGE_DEFINITIONS.slice(0, 4)).map((info) => {
-              const current    = totalHours;
-              const target     = info.target;
-              const percentage = Math.min((current / target) * 100, 100);
-              const isUnlocked = current >= target;
-              const isClaimed  = Boolean(claimedStatus[info.id]);
-              const isFav      = favorites.includes(info.id);
+            {(showAllProgress ? BADGE_DEFINITIONS : BADGE_DEFINITIONS.slice(0, 4)).map(
+              (info) => {
+                const current = totalHours;
+                const target = info.target;
+                const percentage = Math.min((current / target) * 100, 100);
+                const isUnlocked = current >= target;
+                const isClaimed = Boolean(claimedStatus[info.id]);
+                const isFav = favorites.includes(info.id);
 
-              return (
-                <View key={info.id}>
-                  <BadgeProgressRow
-                    info={info}
-                    current={current}
-                    target={target}
-                    percentage={percentage}
-                    isUnlocked={isUnlocked}
-                    isClaimed={isClaimed}
-                    onClaim={() => claimBadge(info.id, target)}
-                    animVal={animatedValuesRef.current[info.id]}
-                  />
+                return (
+                  <View key={info.id}>
+                    <BadgeProgressRow
+                      info={info}
+                      current={current}
+                      target={target}
+                      percentage={percentage}
+                      isUnlocked={isUnlocked}
+                      isClaimed={isClaimed}
+                      onClaim={() => claimBadge(info.id, target)}
+                      animVal={animatedValuesRef.current[info.id]}
+                    />
 
-                  {/* If the badge is claimed, show a small “heart” at top-right to toggle favorite */}
-                  {isClaimed && (
-                    <TouchableOpacity
-                      style={styles.smallHeart}
-                      onPress={() => toggleFavorite(info.id)}
-                    >
-                      <Ionicons
-                        name={isFav ? 'heart' : 'heart-outline'}
-                        size={16}
-                        color={isFav ? '#EF4444' : '#9CA3AF'}
-                      />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })}
+                    {/* If the badge is claimed, show a small “heart” at top-right to toggle favorite */}
+                    {isClaimed && (
+                      <TouchableOpacity
+                        style={styles.smallHeart}
+                        onPress={() => toggleFavorite(info.id)}
+                      >
+                        <Ionicons
+                          name={isFav ? 'heart' : 'heart-outline'}
+                          size={16}
+                          color={isFav ? '#EF4444' : '#9CA3AF'}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              }
+            )}
           </View>
         </View>
 
@@ -378,7 +400,7 @@ export default function VolunteerBadgesScreen() {
         <View style={styles.motivationSection}>
           <Text style={styles.motivationTitle}>Keep Going!</Text>
           <Text style={styles.motivationText}>
-            Every hour of volunteering makes a difference. You’re building a stronger community! 🌟
+            Every hour of volunteering makes a difference. You’re building a stronger community!
           </Text>
         </View>
 
@@ -401,9 +423,7 @@ function TabButton({ title, navigation }) {
         }
       }}
     >
-      <Text style={[styles.tabText, isActive && styles.activeTabText]}>
-        {title}
-      </Text>
+      <Text style={[styles.tabText, isActive && styles.activeTabText]}>{title}</Text>
     </TouchableOpacity>
   );
 }
@@ -458,20 +478,15 @@ function BadgeProgressRow({
       <View style={styles.rowTextContainer}>
         <Text style={styles.rowBadgeTitle}>{info.title}</Text>
         <Text style={styles.rowBadgeSubtitle}>
-          {current >= target
-            ? 'Ready to Claim!'
-            : `${Math.ceil(target - current)} hours to go`}
+          {current >= target ? 'Ready to Claim!' : `${Math.ceil(target - current)} hours to go`}
         </Text>
         <View style={styles.smallProgressBar}>
           <View style={[styles.smallProgressFill, { width: `${percentage}%` }]} />
         </View>
-        <Text style={styles.rowProgressNumbers}>
-          {`${Math.floor(current)} / ${target} hrs`}
-        </Text>
+        <Text style={styles.rowProgressNumbers}>{`${Math.floor(current)} / ${target} hrs`}</Text>
       </View>
 
-      {/* Right: either “Claim” button if unlocked but not claimed,
-           ✔️ if claimed, or lock icon if still locked */}
+      {/* Right: either “Claim” button if unlocked but not claimed, ✔️ if claimed, or lock icon if still locked */}
       <View style={styles.rowButtonWrapper}>
         {isClaimed ? (
           <View style={styles.rowBadgeClaimedCheck}>
@@ -536,7 +551,7 @@ const styles = StyleSheet.create({
   // ── Container ───────────────────────────────────────────────────────
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF', // white background everywhere
+    backgroundColor: '#FFFFFF',
   },
   centerContent: {
     flex: 1,
@@ -559,21 +574,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  backButton: {
-    position: 'absolute',
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F9FAFB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#1F2937',
-    
   },
 
   // ── TAB NAVIGATION ─────────────────────────────────────────────────
@@ -663,7 +667,7 @@ const styles = StyleSheet.create({
   },
   featuredBadgeContainer: {
     alignItems: 'center',
-    width: (width - 80) / 3, // three equal columns with some margin
+    width: (width - 80) / 3,
   },
   featuredBadgeBorder: {
     width: 64,
@@ -704,9 +708,7 @@ const styles = StyleSheet.create({
     color: '#FF6B35',
     fontWeight: '600',
   },
-  nextBadgeList: {
-    // stacked vertically
-  },
+  nextBadgeList: {},
 
   // ── Badge Progress Row ──────────────────────────────────────────────
   progressRow: {
@@ -735,7 +737,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF6B35',
   },
   rowIconReady: {
-    backgroundColor: '#FFF1F0', // very light orange tint
+    backgroundColor: '#FFF1F0',
   },
   rowIconLocked: {
     backgroundColor: '#F9FAFB',
@@ -765,7 +767,6 @@ const styles = StyleSheet.create({
   smallProgressFill: {
     height: '100%',
     backgroundColor: '#FF6B35',
-    borderRadius: 3,
   },
   rowProgressNumbers: {
     fontSize: 12,
@@ -796,7 +797,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#10B981', // green check circle
+    backgroundColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -845,6 +846,27 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+
+  // ── Not Logged In State ─────────────────────────────────────────────
+  notLoggedInContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconStack: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  innerBadgeIcon: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+  },
+  notLoggedInText: {
+    fontSize: 18,
+    color: '#FF6B35',
+    fontWeight: '500',
   },
 
   // ── Bottom Padding ─────────────────────────────────────────────────

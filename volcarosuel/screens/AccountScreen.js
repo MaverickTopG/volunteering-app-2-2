@@ -66,7 +66,7 @@ const StatsScreen = () => {
       <View style={styles.tabContainer}>
         <TabButton title="Badges" />
         <TabButton title="Leaderboard" />
-        <TabButton title="Stats" />
+        <TabButton title="Account" />
       </View>
 
       {/* ─── MAIN CONTENT: two cards (About + Privacy) ───────────────────── */}

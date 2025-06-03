@@ -212,6 +212,18 @@ export default function LeaderboardScreen() {
     );
   };
 
+  // If user is not logged in, show a prompt with an orange trophy icon
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.notLoggedInContainer}>
+          <Ionicons name="trophy-outline" size={64} color="#FF6B35" />
+          <Text style={styles.notLoggedInText}>Login to access leaderboard</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* White status bar */}
@@ -241,9 +253,9 @@ export default function LeaderboardScreen() {
 
         <TouchableOpacity
           style={styles.tabButton}
-          onPress={() => navigation.getParent()?.navigate('Stats')}
+          onPress={() => navigation.getParent()?.navigate('Account')}
         >
-          <Text style={styles.tabText}>Stats</Text>
+          <Text style={styles.tabText}>Account</Text>
         </TouchableOpacity>
       </View>
 
@@ -256,7 +268,6 @@ export default function LeaderboardScreen() {
             {/* Current User Section */}
             {currentUserRank && (
               <View style={styles.currentUserSection}>
-            
                 <Text style={styles.currentUserScore}>
                   {Math.round(currentUserRank.data.totalHours)} h
                 </Text>
@@ -571,5 +582,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 40,
+  },
+
+  // ── Not Logged In State ─────────────────────────────────────────────
+  notLoggedInContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notLoggedInText: {
+    marginTop: 12,
+    fontSize: 18,
+    color: '#FF6B35',
+    fontWeight: '500',
   },
 });

@@ -34,7 +34,6 @@ import { AuthContext } from "../../auth/AuthContext";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // ─── EXACT DIMENSIONS ────────────────────────────────────────────────
-// (All of these remain exactly as before; we’re not touching them.)
 const SEARCH_BAR_HEIGHT = 50;
 const SEARCH_BAR_BORDER_RADIUS = 25;
 const SEARCH_BAR_HORIZONTAL_MARGIN = 20;
@@ -62,17 +61,16 @@ const PROFILE_IMAGE_SIZE = 68;
 const HEART_DIAMETER = 36;
 
 // ─── NEW CATEGORY ARRAY ──────────────────────────────────────────────
-// Each object now has an `id`, `title`, `icon`, and `reference`.
 const categories = [
-  { id: "1", title: "Animals",    icon: "paw-outline",          reference: "Animal" },
-  { id: "2", title: "Arts",       icon: "color-palette-outline", reference: "Arts" },
-  { id: "6", title: "Education",  icon: "school-outline",        reference: "Education" },
-  { id: "7", title: "Environment",icon: "leaf-outline",          reference: "Environment" },
-  { id: "4", title: "Family",     icon: "people-circle-outline",  reference: "Family" },
-  { id: "8", title: "Hospital",   icon: "medkit-outline",         reference: "Hospital" },
-  { id: "9", title: "Library",    icon: "book-outline",           reference: "Library" },
-  { id: "11", title: "Seniors",   icon: "walk-outline",           reference: "Seniors" },
-  { id: "5", title: "Tech",       icon: "laptop-outline",         reference: "Tech" },
+  { id: "1", title: "Animals", icon: "paw-outline", reference: "Animal" },
+  { id: "2", title: "Arts", icon: "color-palette-outline", reference: "Arts" },
+  { id: "6", title: "Education", icon: "school-outline", reference: "Education" },
+  { id: "7", title: "Environment", icon: "leaf-outline", reference: "Environment" },
+  { id: "4", title: "Family", icon: "people-circle-outline", reference: "Family" },
+  { id: "8", title: "Hospital", icon: "medkit-outline", reference: "Hospital" },
+  { id: "9", title: "Library", icon: "book-outline", reference: "Library" },
+  { id: "11", title: "Seniors", icon: "walk-outline", reference: "Seniors" },
+  { id: "5", title: "Tech", icon: "laptop-outline", reference: "Tech" },
 ];
 
 // Trip cards (hard‐code California first, then two others)
@@ -80,15 +78,14 @@ const defaultTrips = [
   {
     id: "CA",
     name: "California",
-    image: require('../../assets/california.png'),
+    image: require("../../assets/california.png"),
   },
   {
     id: "SOON",
     name: "Coming Soon!",
-    image: require('../../assets/bg4.png'),
+    image: require("../../assets/bg4.png"),
   },
 ];
-
 
 // Replace with your own secure mechanism
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
@@ -96,6 +93,9 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 export default function SearchScreen() {
   const navigation = useNavigation();
   const { user } = useContext(AuthContext);
+
+  // ref for the TextInput inside chatbot
+  const inputRef = useRef(null);
 
   // References for scrolling & animation
   const carouselRef = useRef(null);
@@ -129,7 +129,6 @@ export default function SearchScreen() {
   const [favoriteIds, setFavoriteIds] = useState([]);
 
   // Currently‐selected category pill → store the actual `reference` string
-  // Default to the first category’s `reference` ("Animal").
   const [selectedCategory, setSelectedCategory] = useState(categories[0].reference);
 
   // Currently‐selected state code (e.g. “CA”)
@@ -139,7 +138,7 @@ export default function SearchScreen() {
   const [bottomSheetMsg, setBottomSheetMsg] = useState("");
   const bottomSheetOpacity = useRef(new Animated.Value(0)).current;
 
-  // ─── Load user-specific theme (if any):
+  // ─── Load user-specific theme (if any)
   useEffect(() => {
     if (!user) {
       setLoadingTheme(false);
@@ -195,15 +194,18 @@ export default function SearchScreen() {
     }
   }, [messages]);
 
-  // Animate overlay fade‐in when showChatbot becomes true
+  // Animate overlay fade‐in when showChatbot becomes true and focus input
   useEffect(() => {
     if (showChatbot) {
       overlayOpacity.setValue(0);
       Animated.timing(overlayOpacity, {
         toValue: 1,
-        duration: 250, // 250ms fade in
+        duration: 250,
         useNativeDriver: true,
       }).start();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
   }, [showChatbot]);
 
@@ -216,7 +218,6 @@ export default function SearchScreen() {
       duration: 250,
       useNativeDriver: true,
     }).start(() => {
-      // hide after 2 seconds
       setTimeout(() => {
         Animated.timing(bottomSheetOpacity, {
           toValue: 0,
@@ -230,13 +231,8 @@ export default function SearchScreen() {
   // Open chat overlay
   const openChatbot = () => {
     setShowChatbot(true);
-    Animated.timing(overlayOpacity, {
-      toValue: 1,
-      duration: 1000, // 1 second fade in
-      useNativeDriver: true,
-    }).start();
   };
-  // Close chat overlay with 250ms fade out
+  // Close chat overlay with fade out
   const closeChatbot = () => {
     Animated.timing(overlayOpacity, {
       toValue: 0,
@@ -277,14 +273,12 @@ export default function SearchScreen() {
     setInputText("");
     setIsTyping(true);
 
-    // Build conversation array for ChatGPT
     const chatHistory = messages.map((m) => ({
       role: m.sender === "user" ? "user" : "assistant",
       content: m.text,
     }));
     chatHistory.push({ role: "user", content: userMessage.text });
 
-    // Prepend a system prompt if databaseMode is on
     const systemPrompt = databaseMode
       ? {
           role: "system",
@@ -343,11 +337,10 @@ export default function SearchScreen() {
   };
 
   // Handle “See more” inside a trip card → Carousel screen
-  // We pass both the selected volunteer category (reference) and the selected state code
   const handleSeeMore = (tripItem) => {
     navigation.navigate("Carousel", {
-      category: selectedCategory,   // e.g. "Animal", "Tech", etc.
-      stateCode: selectedStateCode, // e.g. "CA"
+      category: selectedCategory,
+      stateCode: selectedStateCode,
       locationId: tripItem.id,
       locationName: tripItem.name,
     });
@@ -403,7 +396,7 @@ export default function SearchScreen() {
     );
   };
 
-  // Render one category pill (now using the new object structure)
+  // Render one category pill
   const renderCategory = ({ item }) => {
     const isSelected = item.reference === selectedCategory;
     return (
@@ -437,7 +430,7 @@ export default function SearchScreen() {
     return (
       <View style={[styles.cardContainer, { marginRight: CARD_GAP }]}>
         <ImageBackground
-          source={ item.image }
+          source={item.image}
           style={styles.cardImage}
           imageStyle={styles.cardImageStyle}
         >
@@ -475,12 +468,10 @@ export default function SearchScreen() {
     );
   };
 
-  // If theme is loading, show a spinner (white background, gray spinner)
+  // If theme is loading, show a spinner
   if (loadingTheme) {
     return (
-      <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: "#FFFFFF" }]}
-      >
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: "#FFFFFF" }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={DEFAULT_PALETTE[3]} />
         </View>
@@ -501,7 +492,6 @@ export default function SearchScreen() {
           style={styles.profileImageContainer}
           activeOpacity={0.8}
         >
-          {/* Placeholder image; replace as needed */}
           <Image
             source={require("../../assets/spaceship.png")}
             style={styles.profileImage}
@@ -510,7 +500,7 @@ export default function SearchScreen() {
       </View>
 
       <View style={styles.searchContainer}>
-        {/* Tapping this opens chat overlay */}
+        {/* Tapping this opens chat overlay and focuses TextInput */}
         <TouchableOpacity
           activeOpacity={1}
           onPress={openChatbot}
@@ -519,7 +509,7 @@ export default function SearchScreen() {
             {
               borderRadius: SEARCH_BAR_BORDER_RADIUS,
               height: SEARCH_BAR_HEIGHT,
-              zIndex: 10, // higher z-index so it stays on top
+              zIndex: 10,
             },
           ]}
         >
@@ -532,7 +522,7 @@ export default function SearchScreen() {
           <Text style={styles.searchPlaceholder}>Ask me anything…</Text>
         </TouchableOpacity>
 
-        {/* Database mode toggle button (collapsed state only) */}
+        {/* Database mode toggle button */}
         <TouchableOpacity
           style={[
             styles.filterButton,
@@ -658,13 +648,14 @@ export default function SearchScreen() {
                 </View>
               )}
 
-              {/* BOTTOM INPUT ROW (blurred) */}
+              {/* ─── BOTTOM INPUT ROW (blurred) ───────────────────────── */}
               <BlurView
                 intensity={30}
                 tint="light"
                 style={styles.inputContainer}
               >
                 <TextInput
+                  ref={inputRef}
                   style={styles.chatInput}
                   placeholder="Type a message…"
                   placeholderTextColor="#999"
@@ -699,7 +690,7 @@ export default function SearchScreen() {
   );
 }
 
-// ─── STYLES (unchanged from your original) ───────────────────────────────────────────
+// ─── STYLES (unchanged) ───────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -781,7 +772,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
-    // add subtle shadow
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -793,9 +783,7 @@ const styles = StyleSheet.create({
   },
 
   // ─── “Volunteer Causes” TITLE ────────────────────────────────
-  sectionHeader: {
-    // margins set inline
-  },
+  sectionHeader: {},
   sectionTitle: {
     fontWeight: "700",
     color: "#111",
@@ -961,7 +949,7 @@ const styles = StyleSheet.create({
   overlayCloseButton: {
     position: "absolute",
     right: 16,
-    top: 12, // center vertically
+    top: 12,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -1034,15 +1022,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#999",
     marginHorizontal: 2,
   },
-  typingDot1: {
-    // animate if desired
-  },
-  typingDot2: {
-    // animate if desired
-  },
-  typingDot3: {
-    // animate if desired
-  },
+  typingDot1: {},
+  typingDot2: {},
+  typingDot3: {},
 
   // ─── BOTTOM INPUT ROW (blurred) ─────────────────────────
   inputContainer: {
@@ -1059,8 +1041,8 @@ const styles = StyleSheet.create({
     color: "#333",
     paddingVertical: 8,
     paddingHorizontal: 16,
-    top:0,
-    marginBottom:13
+    top: 0,
+    marginBottom: 13,
   },
   sendButton: {
     width: 40,
@@ -1070,7 +1052,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,
-    marginBottom:10
+    marginBottom: 10,
   },
   sendButtonActive: {
     backgroundColor: "#007AFF",
