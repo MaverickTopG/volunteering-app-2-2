@@ -19,6 +19,10 @@ import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from './AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// ─── Firestore Imports ─────────────────────────────────────────────
+import { db } from '../auth/firebase';                      // make sure this path is correct
+import { collection, addDoc } from 'firebase/firestore';
+
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
 const { width, height } = Dimensions.get('window');
@@ -35,16 +39,49 @@ export default function RegisterScreen() {
   const { signUp } = useContext(AuthContext);
   const nav        = useNavigation();
 
-  // Attempt to register
+  /**
+   * Attempt to register.
+   * 1. Creates a new Auth user.
+   * 2. Immediately writes firstName/lastName + user_id to Firestore under "names".
+   */
   const handleRegister = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
       return Alert.alert('Error', 'Please fill in all fields.');
     }
+
     try {
-      await signUp({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), password });
+      // 1) Create the user in Firebase Auth. We assume `signUp` returns
+      //    a user credential or at least sets the current user in AuthContext.
+      const userCredential = await signUp({
+        firstName: firstName.trim(),
+        lastName:  lastName.trim(),
+        email:     email.trim(),
+        password,
+      });
+
+      // 2) Grab the newly created user's UID.
+      //    If your `signUp` returns userCredential, use: userCredential.user.uid
+      //    Otherwise, you can fallback to the currently authenticated user:
+      const uid =
+        userCredential?.user?.uid ||
+        (await import('firebase/auth')).getAuth().currentUser.uid;
+
+      // 3) Write a document into the "names" collection with { FirstName, LastName, user_id }
+      await addDoc(collection(db, 'names'), {
+        FirstName: firstName.trim(),
+        LastName:  lastName.trim(),
+        user_id:   uid,
+      });
+
+      // 4) Notify success and navigate (or stay) as desired
       Alert.alert('Success', 'Account created successfully.');
-    } catch {
-      Alert.alert('Error', 'Registration failed.');
+
+      // Optionally navigate to your main app screen, e.g.:
+      // nav.navigate('VolunteerDashboard');
+
+    } catch (error) {
+      console.error('Registration or Firestore write failed:', error);
+      Alert.alert('Error', 'Registration failed. ' + (error.message || ''));
     }
   };
 
@@ -61,7 +98,7 @@ export default function RegisterScreen() {
              DIAGONAL IMAGE & OVERLAY
         ───────────────────────────────────────────── */}
         <Image
-          source={require('../assets/bg2.png') }
+          source={require('../assets/bg2.png')}
           style={styles.diagonalImage}
           resizeMode="cover"
         />
@@ -203,7 +240,10 @@ export default function RegisterScreen() {
               <Text style={styles.signupLink}> Login</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={() => nav.navigate('Delete')} style={styles.deleteLinkContainer}>
+          <TouchableOpacity
+            onPress={() => nav.navigate('Delete')}
+            style={styles.deleteLinkContainer}
+          >
             <Text style={styles.deleteLink}>Delete?</Text>
           </TouchableOpacity>
         </View>
@@ -280,9 +320,9 @@ const styles = StyleSheet.create({
   // ─── MAIN FORM CONTENT ──────────────────────────────────────
   content: {
     flex: 1,
-    justifyContent: 'flex-start',        // moved content up
+    justifyContent: 'flex-start',
     paddingHorizontal: scale(30),
-    paddingTop: vScale(120),               // reduced top padding
+    paddingTop: vScale(120),
     zIndex: 3,
   },
   header: {
@@ -327,7 +367,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
 
-  // ─── REGISTER BUTTON (styled same as LOGIN) ─────────────────────
+  // ─── REGISTER BUTTON ───────────────────────────────────────────
   loginButton: {
     backgroundColor: '#333',
     borderRadius: scale(25),

@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Keychain from 'react-native-keychain';
-import { auth } from './firebase';
+
+import { auth, db } from './firebase'; // Your Firebase Web SDK auth & Firestore instances
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -20,6 +21,13 @@ import {
   sendPasswordResetEmail,
   updateProfile,
 } from 'firebase/auth';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  collection,
+} from 'firebase/firestore';
 
 export const AuthContext = createContext();
 
@@ -33,18 +41,93 @@ const vScale = (s) => (height / refH) * s;
 /* constants */
 const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
 
+/* ─────────────────────────────────────────────────────────────────────────
+   1) BADGE DEFINITIONS
+   We only need the array of badge IDs. If you add/remove badges, update this list.
+───────────────────────────────────────────────────────────────────────── */
+const BADGE_IDS = [
+  'first_volunteer',
+  'early_bird',
+  'weekend_warrior',
+  'helping_hand',
+  'community_helper',
+  'dedication',
+  'commitment',
+  'champion',
+  'hero',
+  'legend',
+  'streak_3',
+  'streak_7',
+  'streak_30',
+  'animal_lover',
+  'food_hero',
+  'education_supporter',
+  'environment_guardian',
+  'senior_friend',
+  'youth_mentor',
+  'health_advocate',
+  'team_player',
+  'solo_hero',
+  'night_owl',
+  'rain_or_shine',
+  'holiday_helper',
+  'impact_maker',
+  'inspiration',
+  'changemaker',
+  'community_pillar',
+  'volunteer_master',
+];
+
+/**
+ * Helper: Initialize badges for a given user‐UID.
+ * - Ensures /badges/{uid}/badgeData/badgeStatus exists with all badge IDs = false
+ * - Ensures /badges/{uid}/badgeData/selectedBadges exists with { badges: [] }
+ */
+async function initUserBadges(uid) {
+  if (!uid) return;
+
+  try {
+    // 1) Build a “badgeStatus” object where every badge ID maps to false
+    const badgeStatusData = {};
+    BADGE_IDS.forEach((id) => {
+      badgeStatusData[id] = false;
+    });
+
+    // 2) Reference: /badges/{uid}/badgeData/badgeStatus
+    const badgeStatusRef = doc(collection(db, 'badges', uid, 'badgeData'), 'badgeStatus');
+    const badgeStatusSnap = await getDoc(badgeStatusRef);
+
+    if (!badgeStatusSnap.exists()) {
+      // If it doesn't exist, create it
+      await setDoc(badgeStatusRef, badgeStatusData);
+      console.log(`badgeStatus created for UID=${uid}`);
+    } else {
+      console.log(`badgeStatus already exists for UID=${uid}`);
+    }
+
+    // 3) Reference: /badges/{uid}/badgeData/selectedBadges
+    const selectedRef = doc(collection(db, 'badges', uid, 'badgeData'), 'selectedBadges');
+    // Always (re)initialize to an empty array (you can remove this if you want to preserve)
+    await setDoc(selectedRef, { badges: [] });
+    console.log(`selectedBadges initialized for UID=${uid}`);
+  } catch (err) {
+    console.error(`Error initializing badges for UID=${uid}:`, err);
+  }
+}
+
 /* ----------------------------------------------------------------- */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoad] = useState(true);
 
-  /* ---------- auto-login on mount ---------- */
+  /* ─── auto‐login on mount ───────────────────────────────────────── */
   useEffect(() => {
     (async () => {
       try {
         const loginTime = await AsyncStorage.getItem('loginTime');
         if (!loginTime) return;
 
+        // If more than a week old, clear stored credentials
         if (Date.now() - Number(loginTime) > ONE_WEEK) {
           await AsyncStorage.removeItem('loginTime');
           await Keychain.resetGenericPassword();
@@ -69,25 +152,30 @@ export function AuthProvider({ children }) {
     })();
   }, []);
 
-  /* ---------- global auth listener ---------- */
+  /* ─── global auth listener ───────────────────────────────────────── */
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (current) => {
-      // No longer filtering by emailVerified; any signed-in user is allowed
+    const unsubscribe = onAuthStateChanged(auth, async (current) => {
       setUser(current);
+      if (current) {
+        // Initialize badges for this user (create docs if missing)
+        await initUserBadges(current.uid);
+      }
     });
-    return unsub;
+    return unsubscribe;
   }, []);
 
-  /* ---------- helpers ---------- */
+  /* ─── signIn helper ─────────────────────────────────────────────── */
   const signIn = async (email, password) => {
     try {
       setLoad(true);
-
       const { user: u } = await signInWithEmailAndPassword(auth, email, password);
-      // No more check on u.emailVerified
+
+      // Store login time + Keychain credentials
       await AsyncStorage.setItem('loginTime', Date.now().toString());
       await Keychain.setGenericPassword(email, password);
+
       setUser(u);
+      // initUserBadges will run via onAuthStateChanged
     } catch (e) {
       Alert.alert('Login Error', e.message);
     } finally {
@@ -95,21 +183,25 @@ export function AuthProvider({ children }) {
     }
   };
 
+  /* ─── signUp helper ─────────────────────────────────────────────── */
   const signUp = async ({ email, password, firstName, lastName }) => {
     try {
       setLoad(true);
 
-      // Create user with email & password
+      // 1) Create user with email & password
       const { user: u } = await createUserWithEmailAndPassword(auth, email, password);
 
-      // Set displayName
+      // 2) Set displayName so the user’s profile is populated
       await updateProfile(u, { displayName: `${firstName} ${lastName}` });
 
-      // NO sendEmailVerification(u) HERE, so no verification email is sent
-      // Immediately sign out to clear any internal state (optional)
-      await signOut(auth);
+      // 3) Initialize badges for this new user
+      await initUserBadges(u.uid);
 
-      Alert.alert('Success', 'Account created successfully. You can now log in.');
+      // 4) Sign out immediately (mimic your original flow)
+      await signOut(auth);
+      setUser(null);
+
+      Alert.alert('Success', 'Account created successfully. Please log in.');
       return true;
     } catch (e) {
       Alert.alert('Sign-up Error', e.message);
@@ -119,6 +211,7 @@ export function AuthProvider({ children }) {
     }
   };
 
+  /* ─── resetPassword helper ──────────────────────────────────────── */
   const resetPassword = async (email) => {
     try {
       await sendPasswordResetEmail(auth, email);
@@ -129,6 +222,7 @@ export function AuthProvider({ children }) {
     }
   };
 
+  /* ─── signOut helper ────────────────────────────────────────────── */
   const signOutUser = async () => {
     try {
       await signOut(auth);
@@ -140,14 +234,15 @@ export function AuthProvider({ children }) {
     }
   };
 
+  /* ─── deleteAccount helper ─────────────────────────────────────── */
   const deleteAccount = async (email, password) => {
     try {
       setLoad(true);
-
       // Reauthenticate then delete
       const cred = await signInWithEmailAndPassword(auth, email, password);
       await deleteUser(cred.user);
 
+      setUser(null);
       await AsyncStorage.removeItem('loginTime');
       await Keychain.resetGenericPassword();
       Alert.alert('Success', 'Account deleted.');
@@ -158,7 +253,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  /* ---------- render ---------- */
+  /* ─── render ─────────────────────────────────────────────────────── */
   return (
     <AuthContext.Provider
       value={{
@@ -172,7 +267,7 @@ export function AuthProvider({ children }) {
     >
       {children}
 
-      {/* splash overlay: plain white background + loading spinner */}
+      {/* If loading, show a full-screen white spinner overlay */}
       {loading && (
         <View style={styles.splash}>
           <ActivityIndicator size="large" color="#333" />
@@ -182,7 +277,7 @@ export function AuthProvider({ children }) {
   );
 }
 
-/* ---------- styles ---------- */
+/* ─── Styles ─────────────────────────────────────────────────────────── */
 const styles = StyleSheet.create({
   splash: {
     position: 'absolute',

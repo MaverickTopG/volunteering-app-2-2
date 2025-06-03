@@ -34,6 +34,9 @@ const CARD_BORDER_RADIUS = 16;
 const CHART_HEIGHT = 140;
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+/**
+ * Return ISO‐weekday index (Mon=1…Sun=7)
+ */
 function isoWeekdayIndex(date) {
   const d = new Date(date);
   let day = d.getDay();
@@ -41,6 +44,9 @@ function isoWeekdayIndex(date) {
   return day;
 }
 
+/**
+ * Compute array of Date objects for the current week (Mon→Sun)
+ */
 function getCurrentWeekDates() {
   const today = new Date();
   const idx = isoWeekdayIndex(today); // 1..7
@@ -55,6 +61,9 @@ function getCurrentWeekDates() {
   return week;
 }
 
+/**
+ * Format Date to M/D/YYYY
+ */
 function formatMMDDYYYY(date) {
   const d = new Date(date);
   const m = d.getMonth() + 1;
@@ -68,7 +77,7 @@ export default function VolunteerDashboard() {
   const navigation = useNavigation();
 
   // ─── State ───────────────────────────────────────────────────────────
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState([]);            // all volunteer_sessions
   const [loadingLogs, setLoadingLogs] = useState(true);
 
   // Add‐session modal
@@ -76,20 +85,16 @@ export default function VolunteerDashboard() {
   const [newSite, setNewSite] = useState('');
   const [newHours, setNewHours] = useState('');
 
-  // Goal‐setting modal
+  // Daily‐goal & Total‐hours modal
   const [goalModalVisible, setGoalModalVisible] = useState(false);
-  const [tempGoal, setTempGoal] = useState(''); // for TextInput
-  const [dailyGoal, setDailyGoal] = useState(8); // default 8h
-
-  // Account creation time
-  const [accountCreatedAt, setAccountCreatedAt] = useState(null);
+  const [tempDailyGoal, setTempDailyGoal] = useState(''); // for TextInput
+  const [dailyGoal, setDailyGoal] = useState(8);           // default 8h/day
 
   // Computed metrics
   const [todayHours, setTodayHours] = useState(0);
   const [weeklyTotals, setWeeklyTotals] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [weeklyTotalSum, setWeeklyTotalSum] = useState(0);
-  const [monthlyTotal, setMonthlyTotal] = useState(0);
-  const [yearlyTotal, setYearlyTotal] = useState(0);
+  const [totalHours, setTotalHours] = useState(0); // <-- sum of all logs
 
   // Date arrays
   const weekDates = useMemo(() => getCurrentWeekDates(), []);
@@ -106,14 +111,13 @@ export default function VolunteerDashboard() {
         navigation.navigate('Login');
         return;
       }
-      const created = user.metadata?.creationTime
-        ? new Date(user.metadata.creationTime)
-        : new Date();
-      setAccountCreatedAt(created);
       fetchLogs();
     }, [user])
   );
 
+  /**
+   * Query volunteer_logs for this user and store all entries
+   */
   const fetchLogs = async () => {
     setLoadingLogs(true);
     try {
@@ -141,7 +145,7 @@ export default function VolunteerDashboard() {
     }
   };
 
-  // ─── Compute Aggregates ────────────────────────────────────────────
+  // ─── Compute Aggregates When Logs Change ────────────────────────────
   useEffect(() => {
     // 1) Build array of 7 daily totals for current week
     const dailyArr = [0, 0, 0, 0, 0, 0, 0];
@@ -163,38 +167,10 @@ export default function VolunteerDashboard() {
     const wSum = dailyArr.reduce((a, b) => a + b, 0);
     setWeeklyTotalSum(wSum);
 
-    // 4) Monthly total
-    const now = new Date();
-    const mSum = logs.reduce((sum, entry) => {
-      const [m, d, y] = entry.date.split('/').map(Number);
-      if (m === now.getMonth() + 1 && y === now.getFullYear()) {
-        return sum + Number(entry.hours);
-      }
-      return sum;
-    }, 0);
-    setMonthlyTotal(mSum);
-
-    // 5) Yearly total (from accountCreatedAt to now)
-    if (accountCreatedAt) {
-      const start = accountCreatedAt.getTime();
-      const ySum = logs.reduce((sum, entry) => {
-        const eDate = new Date(entry.date).getTime();
-        if (eDate >= start && eDate <= Date.now()) {
-          return sum + Number(entry.hours);
-        }
-        return sum;
-      }, 0);
-      setYearlyTotal(ySum);
-    } else {
-      setYearlyTotal(0);
-    }
-  }, [logs, accountCreatedAt, weekStrings, todayString]);
-
-  // ─── Filter logs to current week for sessions list ────────────────
-  const filteredWeekLogs = useMemo(
-    () => logs.filter((entry) => weekStrings.includes(entry.date)),
-    [logs, weekStrings]
-  );
+    // 4) Total Hours (all time)
+    const allSum = logs.reduce((sum, entry) => sum + Number(entry.hours), 0);
+    setTotalHours(allSum);
+  }, [logs, weekStrings, todayString]);
 
   // ─── Save New Session ─────────────────────────────────────────────
   const handleSaveSession = async () => {
@@ -224,18 +200,18 @@ export default function VolunteerDashboard() {
     }
   };
 
-  // ─── Save New Goal ────────────────────────────────────────────────
+  // ─── Save New Daily Goal ───────────────────────────────────────────
   const handleSaveGoal = () => {
-    const num = parseFloat(tempGoal);
+    const num = parseFloat(tempDailyGoal);
     if (isNaN(num) || num <= 0) {
       return Alert.alert('Invalid Goal', 'Enter a positive number.');
     }
     setDailyGoal(num);
     setGoalModalVisible(false);
-    setTempGoal('');
+    setTempDailyGoal('');
   };
 
-  // ─── Render Volunteer Log Item ───────────────────────────────────
+  // ─── Render Each Log Item ─────────────────────────────────────────
   const renderLogItem = ({ item }) => (
     <View style={styles.logItem}>
       <View style={styles.logHeader}>
@@ -251,80 +227,47 @@ export default function VolunteerDashboard() {
     </View>
   );
 
+  // ─── Main Render ───────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      {/* ── Static Header Bar ─────────────────────────────────────────── */}
+      {/* ── Header Bar ───────────────────────────────────────────────── */}
       <View style={styles.headerBar}>
-        {/* Sign Out Icon */}
         <TouchableOpacity onPress={() => signOut()} style={styles.logoutContainer}>
           <Ionicons name="log-out-outline" size={24} color="#000" />
         </TouchableOpacity>
-
         <Text style={styles.headerTitle}>Volunteer Dashboard</Text>
-
-        {/* + icon → Open Add Session Modal */}
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setAddModalVisible(true)}
-        >
+        <TouchableOpacity onPress={() => setAddModalVisible(true)} style={styles.addButton}>
           <Ionicons name="add" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
-      {/* ── Content (ScrollView) ──────────────────────────────────────── */}
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      {/* ── Content ────────────────────────────────────────────────────── */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* ── Weekly Bar Chart Card ─────────────────────────────────────── */}
         <View style={styles.chartCard}>
-          {/* Date Range Label */}
           <View style={styles.rangeHeader}>
             <Text style={styles.rangeLabel}>
-              {`${weekDates[0].toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-              })} – ${weekDates[6].toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-              })}`}
+              {`${weekDates[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${weekDates[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
             </Text>
           </View>
-
-          {/* Bar Chart Area */}
           <View style={styles.chartContainer}>
             <View style={styles.barsRow}>
               {weeklyTotals.map((val, idx) => {
-                // Fill ratio vs dailyGoal
                 const ratio = Math.min(val / dailyGoal, 1);
                 const fullBarHeight = CHART_HEIGHT - 40;
                 const fillHeight = ratio * fullBarHeight;
                 const isOver = val > dailyGoal;
-
                 return (
                   <View key={idx} style={styles.barWrapper}>
-                    {/* Grey background bar */}
-                    <View
-                      style={[
-                        styles.barBackground,
-                        { height: fullBarHeight },
-                      ]}
-                    />
-
-                    {/* Filled bar */}
+                    <View style={[styles.barBackground, { height: fullBarHeight }]} />
                     <View
                       style={[
                         styles.barFill,
-                        {
-                          height: fillHeight,
-                          backgroundColor: isOver ? '#FFD700' : '#000',
-                        },
+                        { height: fillHeight, backgroundColor: isOver ? '#FFD700' : '#FF6B35' },
                       ]}
                     >
                       {val > 0 && <Text style={styles.barFillText}>{val}</Text>}
                     </View>
-
-                    {/* Day label */}
                     <Text style={styles.barDayLabel}>{DAYS[idx]}</Text>
                   </View>
                 );
@@ -333,15 +276,14 @@ export default function VolunteerDashboard() {
           </View>
         </View>
 
-        {/* ── Today's Volunteering Card ──────────────────────────────── */}
+        {/* ── Today's & Weekly/Total Hours Progress Card ───────────────── */}
         <View style={styles.progressCard}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Today's Volunteering</Text>
-            {/* Settings (gear) icon to change daily goal */}
+            <Text style={styles.progressTitle}>Today's & Weekly Progress</Text>
             <TouchableOpacity
               style={styles.settingsButton}
               onPress={() => {
-                setTempGoal(String(dailyGoal));
+                setTempDailyGoal(String(dailyGoal));
                 setGoalModalVisible(true);
               }}
             >
@@ -349,14 +291,14 @@ export default function VolunteerDashboard() {
             </TouchableOpacity>
           </View>
 
-          {/* Circle Progress */}
+          {/* Circle showing (todayHours / dailyGoal) */}
           <View style={styles.circleSection}>
             <View style={styles.circleWrapper}>
               <Circle
                 size={100}
                 progress={Math.min(todayHours / dailyGoal, 1)}
                 thickness={8}
-                color="#000"
+                color="#FF6B35"
                 unfilledColor="#DDD"
                 borderWidth={0}
                 showsText={false}
@@ -370,7 +312,7 @@ export default function VolunteerDashboard() {
             </View>
           </View>
 
-          {/* Sub‐Metrics: Week / Month / Year */}
+          {/* Sub‐Metrics: Week Total & Total Hours All‐time */}
           <View style={styles.statsContainer}>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Week Total</Text>
@@ -379,9 +321,7 @@ export default function VolunteerDashboard() {
                   style={[
                     styles.statProgressFill,
                     {
-                      width: `${
-                        Math.min((weeklyTotalSum / (dailyGoal * 7)) * 100, 100)
-                      }%`,
+                      width: `${Math.min((weeklyTotalSum / dailyGoal) * 100, 100)}%`,
                     },
                   ]}
                 />
@@ -390,37 +330,8 @@ export default function VolunteerDashboard() {
             </View>
 
             <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Month Total</Text>
-              <View style={styles.statProgressBar}>
-                <View
-                  style={[
-                    styles.statProgressFill,
-                    {
-                      width: `${
-                        Math.min((monthlyTotal / (dailyGoal * 30)) * 100, 100)
-                      }%`,
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={styles.statValue}>{monthlyTotal} h</Text>
-            </View>
-
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Year Total</Text>
-              <View style={styles.statProgressBar}>
-                <View
-                  style={[
-                    styles.statProgressFill,
-                    {
-                      width: `${
-                        Math.min((yearlyTotal / (dailyGoal * 365)) * 100, 100)
-                      }%`,
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={styles.statValue}>{yearlyTotal} h</Text>
+              <Text style={styles.statLabel}>Total Hours</Text>
+              <Text style={styles.statValue}>{totalHours} h</Text>
             </View>
           </View>
         </View>
@@ -429,30 +340,30 @@ export default function VolunteerDashboard() {
         <View style={styles.logsContainer}>
           <View style={styles.logsHeaderRow}>
             <Text style={styles.logsHeader}>Volunteer Sessions</Text>
-            <Text style={styles.logsCount}>
-              {filteredWeekLogs.length} sessions
-            </Text>
+            <Text style={styles.logsCount}>{logs.length} sessions</Text>
           </View>
 
           {loadingLogs ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#000" />
+              <ActivityIndicator size="large" color="#FF6B35" />
               <Text style={styles.loadingText}>Loading sessions…</Text>
             </View>
-          ) : filteredWeekLogs.length === 0 ? (
+          ) : logs.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>No sessions this week</Text>
+              <Text style={styles.emptyTitle}>No sessions recorded</Text>
               <Text style={styles.emptySubtitle}>
                 Tap the + button to log a volunteer session
               </Text>
             </View>
           ) : (
             <FlatList
-              data={filteredWeekLogs.sort(
-                (a, b) =>
-                  new Date(b.date + ' ' + b.time) -
-                  new Date(a.date + ' ' + a.time)
-              )}
+              data={logs
+                .slice()
+                .sort(
+                  (a, b) =>
+                    new Date(b.date + ' ' + b.time) -
+                    new Date(a.date + ' ' + a.time)
+                )}
               keyExtractor={(item) => item.id}
               renderItem={renderLogItem}
               showsVerticalScrollIndicator={false}
@@ -461,7 +372,7 @@ export default function VolunteerDashboard() {
           )}
         </View>
 
-        {/* Extra bottom padding so the bottom tab bar does not overlap */}
+        {/* Extra bottom padding so bottom tab bar does not overlap */}
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -537,7 +448,7 @@ export default function VolunteerDashboard() {
         <View style={styles.dropdownOverlay}>
           <View style={styles.dropdownCard}>
             <View style={styles.dropdownHeader}>
-              <Text style={styles.dropdownTitle}>Set Daily Goal (hrs)</Text>
+              <Text style={styles.dropdownTitle}>Daily Goal & Total Hours</Text>
               <TouchableOpacity
                 onPress={() => setGoalModalVisible(false)}
                 style={styles.dropdownClose}
@@ -545,16 +456,24 @@ export default function VolunteerDashboard() {
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
+
             <View style={styles.modalBody}>
+              {/* Show current Total Hours */}
+              <Text style={styles.yearlyTotalText}>
+                Total Hours: {totalHours}h
+              </Text>
+
+              {/* Input for daily goal */}
               <TextInput
                 style={styles.modalInput}
-                placeholder="Enter hours (e.g. 8)"
+                placeholder="Enter daily goal (e.g. 8)"
                 placeholderTextColor="#999"
                 keyboardType="numeric"
-                value={tempGoal}
-                onChangeText={setTempGoal}
+                value={tempDailyGoal}
+                onChangeText={setTempDailyGoal}
               />
             </View>
+
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
@@ -638,8 +557,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-
-  // ── Weekly Range Header ────────────────────────────────────────
   rangeHeader: {
     alignItems: 'center',
     marginBottom: 16,
@@ -649,8 +566,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-
-  // ── Bar Chart Area ─────────────────────────────────────────────
   chartContainer: {
     height: CHART_HEIGHT,
     justifyContent: 'flex-end',
@@ -701,6 +616,7 @@ const styles = StyleSheet.create({
     borderRadius: CARD_BORDER_RADIUS,
     padding: CARD_PADDING,
     marginBottom: 16,
+    marginHorizontal: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -721,8 +637,6 @@ const styles = StyleSheet.create({
   settingsButton: {
     padding: 4,
   },
-
-  // ── Circular Progress ──────────────────────────────────────────
   circleSection: {
     alignItems: 'center',
     marginBottom: 24,
@@ -747,8 +661,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
-
-  // ── Stats Container ────────────────────────────────────────────
   statsContainer: {
     gap: 16,
   },
@@ -772,7 +684,7 @@ const styles = StyleSheet.create({
   },
   statProgressFill: {
     height: '100%',
-    backgroundColor: '#000',
+    backgroundColor: '#FF6B35',
     borderRadius: 3,
   },
   statValue: {
@@ -788,6 +700,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderRadius: CARD_BORDER_RADIUS,
     padding: CARD_PADDING,
+    marginHorizontal: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -810,8 +723,6 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
   },
-
-  // ── Loading State ──────────────────────────────────────────────
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -822,8 +733,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 12,
   },
-
-  // ── Empty State ────────────────────────────────────────────────
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -966,7 +875,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#000',
+    backgroundColor: '#FF6B35',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -976,7 +885,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
 
-  // ── Change Goal Modal ───────────────────────────────────────────
+  // ── Change Daily Goal Modal ───────────────────────────────────────
   dropdownOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1014,5 +923,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  yearlyTotalText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
   },
 });

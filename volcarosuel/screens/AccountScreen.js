@@ -9,51 +9,16 @@ import {
   TouchableOpacity,
   StatusBar,
   ScrollView,
+  Linking,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-
-// Dummy stats cards data
-const STATS_DATA = [
-  {
-    id: '1',
-    label: 'Total Days',
-    value: '9',
-    icon: 'calendar-outline',
-    backgroundColor: '#FF6B35', // orange
-    textColor: '#FFFFFF',
-  },
-  {
-    id: '2',
-    label: 'Exercises Done',
-    value: '88',
-    icon: 'barbell-outline',
-    backgroundColor: '#4285F4', // blue
-    textColor: '#FFFFFF',
-  },
-  {
-    id: '3',
-    label: 'Activities',
-    value: '225',
-    icon: 'walk-outline',
-    backgroundColor: '#888888', // gray
-    textColor: '#FFFFFF',
-  },
-  {
-    id: '4',
-    label: 'Calories',
-    value: '1,578',
-    icon: 'flame-outline',
-    backgroundColor: '#A259FF', // purple
-    textColor: '#FFFFFF',
-  },
-];
 
 const StatsScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Tab button navigates via parent
+  // Tab button navigates via parent navigator
   const TabButton = ({ title }) => {
     const isActive = route.name === title;
     return (
@@ -72,78 +37,78 @@ const StatsScreen = () => {
     );
   };
 
+  // When “Privacy Policy” is tapped, open external link
+  const openPrivacyPolicy = () => {
+    const url = 'https://mavericktopg.github.io/privacy_policy.html'; // ← Replace this with your actual privacy URL
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(url);
+        } else {
+          console.warn("Can't open URL:", url);
+        }
+      })
+      .catch((err) => console.error('An error occurred', err));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Use dark‐content on white BG */}
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* ─── HEADER ───────────────────────────────────────────────────── */}
+      {/* ─── HEADER (no back/settings icons) ───────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.headerButtonText}>‹</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Achievements</Text>
-
-        <TouchableOpacity style={styles.headerButton}>
-          <Text style={styles.headerButtonText}>⚙</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Account</Text>
+        {/* We deliberately leave an empty View on the right so title stays centered */}
+        <View style={styles.headerSpacer} />
       </View>
 
-      {/* ─── TAB NAVIGATION ───────────────────────────────────────────────── */}
+      {/* ─── TAB NAVIGATION ─────────────────────────────────────────────── */}
       <View style={styles.tabContainer}>
         <TabButton title="Badges" />
         <TabButton title="Leaderboard" />
         <TabButton title="Stats" />
       </View>
 
-      {/* ─── STATS GRID + MONTH DROPDOWN ────────────────────────────────────── */}
+      {/* ─── MAIN CONTENT: two cards (About + Privacy) ───────────────────── */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.statsGrid}>
-          {STATS_DATA.map((stat) => (
-            <View
-              key={stat.id}
-              style={[
-                styles.statCard,
-                { backgroundColor: stat.backgroundColor },
-              ]}
-            >
-              <Ionicons name={stat.icon} size={24} color={stat.textColor} />
-              <Text
-                style={[
-                  styles.statValue,
-                  { color: stat.textColor },
-                ]}
-              >
-                {stat.value}
-              </Text>
-              <Text
-                style={[
-                  styles.statLabel,
-                  { color: stat.textColor },
-                ]}
-              >
-                {stat.label}
-              </Text>
-            </View>
-          ))}
+        <View style={styles.linksGrid}>
+          {/* ABOUT CARD: in‐app navigation to AboutScreen */}
+          <TouchableOpacity
+            style={[styles.linkCard, { backgroundColor: '#FF6B35' }]}
+            onPress={() => navigation.navigate('About')}
+          >
+            <Ionicons name="information-circle-outline" size={32} color="#FFFFFF" />
+            <Text style={[styles.linkCardValue, { color: '#FFFFFF' }]}>
+              About
+            </Text>
+            <Text style={[styles.linkCardLabel, { color: '#FFFFFF' }]}>
+              Learn more about NexoLink
+            </Text>
+          </TouchableOpacity>
+
+          {/* PRIVACY POLICY CARD: opens external URL */}
+          <TouchableOpacity
+            style={[styles.linkCard, { backgroundColor: '#4285F4' }]}
+            onPress={openPrivacyPolicy}
+          >
+            <Ionicons name="document-text-outline" size={32} color="#FFFFFF" />
+            <Text style={[styles.linkCardValue, { color: '#FFFFFF' }]}>
+              Privacy Policy
+            </Text>
+            <Text style={[styles.linkCardLabel, { color: '#FFFFFF' }]}>
+              View our privacy policy
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Month dropdown pill */}
-        <TouchableOpacity style={styles.monthDropdown}>
-          <Ionicons name="calendar-outline" size={16} color="#333333" />
-          <Text style={styles.monthText}> January 2025</Text>
-          <Ionicons
-            name="chevron-down-outline"
-            size={16}
-            color="#333333"
-            style={{ marginLeft: 4 }}
-          />
-        </TouchableOpacity>
+        {/* ─── THANK YOU MESSAGE ──────────────────────────────────────────── */}
+        <View style={styles.thankYouContainer}>
+          <Text style={styles.thankYouText}>
+            Thank you for using NexoLink! We appreciate your support.
+          </Text>
+        </View>
 
+        {/* Bottom padding so nothing gets overlapped by bottom nav */}
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -153,38 +118,35 @@ const StatsScreen = () => {
 export default StatsScreen;
 
 const styles = StyleSheet.create({
+  // ── SCREEN CONTAINER ───────────────────────────────────────────────
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+
+  // ── HEADER (no back/settings) ──────────────────────────────────────
   header: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // center title
     paddingHorizontal: 20,
     paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F8F8F8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerButtonText: {
-    fontSize: 24,
-    color: '#333333',
-    fontWeight: '300',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#000000',
   },
+  headerSpacer: {
+    position: 'absolute',
+    right: 20,
+    width: 40,
+    height: 40,
+  },
 
+  // ── TAB NAVIGATION ────────────────────────────────────────────────
   tabContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -209,48 +171,56 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
+  // ── MAIN CONTENT WRAPPER ───────────────────────────────────────────
   content: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 10,
   },
 
-  statsGrid: {
+  // ── LINKS GRID 2×2 ─────────────────────────────────────────────────
+  linksGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  statCard: {
+  linkCard: {
     width: '48%',
     borderRadius: 12,
-    padding: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
     marginBottom: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  statValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginTop: 8,
+  linkCardValue: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginTop: 12,
   },
-  statLabel: {
-    fontSize: 14,
+  linkCardLabel: {
+    fontSize: 12,
     marginTop: 4,
+    textAlign: 'center',
+    opacity: 0.9,
   },
 
-  monthDropdown: {
-    flexDirection: 'row',
+  // ── THANK YOU SECTION ──────────────────────────────────────────────
+  thankYouContainer: {
+    marginTop: 16,
+    marginBottom: 24,
+    paddingHorizontal: 10,
     alignItems: 'center',
-    alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#CCCCCC',
-    borderRadius: 25,
   },
-  monthText: {
+  thankYouText: {
     fontSize: 14,
-    color: '#333333',
-    fontWeight: '500',
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

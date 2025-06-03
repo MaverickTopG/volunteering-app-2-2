@@ -33,6 +33,7 @@ import AccountStackNavigator from "../screens/AccountScreen";
 import LeaderboardScreen from "../screens/LeaderBoardScreen";
 import StatsScreen from "../screens/AccountScreen";
 import BadgesScreen from "../screens/badges";
+import AboutScreen from "../screens/about";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -137,6 +138,11 @@ const AccountStack = ({ route }: any) => {
       <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
       <Stack.Screen name="Badges" component={BadgesScreen} />
       <Stack.Screen name="Stats" component={AccountStackNavigator} />
+      <Stack.Screen
+          name="About"
+          component={AboutScreen}
+          options={{ headerShown: false }}
+        />
     </Stack.Navigator>
   );
 };
