@@ -252,11 +252,19 @@ export default function VolunteerBadgesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* ─── HEADER ───────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
       
-        <Text style={styles.headerTitle}>My Achievements</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      
+      <View style={styles.header}>
+  {/* Left spacer (width 40) */}
+  <View style={{ width: 40 }} />
+
+  {/* Centered title */}
+  <Text style={styles.headerTitle}>My Badges</Text>
+
+  {/* Right spacer (width 40) */}
+  <View style={{ width: 40 }} />
+</View>
+     
 
       {/* ─── TAB NAVIGATION ───────────────────────────────────────────────── */}
       <View style={styles.tabContainer}>
