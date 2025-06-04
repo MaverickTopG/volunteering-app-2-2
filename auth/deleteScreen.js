@@ -148,10 +148,7 @@ export default function DeleteScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Cancel Link */}
-          <TouchableOpacity onPress={() => nav.navigate('Login')}>
-            <Text style={styles.cancelLink}>Cancel and go back</Text>
-          </TouchableOpacity>
+        
         </View>
       </SafeAreaView>
     </GestureHandlerRootView>

@@ -16,7 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 const { width, height } = Dimensions.get('window');
 
 // Replace these with your actual asset paths:
-const spaceshipImage = require('../assets/spaceship.png');
+// const spaceshipImage = require('../assets/spaceship.png');
 const backgroundImage = require('../assets/bg.png');
 
 /**
@@ -191,12 +191,12 @@ const NexolinkLoginScreen = ({ navigation }) => {
 
         {/* Logo & Title (shifted up by 15% of screen height) */}
         <View style={[styles.logoSection, { marginTop: -(height * 0.15) }]}>
-          <Image
+          {/* <Image
             source={spaceshipImage}
             style={[styles.logoImage, { tintColor: '#FFF' }]}
             resizeMode="contain"
-          />
-          <Text style={styles.appTitle}>NEXOLINK</Text>
+          /> */}
+          <Text style={styles.appTitle}>Track Volunteer Hours</Text>
         </View>
 
         {/* Bottom section */}

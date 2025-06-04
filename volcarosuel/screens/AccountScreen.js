@@ -18,66 +18,82 @@ const StatsScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Tab button navigates via parent navigator
-  const TabButton = ({ title }) => {
-    const isActive = route.name === title;
-    return (
-      <TouchableOpacity
-        style={[styles.tabButton, isActive && styles.activeTabButton]}
-        onPress={() => {
-          if (!isActive) {
-            navigation.getParent()?.navigate(title);
-          }
-        }}
-      >
-        <Text style={[styles.tabText, isActive && styles.activeTabText]}>
-          {title}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  // When “Privacy Policy” is tapped, open external link
-  const openPrivacyPolicy = () => {
-    const url = 'https://mavericktopg.github.io/privacy_policy.html'; // ← Replace this with your actual privacy URL
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          return Linking.openURL(url);
-        } else {
-          console.warn("Can't open URL:", url);
-        }
-      })
-      .catch((err) => console.error('An error occurred', err));
-  };
+  // Helper to check if a given route is active
+  const isActiveRoute = (routeName) => route.name === routeName;
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* ─── HEADER (no back/settings icons) ───────────────────────────── */}
+      {/* ─── HEADER ──────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Account</Text>
-        {/* We deliberately leave an empty View on the right so title stays centered */}
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* ─── TAB NAVIGATION ─────────────────────────────────────────────── */}
-      <View style={styles.tabContainer}>
-        <TabButton title="Badges" />
-        <TabButton title="Leaderboard" />
-        <TabButton title="Account" />
+      {/* ─── TAB BAR ──────────────────────────────────────────────────── */}
+
+      <View style={styles.buttonRow}>
+        {/* Badges Button */}
+        <TouchableOpacity
+          style={[
+            styles.singleButton,
+            isActiveRoute('Account') && styles.activeButton,
+          ]}
+          onPress={() => {
+            if (!isActiveRoute('Account')) {
+              navigation.getParent()?.navigate('Badges');
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.buttonText,
+              isActiveRoute('Badges') ? styles.activeButtonText : styles.inactiveButtonText,
+            ]}
+          >
+            Badges
+          </Text>
+        </TouchableOpacity>
+
+        {/* Account Button */}
+        <TouchableOpacity
+          style={[
+            styles.singleButton,
+            isActiveRoute('Stats') && styles.activeButton,
+          ]}
+          onPress={() => {
+            if (!isActiveRoute('Stats')) {
+              navigation.getParent()?.navigate('Stats');
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.buttonText,
+              isActiveRoute('Stats') ? styles.activeButtonText : styles.inactiveButtonText,
+            ]}
+          >
+            Account
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* ─── MAIN CONTENT: two cards (About + Privacy) ───────────────────── */}
+      {/* ─── MAIN CONTENT ────────────────────────────────────────────── */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.linksGrid}>
-          {/* ABOUT CARD: in‐app navigation to AboutScreen */}
+          {/* ABOUT CARD */}
           <TouchableOpacity
             style={[styles.linkCard, { backgroundColor: '#FF6B35' }]}
             onPress={() => navigation.navigate('About')}
           >
-            <Ionicons name="information-circle-outline" size={32} color="#FFFFFF" />
+            <Ionicons
+              name="information-circle-outline"
+              size={32}
+              color="#FFFFFF"
+            />
             <Text style={[styles.linkCardValue, { color: '#FFFFFF' }]}>
               About
             </Text>
@@ -86,10 +102,19 @@ const StatsScreen = () => {
             </Text>
           </TouchableOpacity>
 
-          {/* PRIVACY POLICY CARD: opens external URL */}
+          {/* PRIVACY POLICY CARD */}
           <TouchableOpacity
             style={[styles.linkCard, { backgroundColor: '#4285F4' }]}
-            onPress={openPrivacyPolicy}
+            onPress={() => {
+              const url = 'https://mavericktopg.github.io/privacy_policy.html';
+              Linking.canOpenURL(url)
+                .then((supported) => {
+                  if (supported) {
+                    return Linking.openURL(url);
+                  }
+                })
+                .catch((err) => console.error('An error occurred', err));
+            }}
           >
             <Ionicons name="document-text-outline" size={32} color="#FFFFFF" />
             <Text style={[styles.linkCardValue, { color: '#FFFFFF' }]}>
@@ -101,14 +126,14 @@ const StatsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* ─── THANK YOU MESSAGE ──────────────────────────────────────────── */}
+        {/* ─── THANK YOU MESSAGE ──────────────────────────────────────── */}
         <View style={styles.thankYouContainer}>
           <Text style={styles.thankYouText}>
             Thank you for using NexoLink! We appreciate your support.
           </Text>
         </View>
 
-        {/* Bottom padding so nothing gets overlapped by bottom nav */}
+        {/* Bottom padding so nothing gets overlapped */}
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -118,13 +143,13 @@ const StatsScreen = () => {
 export default StatsScreen;
 
 const styles = StyleSheet.create({
-  // ── SCREEN CONTAINER ───────────────────────────────────────────────
+  // ── SCREEN CONTAINER ─────────────────────────────────────────────
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
 
-  // ── HEADER (no back/settings) ──────────────────────────────────────
+  // ── HEADER ───────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -146,39 +171,45 @@ const styles = StyleSheet.create({
     height: 40,
   },
 
-  // ── TAB NAVIGATION ────────────────────────────────────────────────
-  tabContainer: {
+  // ── TAB BAR ───────────────────────────────────────────────────────
+  buttonRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginVertical: 16,
   },
-  tabButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  singleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 25,
     backgroundColor: 'transparent',
   },
-  activeTabButton: {
-    backgroundColor: '#000000',
+  activeButton: {
+    borderWidth: 2,
+    borderColor: '#000000',
   },
-  tabText: {
+  buttonText: {
     fontSize: 16,
-    color: '#666666',
     fontWeight: '500',
   },
-  activeTabText: {
-    color: '#FFFFFF',
+  activeButtonText: {
+    color: '#000000',
+  },
+  inactiveButtonText: {
+    color: '#666666',
   },
 
-  // ── MAIN CONTENT WRAPPER ───────────────────────────────────────────
+
+  // ── MAIN CONTENT WRAPPER ─────────────────────────────────────────
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 0,
   },
 
-  // ── LINKS GRID 2×2 ─────────────────────────────────────────────────
+  // ── LINKS GRID 2×2 ───────────────────────────────────────────────
   linksGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -210,7 +241,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
 
-  // ── THANK YOU SECTION ──────────────────────────────────────────────
+  // ── THANK YOU SECTION ─────────────────────────────────────────────
   thankYouContainer: {
     marginTop: 16,
     marginBottom: 24,

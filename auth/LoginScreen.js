@@ -162,13 +162,6 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Delete Button */}
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => nav.navigate('Delete')}
-          >
-            <Text style={styles.deleteText}>Delete Account</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </GestureHandlerRootView>

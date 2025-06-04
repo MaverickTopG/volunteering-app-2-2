@@ -1,4 +1,4 @@
-// VolunteerDashboard.js
+// /src/screens/VolunteerDashboard.js
 
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import {
@@ -232,22 +232,43 @@ export default function VolunteerDashboard() {
     <SafeAreaView style={styles.container}>
       {/* ── Header Bar ───────────────────────────────────────────────── */}
       <View style={styles.headerBar}>
-        <TouchableOpacity onPress={() => signOut()} style={styles.logoutContainer}>
-          <Ionicons name="log-out-outline" size={24} color="#000" />
-        </TouchableOpacity>
+        {/* Left: Sign Out + Delete icons */}
+        <View style={styles.leftIconsContainer}>
+          <TouchableOpacity onPress={() => signOut()} style={styles.logoutContainer}>
+            <Ionicons name="log-out-outline" size={24} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Delete')}
+            style={styles.logoutContainer}
+          >
+            <Ionicons name="trash-outline" size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.headerTitle}>Volunteer Dashboard</Text>
+
+        {/* Right: Add Session button */}
         <TouchableOpacity onPress={() => setAddModalVisible(true)} style={styles.addButton}>
           <Ionicons name="add" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
       {/* ── Content ────────────────────────────────────────────────────── */}
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ── Weekly Bar Chart Card ─────────────────────────────────────── */}
         <View style={styles.chartCard}>
           <View style={styles.rangeHeader}>
             <Text style={styles.rangeLabel}>
-              {`${weekDates[0].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${weekDates[6].toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
+              {`${weekDates[0].toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })} – ${weekDates[6].toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })}`}
             </Text>
           </View>
           <View style={styles.chartContainer}>
@@ -263,7 +284,10 @@ export default function VolunteerDashboard() {
                     <View
                       style={[
                         styles.barFill,
-                        { height: fillHeight, backgroundColor: isOver ? '#FFD700' : '#FF6B35' },
+                        {
+                          height: fillHeight,
+                          backgroundColor: isOver ? '#FFD700' : '#FF6B35',
+                        },
                       ]}
                     >
                       {val > 0 && <Text style={styles.barFillText}>{val}</Text>}
@@ -521,6 +545,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  leftIconsContainer: {
+    flexDirection: 'row',
+  },
   logoutContainer: {
     width: 36,
     height: 36,
@@ -528,6 +555,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 8,
   },
   headerTitle: {
     fontSize: 18,

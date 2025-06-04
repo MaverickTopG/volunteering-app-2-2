@@ -1,4 +1,4 @@
-// VolunteerCarousel.js
+// /src/screens/VolunteerCarousel.js
 
 import React, { useEffect, useRef, useState, useContext } from 'react';
 import {
@@ -13,6 +13,8 @@ import {
   StatusBar,
   ImageBackground,
   Platform,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { RFPercentage } from 'react-native-responsive-fontsize';
@@ -43,14 +45,14 @@ const TOTAL_HEADER_HEIGHT = HEADER_IMAGE_HEIGHT + STATUS_BAR_HEIGHT;
 const BOTTOM_SHEET_HEIGHT = height * 0.77;
 const CATEGORY_IMAGES = {
   Animal: require('../../assets/animal.png'),
-  Arts:    require('../../assets/art.png'),
+  Arts: require('../../assets/art.png'),
   Education: require('../../assets/education.png'),
   Environment: require('../../assets/enviroment.png'),
-  Family:  require('../../assets/family.png'),
+  Family: require('../../assets/family.png'),
   Hospital: require('../../assets/hospital.png'),
   Library: require('../../assets/library.png'),
   Seniors: require('../../assets/seniors.png'),
-  Tech:    require('../../assets/tech.png'),
+  Tech: require('../../assets/tech.png'),
 };
 
 export default function VolunteerCarousel() {
@@ -67,6 +69,19 @@ export default function VolunteerCarousel() {
   const [loading, setLoading] = useState(true);
   const [expandedSections, setExpandedSections] = useState({});
   const animValuesRef = useRef({});
+
+  // For search functionality
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const scrollRef = useRef(null);
+  const sectionLayouts = useRef({}); // { [sectionTitle]: yOffset }
+
+  // Compute matching counties based on searchText
+  const matchingCounties = sections
+    .map((sec) => sec.title)
+    .filter((title) =>
+      title.toLowerCase().includes(searchText.trim().toLowerCase())
+    );
 
   // Fetch and group all orgs for this category & state
   const fetchOrgs = async () => {
@@ -155,6 +170,27 @@ export default function VolunteerCarousel() {
     navigation.navigate('DisplayScreen', { item: org });
   };
 
+  // Handle search submission: find best match and scroll
+  const onSubmitSearch = () => {
+    const query = searchText.trim().toLowerCase();
+    if (!query) {
+      Alert.alert('Enter county name');
+      return;
+    }
+    // Take first match if exists
+    if (matchingCounties.length > 0) {
+      const matchKey = matchingCounties[0];
+      const yOffset = sectionLayouts.current[matchKey];
+      if (yOffset !== undefined && scrollRef.current) {
+        scrollRef.current.scrollTo({ y: yOffset, animated: true });
+        setShowSearch(false);
+        setSearchText('');
+      }
+    } else {
+      Alert.alert('Not found', 'No matching county section');
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -165,7 +201,7 @@ export default function VolunteerCarousel() {
   }
 
   // Pick header background image based on category, fallback if missing
-  const headerBgImage = CATEGORY_IMAGES[reference]
+  const headerBgImage = CATEGORY_IMAGES[reference] || CATEGORY_IMAGES.Animal;
 
   return (
     <View style={styles.container}>
@@ -177,7 +213,7 @@ export default function VolunteerCarousel() {
 
       {/* Full‐width Header Image (behind status bar, no tint) */}
       <ImageBackground
-       source={headerBgImage}  
+        source={headerBgImage}
         style={[
           styles.headerImage,
           { width: width, height: TOTAL_HEADER_HEIGHT },
@@ -197,11 +233,78 @@ export default function VolunteerCarousel() {
           </TouchableOpacity>
 
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>{reference}</Text>
-            <Text style={styles.headerState}>{stateName}</Text>
+            {showSearch ? (
+              <>
+                <View style={styles.searchContainer}>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search county..."
+                    placeholderTextColor="#AAA"
+                    value={searchText}
+                    onChangeText={setSearchText}
+                    onSubmitEditing={onSubmitSearch}
+                    returnKeyType="search"
+                    autoFocus
+                  />
+                </View>
+                {matchingCounties.length > 0 && searchText.trim() !== '' && (
+                  <View style={styles.suggestionsContainer}>
+                    {matchingCounties.slice(0, 5).map((title) => (
+                      <TouchableOpacity
+                        key={title}
+                        onPress={() => {
+                          const yOffset =
+                            sectionLayouts.current[title];
+                          if (
+                            yOffset !== undefined &&
+                            scrollRef.current
+                          ) {
+                            scrollRef.current.scrollTo({
+                              y: yOffset,
+                              animated: true,
+                            });
+                            setShowSearch(false);
+                            setSearchText('');
+                          }
+                        }}
+                        style={styles.suggestionItem}
+                      >
+                        <Text style={styles.suggestionText}>
+                          {title}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </>
+            ) : (
+              <>
+                <Text style={styles.headerTitle}>{reference}</Text>
+                <Text style={styles.headerState}>{stateName}</Text>
+              </>
+            )}
           </View>
 
-          <View style={styles.headerRightPlaceholder} />
+          {/* Search / Close Icon */}
+          <TouchableOpacity
+            onPress={() => {
+              if (showSearch) {
+                // Close out of search mode
+                setShowSearch(false);
+                setSearchText('');
+              } else {
+                setShowSearch(true);
+              }
+            }}
+            style={styles.searchButton}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={showSearch ? 'close-outline' : 'search-outline'}
+              size={24}
+              color="#FFF"
+            />
+          </TouchableOpacity>
         </View>
       </ImageBackground>
 
@@ -210,6 +313,7 @@ export default function VolunteerCarousel() {
         <View style={styles.handleBar} />
 
         <ScrollView
+          ref={scrollRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -227,7 +331,15 @@ export default function VolunteerCarousel() {
               const animV = animValuesRef.current[section.title];
 
               return (
-                <View key={section.title} style={styles.countyCard}>
+                <View
+                  key={section.title}
+                  style={styles.countyCard}
+                  onLayout={(e) => {
+                    // Record the Y offset of this section
+                    sectionLayouts.current[section.title] =
+                      e.nativeEvent.layout.y;
+                  }}
+                >
                   {/* County Header */}
                   <TouchableOpacity
                     onPress={() => toggleSection(section.title)}
@@ -271,7 +383,9 @@ export default function VolunteerCarousel() {
                           style={styles.organizationItem}
                           activeOpacity={0.8}
                         >
-                          <Text style={styles.orgTitle}>{org.title}</Text>
+                          <Text style={styles.orgTitle}>
+                            {org.title}
+                          </Text>
                           <Ionicons
                             name="chevron-forward"
                             size={20}
@@ -369,8 +483,36 @@ const styles = StyleSheet.create({
     color: '#EEE',
     marginTop: 2,
   },
-  headerRightPlaceholder: {
-    width: 32,
+
+  // Search elements
+  searchButton: {
+    padding: 6,
+  },
+  searchContainer: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 8,
+  },
+  searchInput: {
+    height: 36,
+    paddingHorizontal: 10,
+    fontSize: RFPercentage(1.8),
+    color: '#000',
+  },
+  suggestionsContainer: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 8,
+    marginTop: 4,
+    maxHeight: 100,
+    width: '100%',
+  },
+  suggestionItem: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  suggestionText: {
+    fontSize: RFPercentage(1.8),
+    color: '#333',
   },
 
   // Bottom Sheet
@@ -397,7 +539,7 @@ const styles = StyleSheet.create({
   // ScrollView Container
   scrollView: {
     flex: 1,
-    marginTop: TOTAL_HEADER_HEIGHT - HEADER_IMAGE_HEIGHT-30, // push content below header
+    marginTop: TOTAL_HEADER_HEIGHT - HEADER_IMAGE_HEIGHT - 30, // push content below header
   },
   scrollContent: {
     paddingHorizontal: 16,

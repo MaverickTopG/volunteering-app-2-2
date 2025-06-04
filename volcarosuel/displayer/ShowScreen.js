@@ -1,4 +1,4 @@
-// ShowScreen.js
+// /src/screens/ShowScreen.js
 
 import React, { useEffect, useState, useContext } from 'react';
 import {
@@ -17,6 +17,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Clipboard from 'expo-clipboard';
 import { AuthContext } from '../../auth/AuthContext';
 import { RFPercentage } from 'react-native-responsive-fontsize';
 
@@ -35,15 +36,17 @@ const STATE_MAP = {
 // Category → header image URLs
 const CATEGORY_IMAGES = {
   Animal: require('../../assets/animal.png'),
-  Arts:    require('../../assets/art.png'),
+  Arts: require('../../assets/art.png'),
   Education: require('../../assets/education.png'),
   Environment: require('../../assets/enviroment.png'),
-  Family:  require('../../assets/family.png'),
+  Family: require('../../assets/family.png'),
   Hospital: require('../../assets/hospital.png'),
   Library: require('../../assets/library.png'),
   Seniors: require('../../assets/seniors.png'),
-  Tech:    require('../../assets/tech.png'),
+  Tech: require('../../assets/tech.png'),
 };
+const DEFAULT_HEADER_IMAGE = require('../../assets/animal.png');
+
 // Compute status‐bar height (Android vs. iOS)
 const STATUS_BAR_HEIGHT =
   Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44;
@@ -94,13 +97,56 @@ export default function ShowScreen() {
       .catch(() => {});
   }, [user]);
 
+  // ─── Open maps with the address (matching MapScreen’s behavior) ───────
+  const openMaps = () => {
+    if (!item.address) return;
+
+    const encodedAddress = encodeURIComponent(item.address);
+    let url = '';
+
+    if (Platform.OS === 'ios') {
+      // Use the Apple Maps URI scheme for directions
+      url = `maps://?daddr=${encodedAddress}`;
+    } else {
+      // Android: use Google Maps navigation intent
+      url = `google.navigation:q=${encodedAddress}`;
+    }
+
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(url);
+        } else {
+          // Fallback: open Google Maps web directions
+          const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+          return Linking.openURL(webUrl);
+        }
+      })
+      .catch(() => Alert.alert('Error', 'Unable to open maps.'));
+  };
+
+  // ─── Copy email to clipboard ────────────────────────────────────────
+  const copyToClipboard = (text) => {
+    Clipboard.setStringAsync(text)
+      .then(() => {
+        Alert.alert('Copied!', `${text} has been copied to clipboard.`);
+      })
+      .catch(() => {
+        Alert.alert('Error', 'Failed to copy.');
+      });
+  };
+
   // Handle "Visit Website" button tap
   const handleVisit = () => {
     if (!item.website) return;
-    Linking.canOpenURL(item.website)
+    let url = item.website;
+    if (!url.startsWith('http')) {
+      url = 'https://' + url;
+    }
+    Linking.canOpenURL(url)
       .then((supported) => {
         supported
-          ? Linking.openURL(item.website)
+          ? Linking.openURL(url)
           : Alert.alert('Error', 'Cannot open link');
       })
       .catch(() => Alert.alert('Error', 'Unexpected error'));
@@ -116,7 +162,7 @@ export default function ShowScreen() {
 
       {/* ─── HEADER IMAGE ────────────────────────────────────── */}
       <ImageBackground
-        source={ headerBgImage }
+        source={headerBgImage}
         style={[
           styles.headerImage,
           { width: width, height: TOTAL_HEADER_HEIGHT },
@@ -169,20 +215,18 @@ export default function ShowScreen() {
           </View>
 
           {/* ─── ADDRESS CARD ─────────────────────────────── */}
-          <View style={[styles.card, { backgroundColor: palette[1] }]}>
-            <Text style={[styles.sectionLabel, { color: palette[3] }]}>
-              Address
-            </Text>
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('Map', { address: item.address })
-              }
-            >
-              <Text style={[styles.linkText, { color: palette[3] }]}>
-                {item.address}
+          {item.address && (
+            <View style={[styles.card, { backgroundColor: palette[1] }]}>
+              <Text style={[styles.sectionLabel, { color: palette[3] }]}>
+                Address
               </Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity onPress={openMaps}>
+                <Text style={[styles.linkText, { color: '#1E90FF' }]}>
+                  {item.address}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* ─── CONTACT CARD ─────────────────────────────── */}
           {item.email && (
@@ -190,9 +234,17 @@ export default function ShowScreen() {
               <Text style={[styles.sectionLabel, { color: palette[3] }]}>
                 Contact
               </Text>
-              <Text style={[styles.bodyText, { color: palette[3] }]}>
-                {item.email}
-              </Text>
+              <View style={styles.contactRow}>
+                <Text style={[styles.bodyText, { color: palette[3] }]}>
+                  {item.email}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => copyToClipboard(item.email)}
+                  style={styles.copyButton}
+                >
+                  <Ionicons name="copy-outline" size={20} color={palette[3]} />
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
@@ -274,7 +326,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    marginTop: TOTAL_HEADER_HEIGHT - HEADER_IMAGE_HEIGHT-30,
+    marginTop: TOTAL_HEADER_HEIGHT - HEADER_IMAGE_HEIGHT - 30,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -305,6 +357,15 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: RFPercentage(1.8),
     textDecorationLine: 'underline',
+  },
+
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  copyButton: {
+    padding: 4,
   },
 
   visitBtn: {

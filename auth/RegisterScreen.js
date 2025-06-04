@@ -240,12 +240,7 @@ export default function RegisterScreen() {
               <Text style={styles.signupLink}> Login</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => nav.navigate('Delete')}
-            style={styles.deleteLinkContainer}
-          >
-            <Text style={styles.deleteLink}>Delete?</Text>
-          </TouchableOpacity>
+   
         </View>
       </SafeAreaView>
     </GestureHandlerRootView>

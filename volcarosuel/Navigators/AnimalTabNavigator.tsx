@@ -99,13 +99,13 @@ const VolunteerLogsStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        <Stack.Screen name="VolunteerLogs" component={VolunteerLogs} />
+        <><Stack.Screen name="VolunteerLogs" component={VolunteerLogs} /><Stack.Screen name="Delete" component={DeleteScreen} /></>
+
       ) : (
         <>
           <Stack.Screen name="Inital" component={NexolinkLoginScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="Delete" component={DeleteScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -126,16 +126,15 @@ const AccountStack = ({ route }: any) => {
   // Whenever the “Search” tab regains focus, force it back to SearchScreen:
   useFocusEffect(
     React.useCallback(() => {
-      navigation.reset({ index: 0, routes: [{ name: "leaderboard" }] });
+      navigation.reset({ index: 0, routes: [{ name: "Badges" }] });
     }, [navigation])
   );
 
   return (
     <Stack.Navigator
-      initialRouteName="leaderboard"
+      initialRouteName="Badges"
       screenOptions={{ headerShown: false }}
     >
-      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
       <Stack.Screen name="Badges" component={BadgesScreen} />
       <Stack.Screen name="Stats" component={AccountStackNavigator} />
       <Stack.Screen

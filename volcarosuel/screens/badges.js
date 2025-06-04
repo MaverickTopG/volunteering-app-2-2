@@ -32,68 +32,68 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 const { width } = Dimensions.get('window');
 
-// ─── Exactly 10 badge thresholds (cumulative volunteer hours) ───────
+// ─── Badge definitions ───────────────────────────────────────────────
 const BADGE_DEFINITIONS = [
-  { id: 'badge_1', title: 'First Step', target: 1, icon: 'time-outline', type: 'circle' },
-  { id: 'badge_5', title: 'Committed', target: 5, icon: 'flash-outline', type: 'circle' },
-  { id: 'badge_10', title: 'Champion', target: 10, icon: 'trophy-outline', type: 'shield' },
-  { id: 'badge_15', title: 'Hero', target: 15, icon: 'medal-outline', type: 'circle' },
-  { id: 'badge_20', title: 'Superstar', target: 20, icon: 'star-outline', type: 'shield' },
-  { id: 'badge_25', title: 'Legend', target: 25, icon: 'ribbon-outline', type: 'banner' },
-  { id: 'badge_30', title: 'Guardian', target: 30, icon: 'heart-outline', type: 'circle' },
-  { id: 'badge_40', title: 'Community Leader', target: 40, icon: 'people-outline', type: 'shield' },
-  { id: 'badge_50', title: 'Diamond Volunteer', target: 50, icon: 'diamond-outline', type: 'banner' },
-  { id: 'badge_75', title: 'Master Volunteer', target: 75, icon: 'checkmark-circle-outline', type: 'shield' },
+  { id: 'badge_1',  title: 'First Step',         target: 1,   icon: 'time-outline' },
+  { id: 'badge_5',  title: 'Committed',          target: 5,   icon: 'flash-outline' },
+  { id: 'badge_10', title: 'Champion',           target: 10,  icon: 'trophy-outline' },
+  { id: 'badge_15', title: 'Hero',               target: 15,  icon: 'medal-outline' },
+  { id: 'badge_20', title: 'Superstar',          target: 20,  icon: 'star-outline' },
+  { id: 'badge_25', title: 'Legend',             target: 25,  icon: 'ribbon-outline' },
+  { id: 'badge_30', title: 'Guardian',           target: 30,  icon: 'heart-outline' },
+  { id: 'badge_40', title: 'Community Leader',   target: 40,  icon: 'people-outline' },
+  { id: 'badge_50', title: 'Diamond Volunteer',  target: 50,  icon: 'diamond-outline' },
+  { id: 'badge_75', title: 'Master Volunteer',   target: 75,  icon: 'checkmark-circle-outline' },
 ];
 const BADGE_IDS = BADGE_DEFINITIONS.map((b) => b.id);
 
 // Firestore doc IDs:
-const CLAIMED_DOC_ID = 'status'; // users/{uid}/claimedBadges/status
-const FAVORITES_DOC_ID = 'list'; // users/{uid}/favorites/list
+const CLAIMED_DOC_ID   = 'status'; // users/{uid}/claimedBadges/status
+const FAVORITES_DOC_ID = 'list';   // users/{uid}/favorites/list
 
 export default function VolunteerBadgesScreen() {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // ─── STATE & REFS ─────────────────────────────────────────────────
+  // ─── Auth & loading ─────────────────────────────────────────────────
   const [authUser, setAuthUser] = useState(null);
-  const [totalHours, setTotalHours] = useState(0);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+      setAuthUser(user);
+      setCheckingAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // ─── Badge state ────────────────────────────────────────────────────
+  const [totalHours, setTotalHours]       = useState(0);
   const [claimedStatus, setClaimedStatus] = useState({}); // { badge_1: boolean, … }
-  const [favorites, setFavorites] = useState([]); // up to 3 badge IDs
-  const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites]         = useState([]); // up to 3 badge IDs
+  const [loading, setLoading]             = useState(false);
   const [showAllProgress, setShowAllProgress] = useState(false);
 
-  // Animated “pulse” values, one per badge
+  // Animated “pulse” for each badge
   const animatedValuesRef = useRef({});
   useEffect(() => {
     const vals = {};
-    BADGE_IDS.forEach((id) => {
+    BADGE_IDS.forEach(id => {
       vals[id] = new Animated.Value(0);
     });
     animatedValuesRef.current = vals;
   }, []);
 
-  // ─── AUTH LISTENER ─────────────────────────────────────────────────
+  // ─── On login, load data ────────────────────────────────────────────
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setAuthUser(user);
-      if (!user) {
-        // Reset badge state on logout
-        setTotalHours(0);
-        const resetMap = {};
-        BADGE_IDS.forEach((id) => (resetMap[id] = false));
-        setClaimedStatus(resetMap);
-        setFavorites([]);
-        setLoading(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // ─── LOAD USER DATA WHEN authUser CHANGES ──────────────────────────
-  useEffect(() => {
-    if (!authUser) return;
-
+    if (!authUser) {
+      // reset state if logged out
+      setTotalHours(0);
+      const emptyMap = {};
+      BADGE_IDS.forEach(id => (emptyMap[id] = false));
+      setClaimedStatus(emptyMap);
+      setFavorites([]);
+      return;
+    }
     const loadData = async () => {
       setLoading(true);
       await loadTotalHours(authUser.uid);
@@ -101,63 +101,53 @@ export default function VolunteerBadgesScreen() {
       await loadFavorites(authUser.uid);
       setLoading(false);
     };
-
     loadData();
   }, [authUser]);
 
-  /**
-   * Sum up all hours_contributed from volunteer_logs for this user.
-   */
-  const loadTotalHours = async (uid) => {
+  // ─── Load total volunteer hours ─────────────────────────────────────
+  const loadTotalHours = async uid => {
     try {
       const logsRef = collection(db, 'volunteer_logs');
       const q = query(logsRef, where('user_id', '==', uid));
       const snap = await getDocs(q);
       let sum = 0;
-      snap.forEach((docSnap) => {
+      snap.forEach(docSnap => {
         const data = docSnap.data();
         const hrs = parseFloat(data.hours_contributed) || 0;
         sum += hrs;
       });
       setTotalHours(sum);
     } catch (e) {
-      console.error('▶︎ loadTotalHours error:', e);
+      console.error('loadTotalHours error:', e);
       Alert.alert('Error', 'Could not load volunteer hours.');
       setTotalHours(0);
     }
   };
 
-  /**
-   * Fetch or initialize users/{uid}/claimedBadges/status
-   * If missing, write all flags false.
-   */
-  const loadClaimedStatus = async (uid) => {
+  // ─── Load or initialize claimed badges ───────────────────────────────
+  const loadClaimedStatus = async uid => {
     try {
       const ref = doc(db, 'users', uid, 'claimedBadges', CLAIMED_DOC_ID);
       const snap = await getDoc(ref);
       if (snap.exists()) {
         setClaimedStatus(snap.data());
       } else {
-        // Initialize all badges=false
         const initMap = {};
-        BADGE_IDS.forEach((id) => (initMap[id] = false));
+        BADGE_IDS.forEach(id => (initMap[id] = false));
         await setDoc(ref, initMap);
         setClaimedStatus(initMap);
       }
     } catch (e) {
-      console.error('▶︎ loadClaimedStatus error:', e);
+      console.error('loadClaimedStatus error:', e);
       Alert.alert('Error', 'Could not load claimed badges.');
       const fallback = {};
-      BADGE_IDS.forEach((id) => (fallback[id] = false));
+      BADGE_IDS.forEach(id => (fallback[id] = false));
       setClaimedStatus(fallback);
     }
   };
 
-  /**
-   * Fetch or initialize users/{uid}/favorites/list
-   * If missing, write list: [].
-   */
-  const loadFavorites = async (uid) => {
+  // ─── Load or initialize favorites ────────────────────────────────────
+  const loadFavorites = async uid => {
     try {
       const ref = doc(db, 'users', uid, 'favorites', FAVORITES_DOC_ID);
       const snap = await getDoc(ref);
@@ -169,27 +159,21 @@ export default function VolunteerBadgesScreen() {
         setFavorites([]);
       }
     } catch (e) {
-      console.error('▶︎ loadFavorites error:', e);
+      console.error('loadFavorites error:', e);
       Alert.alert('Error', 'Could not load favorite badges.');
       setFavorites([]);
     }
   };
 
-  /**
-   * Toggle a badge in favorites:
-   *   • Only if that badge is already claimed
-   *   • Max 3 favorites
-   *   • Persist to Firestore at users/{uid}/favorites/list
-   */
-  const toggleFavorite = async (badgeId) => {
+  // ─── Toggle favorite badge ──────────────────────────────────────────
+  const toggleFavorite = async badgeId => {
     if (!claimedStatus[badgeId]) {
       Alert.alert('Locked', 'You must claim this badge before favoriting.');
       return;
     }
-
     let newList = [...favorites];
     if (newList.includes(badgeId)) {
-      newList = newList.filter((id) => id !== badgeId);
+      newList = newList.filter(id => id !== badgeId);
     } else {
       if (newList.length >= 3) {
         Alert.alert('Max Favorites', 'Can only favorite up to 3 badges.');
@@ -198,60 +182,49 @@ export default function VolunteerBadgesScreen() {
       newList.push(badgeId);
     }
     setFavorites(newList);
-
     try {
-      const ref = doc(db, 'users', authUser.uid, 'favorites', FAVORITES_DOC_ID);
-      await updateDoc(ref, { list: newList });
+      await updateDoc(
+        doc(db, 'users', authUser.uid, 'favorites', FAVORITES_DOC_ID),
+        { list: newList }
+      );
     } catch (e) {
-      console.error('▶︎ toggleFavorite error:', e);
+      console.error('toggleFavorite error:', e);
     }
   };
 
-  /**
-   * Attempt to claim a badge:
-   *   • Only if totalHours >= target
-   *   • Pulse animation
-   *   • updateDoc → users/{uid}/claimedBadges/status.{badgeId} = true
-   */
+  // ─── Claim a badge ──────────────────────────────────────────────────
   const claimBadge = async (badgeId, target) => {
     if (totalHours < target) {
       Alert.alert('Not Ready', `You need ${target} hours to unlock this badge.`);
       return;
     }
-
-    // Animate pulse
+    // Pulse animation
     const animVal = animatedValuesRef.current[badgeId];
     if (animVal) {
       Animated.sequence([
-        Animated.timing(animVal, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animVal, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
+        Animated.timing(animVal, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(animVal, { toValue: 0, duration: 200, useNativeDriver: true }),
       ]).start();
     }
-
     // Update Firestore
     try {
-      const ref = doc(db, 'users', authUser.uid, 'claimedBadges', CLAIMED_DOC_ID);
-      await updateDoc(ref, { [badgeId]: true });
-      setClaimedStatus((prev) => ({ ...prev, [badgeId]: true }));
+      await updateDoc(
+        doc(db, 'users', authUser.uid, 'claimedBadges', CLAIMED_DOC_ID),
+        { [badgeId]: true }
+      );
+      setClaimedStatus(prev => ({ ...prev, [badgeId]: true }));
       Alert.alert('Badge Claimed!', 'Congratulations on unlocking a new badge!');
     } catch (e) {
-      console.error('▶︎ claimBadge error:', e);
+      console.error('claimBadge error:', e);
       Alert.alert('Error', 'Could not claim badge. Try again later.');
     }
   };
 
-  // ─── RENDER LOGIC ───────────────────────────────────────────────────
+  // Helper to check if a given route is active
+  const isActiveRoute = (routeName) => route.name === routeName;
 
-  // If still loading (either auth or data), show spinner:
-  if (loading || authUser === null) {
+  // ─── If checking auth, show loader ───────────────────────────────────
+  if (checkingAuth) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color="#FF6B35" />
@@ -259,176 +232,202 @@ export default function VolunteerBadgesScreen() {
     );
   }
 
-  // If not logged in, show prompt to login
-  if (!authUser) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.notLoggedInContainer}>
-          <View style={styles.iconStack}>
-            <Ionicons name="trophy-outline" size={80} color="#FF6B35" />
-            <Ionicons
-              name="badge-outline"
-              size={40}
-              color="#FF6B35"
-              style={styles.innerBadgeIcon}
-            />
-          </View>
-          <Text style={styles.notLoggedInText}>Login to access badges</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // How many badges have been claimed so far?
-  const unlockedCount = Object.values(claimedStatus).filter((v) => v === true).length;
-
+  // ─── Main return ────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      {/* ─── HEADER ───────────────────────────────────────────────────────── */}
+      {/* ── HEADER ───────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        {/* Left spacer (width 40) */}
         <View style={{ width: 40 }} />
-        {/* Centered title */}
         <Text style={styles.headerTitle}>My Badges</Text>
-        {/* Right spacer (width 40) */}
         <View style={{ width: 40 }} />
       </View>
 
-      {/* ─── TAB NAVIGATION ───────────────────────────────────────────────── */}
-      <View style={styles.tabContainer}>
-        <TabButton title="Badges" navigation={navigation} />
-        <TabButton title="Leaderboard" navigation={navigation} />
-        <TabButton title="Account" navigation={navigation} />
+      {/* ── TWO BUTTONS SIDE BY SIDE ─────────────────────────────────────── */}
+      <View style={styles.buttonRow}>
+        {/* Badges Button */}
+        <TouchableOpacity
+          style={[
+            styles.singleButton,
+            isActiveRoute('Badges') && styles.activeButton,
+          ]}
+          onPress={() => {
+            if (!isActiveRoute('Badges')) {
+              navigation.getParent()?.navigate('Badges');
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.buttonText,
+              isActiveRoute('Badges') ? styles.activeButtonText : styles.inactiveButtonText,
+            ]}
+          >
+            Badges
+          </Text>
+        </TouchableOpacity>
+
+        {/* Account Button */}
+        <TouchableOpacity
+          style={[
+            styles.singleButton,
+            isActiveRoute('Stats') && styles.activeButton,
+          ]}
+          onPress={() => {
+            if (!isActiveRoute('Stats')) {
+              navigation.getParent()?.navigate('Stats');
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.buttonText,
+              isActiveRoute('Stats') ? styles.activeButtonText : styles.inactiveButtonText,
+            ]}
+          >
+            Account
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* ─── MAIN SCROLLABLE CONTENT ───────────────────────────────────────── */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* ─── HERO SECTION (Now displays “favorite” badges) ─────────────────── */}
-        <View style={styles.heroSection}>
-          <View style={styles.totalBadgesContainer}>
-            <View style={styles.badgeCountCircle}>
-              <Text style={styles.totalBadgesNumber}>{unlockedCount}</Text>
+      {/* ── CONTENT AREA ─────────────────────────────────────────────────── */}
+      {authUser ? (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {loading ? (
+            <View style={[styles.container, styles.centerContent]}>
+              <ActivityIndicator size="large" color="#FF6B35" />
             </View>
-            <Text style={styles.totalBadgesLabel}>Badges Unlocked</Text>
-            <Text style={styles.totalHoursText}>{totalHours} volunteer hours</Text>
-          </View>
-
-          {/* ─── Favorite badges appear here (up to 3) ───────────────────────── */}
-          <View style={styles.featuredRow}>
-            {favorites.map((favId) => {
-              const info = BADGE_DEFINITIONS.find((b) => b.id === favId);
-              return (
-                <View key={favId} style={styles.featuredBadgeContainer}>
-                  <View style={styles.featuredBadgeBorder}>
-                    <Ionicons name={info.icon} size={32} color="#FF6B35" />
+          ) : (
+            <>
+              {/* HERO SECTION */}
+              <View style={styles.heroSection}>
+                <View style={styles.totalBadgesContainer}>
+                  <View style={styles.badgeCountCircle}>
+                    <Text style={styles.totalBadgesNumber}>
+                      {Object.values(claimedStatus).filter(v => v).length}
+                    </Text>
                   </View>
-                  <Text style={styles.featuredBadgeTitle}>{info.title}</Text>
+                  <Text style={styles.totalBadgesLabel}>Badges Unlocked</Text>
+                  <Text style={styles.totalHoursText}>
+                    {totalHours} volunteer hours
+                  </Text>
                 </View>
-              );
-            })}
-            {/*
-              If fewer than 3 favorites, render placeholders
-            */}
-            {Array.from({ length: 3 - favorites.length }).map((_, idx) => (
-              <View key={'empty-fav-' + idx} style={styles.featuredBadgeContainer}>
-                <View style={styles.featuredBadgeBorder}>
-                  <Ionicons name="help-circle-outline" size={32} color="#D1D5DB" />
+
+                <View style={styles.featuredRow}>
+                  {favorites.map(favId => {
+                    const info = BADGE_DEFINITIONS.find(b => b.id === favId);
+                    return (
+                      <View key={favId} style={styles.featuredBadgeContainer}>
+                        <View style={styles.featuredBadgeBorder}>
+                          <Ionicons name={info.icon} size={32} color="#FF6B35" />
+                        </View>
+                        <Text style={styles.featuredBadgeTitle}>{info.title}</Text>
+                      </View>
+                    );
+                  })}
+                  {Array.from({ length: 3 - favorites.length }).map((_, idx) => (
+                    <View
+                      key={'empty-fav-' + idx}
+                      style={styles.featuredBadgeContainer}
+                    >
+                      <View style={styles.featuredBadgeBorder}>
+                        <Ionicons
+                          name="help-circle-outline"
+                          size={32}
+                          color="#D1D5DB"
+                        />
+                      </View>
+                      <Text
+                        style={[styles.featuredBadgeTitle, { color: '#9CA3AF' }]}
+                      >
+                        Favorite
+                      </Text>
+                    </View>
+                  ))}
                 </View>
-                <Text style={[styles.featuredBadgeTitle, { color: '#9CA3AF' }]}>
-                  Favorite
+              </View>
+
+              {/* “Your Next Badge” */}
+              <View style={styles.sectionContainer}>
+                <View style={styles.nextBadgeHeader}>
+                  <Text style={styles.nextBadgeTitle}>Your Next Badge</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowAllProgress(!showAllProgress)}
+                  >
+                    <Text style={styles.nextBadgeSeeAll}>
+                      {showAllProgress ? 'Show Less' : 'See All'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.nextBadgeList}>
+                  {(showAllProgress
+                    ? BADGE_DEFINITIONS
+                    : BADGE_DEFINITIONS.slice(0, 4)
+                  ).map(info => {
+                    const percentage = Math.min((totalHours / info.target) * 100, 100);
+                    const isUnlocked = totalHours >= info.target;
+                    const isClaimed = Boolean(claimedStatus[info.id]);
+                    const isFav = favorites.includes(info.id);
+
+                    return (
+                      <View key={info.id}>
+                        <BadgeProgressRow
+                          info={info}
+                          current={totalHours}
+                          target={info.target}
+                          percentage={percentage}
+                          isUnlocked={isUnlocked}
+                          isClaimed={isClaimed}
+                          onClaim={() => claimBadge(info.id, info.target)}
+                          animVal={animatedValuesRef.current[info.id]}
+                        />
+                        {isClaimed && (
+                          <TouchableOpacity
+                            style={styles.smallHeart}
+                            onPress={() => toggleFavorite(info.id)}
+                          >
+                            <Ionicons
+                              name={isFav ? 'heart' : 'heart-outline'}
+                              size={16}
+                              color={isFav ? '#EF4444' : '#9CA3AF'}
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* MOTIVATION */}
+              <View style={styles.motivationSection}>
+                <Text style={styles.motivationTitle}>Keep Going!</Text>
+                <Text style={styles.motivationText}>
+                  Every hour of volunteering makes a difference. You’re building
+                  a stronger community! 🌟
                 </Text>
               </View>
-            ))}
-          </View>
-        </View>
 
-        {/* ─── “Your Next Badge” Section ────────────────────────────────────── */}
-        <View style={styles.sectionContainer}>
-          <View style={styles.nextBadgeHeader}>
-            <Text style={styles.nextBadgeTitle}>Your Next Badge</Text>
-            <TouchableOpacity onPress={() => setShowAllProgress(!showAllProgress)}>
-              <Text style={styles.nextBadgeSeeAll}>
-                {showAllProgress ? 'Show Less' : 'See All'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.nextBadgeList}>
-            {(showAllProgress ? BADGE_DEFINITIONS : BADGE_DEFINITIONS.slice(0, 4)).map(
-              (info) => {
-                const current = totalHours;
-                const target = info.target;
-                const percentage = Math.min((current / target) * 100, 100);
-                const isUnlocked = current >= target;
-                const isClaimed = Boolean(claimedStatus[info.id]);
-                const isFav = favorites.includes(info.id);
-
-                return (
-                  <View key={info.id}>
-                    <BadgeProgressRow
-                      info={info}
-                      current={current}
-                      target={target}
-                      percentage={percentage}
-                      isUnlocked={isUnlocked}
-                      isClaimed={isClaimed}
-                      onClaim={() => claimBadge(info.id, target)}
-                      animVal={animatedValuesRef.current[info.id]}
-                    />
-
-                    {/* If the badge is claimed, show a small “heart” at top-right to toggle favorite */}
-                    {isClaimed && (
-                      <TouchableOpacity
-                        style={styles.smallHeart}
-                        onPress={() => toggleFavorite(info.id)}
-                      >
-                        <Ionicons
-                          name={isFav ? 'heart' : 'heart-outline'}
-                          size={16}
-                          color={isFav ? '#EF4444' : '#9CA3AF'}
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                );
-              }
-            )}
-          </View>
-        </View>
-
-        {/* ─── MOTIVATION SECTION ───────────────────────────────────────────── */}
-        <View style={styles.motivationSection}>
-          <Text style={styles.motivationTitle}>Keep Going!</Text>
-          <Text style={styles.motivationText}>
-            Every hour of volunteering makes a difference. You’re building a stronger community!
+              <View style={styles.bottomPadding} />
+            </>
+          )}
+        </ScrollView>
+      ) : (
+        // ── Not logged in prompt ─────────────────────────────────────
+        <View style={[styles.container, styles.centerContent]}>
+          <Ionicons name="ribbon-outline" size={80} color="#FF6B35" />
+          <Text style={styles.notLoggedInText}>
+            Login to access badges
           </Text>
         </View>
-
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
-// ─── TabButton Component ─────────────────────────────────────────────────
-function TabButton({ title, navigation }) {
-  const route = useRoute();
-  const isActive = route.name === title;
-  return (
-    <TouchableOpacity
-      style={[styles.tabButton, isActive && styles.activeTabButton]}
-      onPress={() => {
-        if (!isActive) {
-          navigation.getParent()?.navigate(title);
-        }
-      }}
-    >
-      <Text style={[styles.tabText, isActive && styles.activeTabText]}>{title}</Text>
-    </TouchableOpacity>
-  );
-}
-
-// ─── A Single Badge Progress Row ─────────────────────────────────────────
+// ─── Badge Row Component ───────────────────────────────────────────────
 function BadgeProgressRow({
   info,
   current,
@@ -455,7 +454,6 @@ function BadgeProgressRow({
         },
       ]}
     >
-      {/* Left: Icon + circular progress ring */}
       <View
         style={[
           styles.rowIconWrapper,
@@ -474,19 +472,23 @@ function BadgeProgressRow({
         <ProgressRing percentage={percentage} size={70} strokeWidth={4} />
       </View>
 
-      {/* Middle: Title / status text / small progress bar */}
       <View style={styles.rowTextContainer}>
         <Text style={styles.rowBadgeTitle}>{info.title}</Text>
         <Text style={styles.rowBadgeSubtitle}>
-          {current >= target ? 'Ready to Claim!' : `${Math.ceil(target - current)} hours to go`}
+          {current >= target
+            ? 'Ready to Claim!'
+            : `${Math.ceil(target - current)} hours to go`}
         </Text>
         <View style={styles.smallProgressBar}>
-          <View style={[styles.smallProgressFill, { width: `${percentage}%` }]} />
+          <View
+            style={[styles.smallProgressFill, { width: `${percentage}%` }]}
+          />
         </View>
-        <Text style={styles.rowProgressNumbers}>{`${Math.floor(current)} / ${target} hrs`}</Text>
+        <Text style={styles.rowProgressNumbers}>
+          {`${Math.floor(current)} / ${target} hrs`}
+        </Text>
       </View>
 
-      {/* Right: either “Claim” button if unlocked but not claimed, ✔️ if claimed, or lock icon if still locked */}
       <View style={styles.rowButtonWrapper}>
         {isClaimed ? (
           <View style={styles.rowBadgeClaimedCheck}>
@@ -558,10 +560,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
 
   // ── HEADER ─────────────────────────────────────────────────────────
   header: {
@@ -580,37 +578,40 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
 
-  // ── TAB NAVIGATION ─────────────────────────────────────────────────
-  tabContainer: {
+  // ── TWO-BUTTON ROW ─────────────────────────────────────────────────
+  buttonRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginVertical: 16,
   },
-  tabButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: '#F9FAFB',
-    minWidth: 100,
+  singleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    marginHorizontal: 4,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 25,
+    backgroundColor: 'transparent',
   },
-  activeTabButton: {
-    backgroundColor: '#000000',
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+  activeButton: {
+    borderWidth: 2,
+    borderColor: '#000000',
   },
-  tabText: {
-    fontSize: 14,
-    color: '#64748B',
-    fontWeight: '600',
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
-  activeTabText: {
-    color: '#FFFFFF',
+  activeButtonText: {
+    color: '#000000',
+  },
+  inactiveButtonText: {
+    color: '#666666',
+  },
+
+  // ── CONTENT ────────────────────────────────────────────────────────
+  content: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
 
   // ── HERO SECTION ───────────────────────────────────────────────────
@@ -810,7 +811,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── SMALL HEART ICON NEXT TO A PROGRESS ROW ─────────────────────────
+  // ── Small heart for favorites ───────────────────────────────────────
   smallHeart: {
     position: 'absolute',
     top: 12,
@@ -821,7 +822,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  // ── MOTIVATION SECTION ─────────────────────────────────────────────
+  // ── MOTIVATION ─────────────────────────────────────────────────────
   motivationSection: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
@@ -848,28 +849,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // ── Not Logged In State ─────────────────────────────────────────────
-  notLoggedInContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconStack: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  innerBadgeIcon: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-  },
+  // ── Not logged in prompt ────────────────────────────────────────────
   notLoggedInText: {
+    marginTop: 16,
     fontSize: 18,
     color: '#FF6B35',
     fontWeight: '500',
   },
 
-  // ── Bottom Padding ─────────────────────────────────────────────────
+  // ── Bottom padding ──────────────────────────────────────────────────
   bottomPadding: {
     height: 80,
   },
