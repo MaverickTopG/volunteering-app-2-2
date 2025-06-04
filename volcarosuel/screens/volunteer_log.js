@@ -232,22 +232,14 @@ export default function VolunteerDashboard() {
     <SafeAreaView style={styles.container}>
       {/* ── Header Bar ───────────────────────────────────────────────── */}
       <View style={styles.headerBar}>
-        {/* Left: Sign Out + Delete icons */}
-        <View style={styles.leftIconsContainer}>
-          <TouchableOpacity onPress={() => signOut()} style={styles.logoutContainer}>
-            <Ionicons name="log-out-outline" size={24} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Delete')}
-            style={styles.logoutContainer}
-          >
-            <Ionicons name="trash-outline" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
+        {/* Only Sign Out icon now */}
+        <TouchableOpacity onPress={() => signOut()} style={styles.logoutContainer}>
+          <Ionicons name="log-out-outline" size={24} color="#000" />
+        </TouchableOpacity>
 
         <Text style={styles.headerTitle}>Volunteer Dashboard</Text>
 
-        {/* Right: Add Session button */}
+        {/* Add Session button */}
         <TouchableOpacity onPress={() => setAddModalVisible(true)} style={styles.addButton}>
           <Ionicons name="add" size={24} color="#000" />
         </TouchableOpacity>
@@ -398,6 +390,16 @@ export default function VolunteerDashboard() {
 
         {/* Extra bottom padding so bottom tab bar does not overlap */}
         <View style={{ height: 100 }} />
+
+        {/* ── Delete Icon at Bottom ───────────────────────────────────── */}
+        <View style={styles.bottomDeleteContainer}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Delete')}
+            style={styles.deleteButton}
+          >
+            <Ionicons name="trash-outline" size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* ── Add Session Modal ───────────────────────────────────────── */}
@@ -545,9 +547,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  leftIconsContainer: {
-    flexDirection: 'row',
-  },
   logoutContainer: {
     width: 36,
     height: 36,
@@ -555,7 +554,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
   },
   headerTitle: {
     fontSize: 18,
@@ -958,5 +956,24 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 12,
     textAlign: 'center',
+  },
+
+  // ── Bottom Delete Button ─────────────────────────────────────────
+  bottomDeleteContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
 });
