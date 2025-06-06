@@ -3,7 +3,6 @@ import React from 'react';
 import { View, StatusBar, StyleSheet, Dimensions } from 'react-native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import AnimalTabNavigator from '../volcarosuel/Navigators/AnimalTabNavigator';
-import OrganizationScreen from '../volcarosuel/screens/OrganizationScreen';
 import AccountScreen from '../volcarosuel/screens/AccountScreen';
 
 const { width } = Dimensions.get('window');
@@ -40,10 +39,6 @@ export default function DrawerNavigator() {
           component={AnimalTabNavigator}
         />
 
-        <Drawer.Screen
-          name="AddOrg"
-          component={OrganizationScreen}
-        />
 
         <Drawer.Screen
           name="Account"

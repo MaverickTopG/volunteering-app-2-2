@@ -21,7 +21,7 @@ import { AuthContext } from "../../auth/AuthContext"; // adjust path if needed
 import SearchScreen from "../screens/SearchScreen";
 import AnimalCarousel from "../displayer/showContainer";
 import DisplayScreen from "../displayer/ShowScreen";
-import LiveOps from "../screens/LiveOp";
+
 import VolunteerLogs from "../screens/volunteer_log";
 import LoginScreen from "../../auth/LoginScreen";
 import RegisterScreen from "../../auth/RegisterScreen";
@@ -30,7 +30,6 @@ import MapScreen from "../screens/MapScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import NexolinkLoginScreen from "../../auth/selectscreen";
 import AccountStackNavigator from "../screens/AccountScreen";
-import LeaderboardScreen from "../screens/LeaderBoardScreen";
 import StatsScreen from "../screens/AccountScreen";
 import BadgesScreen from "../screens/badges";
 import AboutScreen from "../screens/about";
@@ -86,7 +85,7 @@ const HomeStack = ({ route }: any) => {
         initialParams={{ reference: route?.params?.reference }}
       />
       <Stack.Screen name="DisplayScreen" component={DisplayScreen} />
-      <Stack.Screen name="LiveOps" component={LiveOps} />
+     
     </Stack.Navigator>
   );
 };

@@ -400,25 +400,7 @@ export default function VolunteerCarousel() {
             })
           )}
 
-          {/* Live Opportunities Button (black background, white text) */}
-          <View style={styles.liveWrap}>
-            <TouchableOpacity
-              style={styles.liveButton}
-              onPress={handleLiveOps}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={['#000', '#444']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.liveButtonGradient}
-              >
-                <Text style={styles.liveButtonText}>
-                  Live Opportunities
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+      
         </ScrollView>
       </View>
     </View>

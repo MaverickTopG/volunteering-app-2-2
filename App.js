@@ -16,7 +16,6 @@ Mapbox.setAccessToken(process.env.RNMapboxMapsDownloadToken);
 import { AuthProvider } from "./auth/AuthContext";
 import DrawerNavigator from "./navigation/drawer";
 import AppUpdateChecker from "./AppUpdateChecker";
-import { themePacks, seasonal } from "./volcarosuel/screens/shop";
 
 SplashScreen.preventAutoHideAsync();
 

@@ -76,26 +76,7 @@ export default function ShowScreen() {
   ];
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
 
-  useEffect(() => {
-    if (!user) return;
-    AsyncStorage.getItem(`@shop/active-${user.uid}`)
-      .then((id) => {
-        if (!id) return;
-        const { themePacks, seasonal } = require('../screens/shop');
-        const pack =
-          themePacks.find((t) => t.id === id) ||
-          seasonal.find((s) => s.id === id);
-        if (pack?.colors) {
-          setPalette([
-            pack.colors[0] ?? DEFAULT_PALETTE[0],
-            pack.colors[1] ?? DEFAULT_PALETTE[1],
-            pack.colors[2] ?? DEFAULT_PALETTE[2],
-            pack.colors[3] ?? DEFAULT_PALETTE[3],
-          ]);
-        }
-      })
-      .catch(() => {});
-  }, [user]);
+
 
   // ─── Open maps with the address (matching MapScreen’s behavior) ───────
   const openMaps = () => {
