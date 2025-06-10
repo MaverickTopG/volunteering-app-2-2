@@ -9,9 +9,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { registerRootComponent } from "expo";
 import * as SplashScreen from "expo-splash-screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Mapbox from '@rnmapbox/maps';
 
-Mapbox.setAccessToken(process.env.RNMapboxMapsDownloadToken);
 
 import { AuthProvider } from "./auth/AuthContext";
 import DrawerNavigator from "./navigation/drawer";

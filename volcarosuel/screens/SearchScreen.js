@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   // ── CAROUSEL HEADER (ABSOLUTE) ───────────────────────────────────
   headerContainerCarousel: {
     position: "absolute",
-    top: StatusBar.currentHeight || 90,
+    top: StatusBar.currentHeight || 60,
     left: 16,
     right: 16,
     height: 56,

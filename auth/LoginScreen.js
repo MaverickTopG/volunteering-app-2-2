@@ -1,6 +1,6 @@
 // LoginScreen.js
 
-import React, { useState, useContext, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -10,20 +10,21 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
-  ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { AuthContext } from './AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
+const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 428;
 const guidelineBaseHeight = 926;
-const { width, height } = Dimensions.get('window');
 const scale  = (s) => (width  / guidelineBaseWidth)  * s;
 const vScale = (s) => (height / guidelineBaseHeight) * s;
 
@@ -35,7 +36,6 @@ export default function LoginScreen() {
   const { signIn } = useContext(AuthContext);
   const nav        = useNavigation();
 
-  // Attempt to sign in
   const handleLogin = async () => {
     if (!email.trim() || !password) {
       return Alert.alert('Error', 'Please enter both email and password.');
@@ -43,6 +43,7 @@ export default function LoginScreen() {
     try {
       await signIn(email.trim(), password);
       Alert.alert('Success', 'Logged in successfully.');
+      // nav.navigate('VolunteerDashboard');
     } catch {
       Alert.alert('Error', 'Invalid credentials.');
     }
@@ -50,120 +51,117 @@ export default function LoginScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
-        {/* ─────────────────────────────────────────────
-             BACKGROUND BLOBS
-        ───────────────────────────────────────────── */}
-        <View style={styles.topRightBlob} />
-        <View style={styles.bottomLeftBlob} />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <SafeAreaView style={styles.container}>
 
-        {/* ─────────────────────────────────────────────
-             DIAGONAL IMAGE & OVERLAY
-        ───────────────────────────────────────────── */}
-        <Image
-          source={ require('../assets/bg1.png')}
-          style={styles.diagonalImage}
-          resizeMode="cover"
-        />
-        <LinearGradient
-          colors={['rgba(248,248,248,0)', 'rgba(248,248,248,0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.diagonalOverlay}
-        />
+            {/* BACKGROUND BLOBS */}
+            <View style={styles.topRightBlob} />
+            <View style={styles.bottomLeftBlob} />
 
-        {/* ─────────────────────────────────────────────
-             BACK BUTTON
-        ───────────────────────────────────────────── */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => nav.goBack()}
-        >
-          <View style={styles.backCircle}>
-            <Ionicons name="chevron-back" size={scale(20)} color="#444" />
-          </View>
-        </TouchableOpacity>
+            {/* DIAGONAL IMAGE & OVERLAY */}
+            <Image
+              source={ require('../assets/bg1.png') }
+              style={styles.diagonalImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['rgba(248,248,248,0)', 'rgba(248,248,248,0)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.diagonalOverlay}
+            />
 
-        {/* ─────────────────────────────────────────────
-             MAIN LOGIN FORM
-        ───────────────────────────────────────────── */}
-        <View style={styles.content}>
-          <Text style={styles.header}>
-            Welcome back{'\n'}to NexoLink
-          </Text>
-
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="mail-outline"
-                size={scale(20)}
-                color="#888"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="you@example.com"
-                placeholderTextColor="#AAA"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
-            </View>
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={scale(20)}
-                color="#888"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor="#AAA"
-                secureTextEntry={!isVisible}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setIsVisible((v) => !v)}
-                style={{ marginLeft: scale(8) }}
-              >
-                <Ionicons
-                  name={isVisible ? 'eye-outline' : 'eye-off-outline'}
-                  size={scale(20)}
-                  color="#888"
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* LOGIN Button */}
-          <TouchableOpacity
-            onPress={handleLogin}
-            activeOpacity={0.8}
-            style={styles.loginButton}
-          >
-            <Text style={styles.loginText}>LOGIN</Text>
-          </TouchableOpacity>
-
-          {/* Signup Prompt */}
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>New to NexoLink?</Text>
-            <TouchableOpacity onPress={() => nav.navigate('Register')}>
-              <Text style={styles.signupLink}> Sign up</Text>
+            {/* BACK BUTTON */}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => nav.goBack()}
+            >
+              <View style={styles.backCircle}>
+                <Ionicons name="chevron-back" size={scale(20)} color="#444" />
+              </View>
             </TouchableOpacity>
-          </View>
 
-        </View>
-      </SafeAreaView>
+            {/* MAIN LOGIN FORM (centered) */}
+            <View style={styles.content}>
+              <Text style={styles.header}>Welcome back{'\n'}to NexoLink</Text>
+
+              {/* Email */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons
+                    name="mail-outline"
+                    size={scale(20)}
+                    color="#888"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="you@example.com"
+                    placeholderTextColor="#AAA"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    value={email}
+                    onChangeText={setEmail}
+                  />
+                </View>
+              </View>
+
+              {/* Password */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Password</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={scale(20)}
+                    color="#888"
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#AAA"
+                    secureTextEntry={!isVisible}
+                    value={password}
+                    onChangeText={setPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setIsVisible(v => !v)}
+                    style={{ marginLeft: scale(8) }}
+                  >
+                    <Ionicons
+                      name={isVisible ? 'eye-outline' : 'eye-off-outline'}
+                      size={scale(20)}
+                      color="#888"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* LOGIN Button */}
+              <TouchableOpacity
+                onPress={handleLogin}
+                activeOpacity={0.8}
+                style={styles.loginButton}
+              >
+                <Text style={styles.loginText}>LOGIN</Text>
+              </TouchableOpacity>
+
+              {/* Signup Prompt */}
+              <View style={styles.signupContainer}>
+                <Text style={styles.signupText}>New to NexoLink?</Text>
+                <TouchableOpacity onPress={() => nav.navigate('Register')}>
+                  <Text style={styles.signupLink}> Sign up</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </SafeAreaView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </GestureHandlerRootView>
   );
 }
@@ -173,8 +171,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8F8F8',
   },
-
-  // ─── BACKGROUND BLOBS ───────────────────────────────────────────
   topRightBlob: {
     position: 'absolute',
     top: -height * 0.15,
@@ -195,8 +191,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,230,200,0.3)',
     zIndex: 0,
   },
-
-  // ─── DIAGONAL IMAGE & OVERLAY ─────────────────────────────────
   diagonalImage: {
     position: 'absolute',
     width: width * 1.4,
@@ -211,8 +205,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 2,
   },
-
-  // ─── BACK BUTTON ───────────────────────────────────────────────
   backButton: {
     position: 'absolute',
     top: Platform.OS === 'android' ? scale(30) : scale(50),
@@ -232,14 +224,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
-  // ─── MAIN FORM CONTENT ──────────────────────────────────────
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center',      // center vertically
     paddingHorizontal: scale(30),
-    paddingTop: vScale(0),
-    zIndex: 3, // keep above diagonal overlays
+    zIndex: 3,
   },
   header: {
     fontSize: scale(32),
@@ -249,8 +238,6 @@ const styles = StyleSheet.create({
     marginBottom: vScale(40),
     lineHeight: scale(40),
   },
-
-  // ─── INPUT FIELDS ─────────────────────────────────────────────
   inputContainer: {
     marginBottom: vScale(20),
   },
@@ -282,8 +269,6 @@ const styles = StyleSheet.create({
     color: '#333',
     paddingVertical: 0,
   },
-
-  // ─── LOGIN BUTTON ─────────────────────────────────────────────
   loginButton: {
     backgroundColor: '#333',
     borderRadius: scale(25),
@@ -303,8 +288,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
   },
-
-  // ─── SIGNUP PROMPT ────────────────────────────────────────────
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -316,18 +299,6 @@ const styles = StyleSheet.create({
   },
   signupLink: {
     color: '#333',
-    fontSize: scale(14),
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-
-  // ─── DELETE BUTTON ─────────────────────────────────────────────
-  deleteButton: {
-    marginTop: vScale(10),
-    alignSelf: 'center',
-  },
-  deleteText: {
-    color: '#FF4444',
     fontSize: scale(14),
     fontWeight: '600',
     textDecorationLine: 'underline',

@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useContext,
   useCallback,
-  useMemo,
 } from 'react';
 import {
   View,
@@ -17,266 +16,195 @@ import {
   Alert,
   Modal,
   TextInput,
-  Platform,
   ActivityIndicator,
   Linking,
   ScrollView,
   Animated,
   TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
-import MapView, {
-  Marker,
-  PROVIDER_GOOGLE,
-  PROVIDER_DEFAULT,
-} from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, PROVIDER_DEFAULT } from 'react-native-maps';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
-import Geolocation from 'react-native-geolocation-service';
-import { collection, query, getDocs } from 'firebase/firestore';
+import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+import { collection, query, getDocs } from 'firebase/firestore';
 import { AuthContext } from '../../auth/AuthContext';
 import { db } from '../../auth/firebase';
-import { useFocusEffect } from '@react-navigation/native';
 
-// ─── DIMENSIONS & SCALING ────────────────────────────────────────────────────────
 const { width, height } = Dimensions.get('window');
 const BASE_WIDTH = 428;
 const BASE_HEIGHT = 926;
 const scale = (s) => (width / BASE_WIDTH) * s;
 const verticalScale = (s) => (height / BASE_HEIGHT) * s;
 
-// ─── CATEGORY ICON + COLOR LOOKUP ───────────────────────────────────────────────
+// Category lookup
 const categories = [
-  { reference: 'Animal',      icon: 'paw-outline',          color: '#E74C3C' },
-  { reference: 'Arts',        icon: 'color-palette-outline',color: '#9B59B6' },
-  { reference: 'Education',   icon: 'school-outline',       color: '#3498DB' },
-  { reference: 'Environment', icon: 'leaf-outline',         color: '#2ECC71' },
-  { reference: 'Family',      icon: 'people-circle-outline',color: '#F1C40F' },
-  { reference: 'Hospital',    icon: 'medkit-outline',       color: '#E67E22' },
-  { reference: 'Library',     icon: 'book-outline',         color: '#1ABC9C' },
-  { reference: 'Seniors',     icon: 'walk-outline',         color: '#34495E' },
-  { reference: 'Tech',        icon: 'laptop-outline',       color: '#8E44AD' },
+  { reference: 'Animal',   icon: 'paw-outline',          color: '#E74C3C' },
+  { reference: 'Arts',     icon: 'color-palette-outline',color: '#9B59B6' },
+  { reference: 'Education',icon: 'school-outline',       color: '#3498DB' },
+  { reference: 'Environment',icon: 'leaf-outline',       color: '#2ECC71' },
+  { reference: 'Family',   icon: 'people-circle-outline',color: '#F1C40F' },
+  { reference: 'Hospital', icon: 'medkit-outline',       color: '#E67E22' },
+  { reference: 'Library',  icon: 'book-outline',         color: '#1ABC9C' },
+  { reference: 'Seniors',  icon: 'walk-outline',         color: '#34495E' },
+  { reference: 'Tech',     icon: 'laptop-outline',       color: '#8E44AD' },
 ];
 const CATEGORY_ICON_MAP = {};
-categories.forEach((cat) => {
-  CATEGORY_ICON_MAP[cat.reference.toLowerCase()] = {
-    icon: cat.icon,
-    color: cat.color,
+categories.forEach((c) => {
+  CATEGORY_ICON_MAP[c.reference.toLowerCase()] = {
+    icon: c.icon,
+    color: c.color,
   };
 });
 
-// ─── GEOCODING HELPER (NOMINATIM) ───────────────────────────────────────────────
-// Returns null or an object { latitude, longitude }
+// Geocoding via Nominatim
 async function fetchCoordsForAddress(address) {
-  if (!address || !address.trim()) return null;
+  if (!address?.trim()) return null;
   try {
     const url =
-      `https://nominatim.openstreetmap.org/search?` +
+      'https://nominatim.openstreetmap.org/search?' +
       `q=${encodeURIComponent(address)}` +
-      `&format=json&limit=1`;
+      '&format=json&limit=1';
     const { data } = await axios.get(url, {
       headers: { 'User-Agent': 'NexoLinkApp/1.0' },
     });
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data) && data.length) {
       const { lat, lon } = data[0];
-      return {
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lon),
-      };
+      return { latitude: +lat, longitude: +lon };
     }
   } catch (err) {
-    console.warn('Nominatim error:', err);
+    console.warn('Geocode error:', err);
   }
   return null;
 }
 
 export default function MapScreen() {
   const mapRef = useRef(null);
+  const panelAnim = useRef(new Animated.Value(height * 0.5)).current;
+  const { user } = useContext(AuthContext);
 
-  // ─── STATE ────────────────────────────────────────────────────────────────────
+  // state
   const [sitesWithCoords, setSitesWithCoords] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
-  const [geoFailed, setGeoFailed] = useState(false);
   const [homeLocation, setHomeLocation] = useState(null);
-  const [showHomeModal, setShowHomeModal] = useState(false);
+  const [geoFailed, setGeoFailed] = useState(false);
   const [homeAddressInput, setHomeAddressInput] = useState('');
-
+  const [showHomeModal, setShowHomeModal] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
   const [is3D, setIs3D] = useState(false);
   const [loadingSites, setLoadingSites] = useState(true);
 
-  const { user } = useContext(AuthContext);
-
-  // ─── ANIMATED BOTTOM PANEL ─────────────────────────────────────────────────────
-  // height of the panel when fully open:
-  const PANEL_HEIGHT = height * 0.5;
-  // Animated value controlling panel’s translateY.
-  const panelAnim = useRef(new Animated.Value(PANEL_HEIGHT)).current;
-
-  // Whenever selectedSite changes, slide the panel up or down.
+  // slide bottom panel
   useEffect(() => {
-    if (selectedSite) {
-      // Slide up to 0
-      Animated.timing(panelAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      // Slide down off-screen
-      Animated.timing(panelAnim, {
-        toValue: PANEL_HEIGHT,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [selectedSite, panelAnim]);
+    Animated.timing(panelAnim, {
+      toValue: selectedSite ? 0 : height * 0.5,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [selectedSite]);
 
-  // ─── 1) REQUEST DEVICE LOCATION ───────────────────────────────────────────────
-  const requestLocation = async () => {
-    if (Platform.OS === 'ios') {
-      const status = await Geolocation.requestAuthorization('whenInUse');
-      if (status === 'granted') {
-        Geolocation.getCurrentPosition(
-          (pos) => {
-            const coords = {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            };
-            setUserLocation(coords);
-            setHomeLocation(coords);
-            setGeoFailed(false);
-            mapRef.current?.animateCamera({
-              center: coords,
-              zoom: 14,
-              pitch: is3D ? 45 : 0,
-              heading: 0,
-            });
-          },
-          (error) => {
-            console.warn('Geo error:', error);
-            setGeoFailed(true);
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-        );
-      } else {
-        setGeoFailed(true);
-      }
-    } else {
-      Geolocation.getCurrentPosition(
-        (pos) => {
-          const coords = {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          };
-          setUserLocation(coords);
-          setHomeLocation(coords);
-          setGeoFailed(false);
-          mapRef.current?.animateCamera({
-            center: coords,
-            zoom: 14,
-            pitch: is3D ? 45 : 0,
-            heading: 0,
-          });
-        },
-        (error) => {
-          console.warn('Geo error:', error);
-          setGeoFailed(true);
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-      );
+  // 1) request location via Expo
+  const requestLocation = useCallback(async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      setGeoFailed(true);
+      return;
     }
-  };
+    const loc = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Highest,
+    });
+    const coords = {
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+    };
+    setUserLocation(coords);
+    setHomeLocation(coords);
+    setGeoFailed(false);
+    mapRef.current?.animateCamera({
+      center: coords,
+      zoom: 14,
+      pitch: is3D ? 45 : 0,
+      heading: 0,
+    });
+  }, [is3D]);
 
-  // ─── 2) FETCH + GEOCODE VOLUNTEER SITES ────────────────────────────────────────
+  // 2) load + geocode volunteer sites
   const loadVolunteerSites = useCallback(async () => {
     setLoadingSites(true);
-
-    // 2A) Attempt AsyncStorage cache
+    // try cache
     try {
-      const rawCached = await AsyncStorage.getItem(
-        '@nexolink_sites_with_coords'
-      );
-      if (rawCached) {
-        const parsed = JSON.parse(rawCached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSitesWithCoords(parsed);
-          setLoadingSites(false);
-          return;
-        }
+      const raw = await AsyncStorage.getItem('@nexolink_sites_with_coords');
+      const parsed = JSON.parse(raw || '[]');
+      if (parsed.length) {
+        setSitesWithCoords(parsed);
+        setLoadingSites(false);
+        return;
       }
     } catch (e) {
-      console.warn('Cache parse error, ignoring cache:', e);
+      console.warn('Cache error:', e);
       await AsyncStorage.removeItem('@nexolink_sites_with_coords');
     }
 
-    // 2B) Fetch from Firestore, then geocode sequentially
+    // fetch from Firestore
     let rawSites = [];
     try {
-      const q = query(collection(db, 'volunteer_organizations'));
-      const snap = await getDocs(q);
-      rawSites = snap.docs.map((doc) => {
-        const data = doc.data();
+      const snap = await getDocs(query(collection(db, 'volunteer_organizations')));
+      rawSites = snap.docs.map((d) => {
+        const data = d.data();
         return {
-          id: doc.id,
+          id: d.id,
           name: data.title || data.name || 'Volunteer Site',
           address: data.address || '',
           type: (data.type || 'community').toLowerCase(),
-          description: data.description || 'Help make a difference',
+          description: data.description || '',
           contact: data.contact || data.phone || null,
           website: data.website || null,
         };
       });
-    } catch (err) {
-      console.warn('Error fetching volunteer sites:', err);
+    } catch (e) {
+      console.warn('Firestore error:', e);
     }
-
-    // Hide “loading” overlay now, but we will still push markers one by one
     setLoadingSites(false);
 
-    const geocodedList = [];
-    for (let site of rawSites) {
-      if (!site.address.trim()) continue;
-      const coords = await fetchCoordsForAddress(site.address);
+    // geocode sequentially
+    const geocoded = [];
+    for (let s of rawSites) {
+      if (!s.address.trim()) continue;
+      const coords = await fetchCoordsForAddress(s.address);
       if (coords) {
-        const withCoords = { ...site, coords };
-        geocodedList.push(withCoords);
-        // Immediately add marker to state
-        setSitesWithCoords((prev) => [...prev, withCoords]);
+        geocoded.push({ ...s, coords });
+        setSitesWithCoords((prev) => [...prev, { ...s, coords }]);
       }
-      // Throttle Nominatim requests
       await new Promise((r) => setTimeout(r, 150));
     }
-
-    // Deduplicate by rounding lat/lng to 5 decimals
-    const uniqueMap = {};
-    geocodedList.forEach((s) => {
+    // dedupe
+    const uniq = {};
+    geocoded.forEach((s) => {
       const key = `${s.coords.latitude.toFixed(5)}|${s.coords.longitude.toFixed(5)}`;
-      if (!uniqueMap[key]) uniqueMap[key] = s;
+      if (!uniq[key]) uniq[key] = s;
     });
-    const deduped = Object.values(uniqueMap);
+    const deduped = Object.values(uniq);
     setSitesWithCoords(deduped);
 
-    // Cache to AsyncStorage
+    // cache
     try {
-      await AsyncStorage.setItem(
-        '@nexolink_sites_with_coords',
-        JSON.stringify(deduped)
-      );
+      await AsyncStorage.setItem('@nexolink_sites_with_coords', JSON.stringify(deduped));
     } catch (e) {
-      console.warn('AsyncStorage set error:', e);
+      console.warn('Save cache error:', e);
     }
   }, []);
 
-  // On screen focus: request location + load volunteer sites
+  // on focus, request location + load sites
   useFocusEffect(
     React.useCallback(() => {
       requestLocation();
       loadVolunteerSites();
-    }, [loadVolunteerSites])
+    }, [requestLocation, loadVolunteerSites])
   );
 
-  // Recenter camera whenever userLocation or is3D toggles
+  // recenter on toggle 2D/3D
   useEffect(() => {
     if (mapRef.current && userLocation) {
       mapRef.current.animateCamera({
@@ -288,10 +216,9 @@ export default function MapScreen() {
     }
   }, [is3D, userLocation]);
 
-  // ─── 3) MARKER & CONTROL HANDLERS ─────────────────────────────────────────────
+  // handlers
   const onMarkerPress = (site) => {
     setSelectedSite(site);
-    // Animate to that marker:
     mapRef.current?.animateCamera({
       center: site.coords,
       zoom: 15,
@@ -299,7 +226,6 @@ export default function MapScreen() {
       heading: 0,
     });
   };
-
   const onLocatePress = () => {
     const loc = homeLocation || userLocation;
     if (loc) {
@@ -311,7 +237,6 @@ export default function MapScreen() {
       });
     }
   };
-
   const onGetDirections = () => {
     if (!selectedSite?.coords) return;
     const { latitude, longitude } = selectedSite.coords;
@@ -319,25 +244,18 @@ export default function MapScreen() {
       Platform.OS === 'ios'
         ? `maps://?daddr=${latitude},${longitude}`
         : `google.navigation:q=${latitude},${longitude}`;
-    Linking.openURL(url).catch((err) =>
-      console.warn('Error opening Maps:', err)
-    );
+    Linking.openURL(url).catch(console.warn);
   };
-
   const onCopyAddress = () => {
     if (!selectedSite?.address) return;
     Alert.alert('Copied', 'Address copied to clipboard');
   };
-
   const onOpenWebsite = () => {
     if (!selectedSite?.website) return;
     let url = selectedSite.website;
     if (!url.startsWith('http')) url = 'https://' + url;
-    Linking.openURL(url).catch((err) =>
-      console.warn('Error opening Website:', err)
-    );
+    Linking.openURL(url).catch(console.warn);
   };
-
   const saveHomeAddress = async () => {
     if (!homeAddressInput.trim()) return;
     const coords = await fetchCoordsForAddress(homeAddressInput.trim());
@@ -356,13 +274,12 @@ export default function MapScreen() {
     }
   };
 
-  // ─── 4) FALLBACK WHEN GEOLOCATION IS DENIED ───────────────────────────────────
+  // fallback if location denied
   if (geoFailed) {
     return (
       <View style={styles.fallbackContainer}>
         <Text style={styles.fallbackText}>
-          Location permission denied or unavailable. Please enter your address
-          manually.
+          Location permission denied. Please enter your address manually.
         </Text>
         <TouchableOpacity
           style={styles.fallbackButton}
@@ -400,37 +317,24 @@ export default function MapScreen() {
     );
   }
 
-  // ─── 5) MAIN RENDER ────────────────────────────────────────────────────────────
+  // main render
   return (
     <View style={styles.container}>
-      {/** Full-screen MapView */}
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={
-          Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT
-        }
-        showsUserLocation={true}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
+        showsUserLocation
         showsBuildings={is3D}
-        mapType="standard"
-        showsTraffic={false}
-        showsIndoors={false}
-        showsIndoorsLevelPicker={false}
       >
-        {/** Render a marker for each geocoded site */}
         {sitesWithCoords.map((site) => {
-          const cat =
-            CATEGORY_ICON_MAP[site.type] || {
-              icon: 'heart-outline',
-              color: '#000',
-            };
+          const cat = CATEGORY_ICON_MAP[site.type] || { color: '#000' };
           return (
             <Marker
               key={site.id}
               coordinate={site.coords}
               onPress={() => onMarkerPress(site)}
             >
-              {/* Use a small colored pin icon */}
               <Ionicons
                 name="location-sharp"
                 size={scale(25)}
@@ -441,17 +345,10 @@ export default function MapScreen() {
         })}
       </MapView>
 
-      {/** ─── TOP-RIGHT VERTICAL BUTTONS (Locate + 2D/3D) ───────────────────────────── */}
       <View style={styles.topRightButtons}>
-        {/* Locate Me */}
-        <TouchableOpacity
-          style={styles.controlButton}
-          onPress={onLocatePress}
-        >
+        <TouchableOpacity style={styles.controlButton} onPress={onLocatePress}>
           <Ionicons name="locate-outline" size={scale(24)} color="#000" />
         </TouchableOpacity>
-
-        {/* 2D ↔ 3D Toggle */}
         <TouchableOpacity
           style={styles.controlButton}
           onPress={() => setIs3D((v) => !v)}
@@ -460,24 +357,19 @@ export default function MapScreen() {
         </TouchableOpacity>
       </View>
 
-      {/** ─── LOADING OVERLAY ───────────────────────────────────────────────────── */}
       {loadingSites && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#3498DB" />
-          <Text style={styles.loadingText}>
-            Loading volunteer sites…
-          </Text>
+          <Text style={styles.loadingText}>Loading volunteer sites…</Text>
         </View>
       )}
 
-      {/** ─── TRANSPARENT OVERLAY TO CLOSE PANEL WHEN TAPPED OUTSIDE ───────────────── */}
       {selectedSite && (
         <TouchableWithoutFeedback onPress={() => setSelectedSite(null)}>
           <View style={styles.overlayTouchable} />
         </TouchableWithoutFeedback>
       )}
 
-      {/** ─── ANIMATED BOTTOM PANEL ───────────────────────────────────────────────── */}
       <Animated.View
         style={[
           styles.bottomPanel,
@@ -494,9 +386,7 @@ export default function MapScreen() {
                 {selectedSite.type.charAt(0).toUpperCase() +
                   selectedSite.type.slice(1)}
               </Text>
-              <Text style={styles.siteAddress}>
-                {selectedSite.address}
-              </Text>
+              <Text style={styles.siteAddress}>{selectedSite.address}</Text>
               <Text style={styles.siteDescription}>
                 {selectedSite.description}
               </Text>
@@ -506,11 +396,7 @@ export default function MapScreen() {
                   style={styles.sheetButton}
                   onPress={onGetDirections}
                 >
-                  <Ionicons
-                    name="navigate-outline"
-                    size={scale(20)}
-                    color="#000"
-                  />
+                  <Ionicons name="navigate-outline" size={scale(20)} />
                   <Text style={styles.sheetButtonText}>Directions</Text>
                 </TouchableOpacity>
 
@@ -518,11 +404,7 @@ export default function MapScreen() {
                   style={styles.sheetButton}
                   onPress={onCopyAddress}
                 >
-                  <Ionicons
-                    name="copy-outline"
-                    size={scale(20)}
-                    color="#000"
-                  />
+                  <Ionicons name="copy-outline" size={scale(20)} />
                   <Text style={styles.sheetButtonText}>Copy Address</Text>
                 </TouchableOpacity>
 
@@ -531,11 +413,7 @@ export default function MapScreen() {
                     style={styles.sheetButton}
                     onPress={onOpenWebsite}
                   >
-                    <Ionicons
-                      name="globe-outline"
-                      size={scale(20)}
-                      color="#000"
-                    />
+                    <Ionicons name="globe-outline" size={scale(20)} />
                     <Text style={styles.sheetButtonText}>Website</Text>
                   </TouchableOpacity>
                 )}
@@ -552,41 +430,31 @@ export default function MapScreen() {
   );
 }
 
-// ─── STYLESHEET ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  container: { flex: 1 },
+  map: { ...StyleSheet.absoluteFillObject },
 
-  // ─── TOP-RIGHT VERTICAL BUTTONS (Locate + 2D/3D) ─────────────────────────────
   topRightButtons: {
     position: 'absolute',
     top: verticalScale(40),
     right: scale(20),
-    flexDirection: 'column',
     alignItems: 'center',
     zIndex: 10,
   },
   controlButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     width: scale(40),
     height: scale(40),
     borderRadius: scale(20),
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: verticalScale(6),
-    flexDirection: 'row',
   },
   toggleText: {
     fontSize: scale(14),
     fontWeight: '700',
-    color: '#000',
   },
 
-  // ─── LOADING OVERLAY ─────────────────────────────────────────────────────────────
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.7)',
@@ -595,21 +463,15 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: verticalScale(8),
-    fontSize: scale(14),
-    color: '#333',
   },
 
-  // ─── FALLBACK VIEW WHEN GEOLOCATION DENIED ──────────────────────────────────────
   fallbackContainer: {
     flex: 1,
-    backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
     padding: scale(20),
   },
   fallbackText: {
-    fontSize: scale(16),
-    color: '#333',
     textAlign: 'center',
     marginBottom: verticalScale(20),
   },
@@ -621,11 +483,9 @@ const styles = StyleSheet.create({
   },
   fallbackButtonText: {
     color: '#FFF',
-    fontSize: scale(16),
     fontWeight: '600',
   },
 
-  // ─── MODAL FOR MANUAL ADDRESS ───────────────────────────────────────────────────
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -639,20 +499,15 @@ const styles = StyleSheet.create({
     padding: scale(20),
   },
   modalTitle: {
-    fontSize: scale(18),
-    fontWeight: '700',
-    marginBottom: verticalScale(15),
     textAlign: 'center',
+    marginBottom: verticalScale(15),
+    fontWeight: '700',
   },
   modalInput: {
-    width: '100%',
-    height: verticalScale(45),
     backgroundColor: '#F5F5F5',
     borderRadius: scale(8),
-    paddingHorizontal: scale(15),
+    padding: scale(15),
     marginBottom: verticalScale(20),
-    fontSize: scale(16),
-    color: '#000',
   },
   modalSaveBtn: {
     backgroundColor: '#000',
@@ -662,18 +517,15 @@ const styles = StyleSheet.create({
   },
   modalSaveBtnText: {
     color: '#FFF',
-    fontSize: scale(16),
     fontWeight: '600',
   },
 
-  // ─── OVERLAY TO DISMISS BOTTOM PANEL ───────────────────────────────────────────
   overlayTouchable: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
     zIndex: 10,
   },
 
-  // ─── ANIMATED BOTTOM PANEL ─────────────────────────────────────────────────────
   bottomPanel: {
     position: 'absolute',
     left: 0,
@@ -696,8 +548,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E0E0',
     borderRadius: scale(2),
     alignSelf: 'center',
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(12),
+    marginVertical: verticalScale(12),
   },
   sheetContent: {
     paddingHorizontal: scale(20),
@@ -706,23 +557,19 @@ const styles = StyleSheet.create({
   siteTitle: {
     fontSize: scale(20),
     fontWeight: '700',
-    color: '#000',
     marginBottom: verticalScale(8),
   },
   siteType: {
     fontSize: scale(14),
     fontWeight: '600',
-    color: '#555',
     marginBottom: verticalScale(6),
   },
   siteAddress: {
     fontSize: scale(14),
-    color: '#666',
     marginBottom: verticalScale(8),
   },
   siteDescription: {
     fontSize: scale(13),
-    color: '#444',
     marginBottom: verticalScale(12),
   },
   sheetButtonsRow: {
@@ -731,19 +578,17 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(12),
   },
   sheetButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F0F0F0',
     borderRadius: scale(8),
     paddingVertical: verticalScale(8),
     paddingHorizontal: scale(12),
-    flex: 1,
     marginHorizontal: scale(4),
   },
   sheetButtonText: {
     marginLeft: scale(6),
-    fontSize: scale(14),
-    color: '#000',
     fontWeight: '600',
   },
 });
