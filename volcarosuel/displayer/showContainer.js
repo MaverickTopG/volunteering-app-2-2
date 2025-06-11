@@ -1,5 +1,3 @@
-// /src/screens/VolunteerCarousel.js
-
 import React, { useEffect, useRef, useState, useContext } from 'react';
 import {
   View,
@@ -26,23 +24,45 @@ import { AuthContext } from '../../auth/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
-// Simple map from two‐letter state codes to full names
+const getResponsiveValues = () => {
+  const screenRatio = width / height;
+  const isVerySmallScreen = width < 400;
+  const isSmallScreen = width < 410;
+  const isMediumScreen = width >= 440 && width < 600;
+  
+  return {
+    statusBarHeight: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : isSmallScreen ? 20 : 25,
+    headerImageHeight: isVerySmallScreen ? 200 : isMediumScreen ? 250 : 160,
+    bottomSheetHeight: height * (isVerySmallScreen ? 0.78 : 0.77),
+    backCircleSize: isVerySmallScreen ? 32 : 36,
+    backIconSize: isVerySmallScreen ? 20 : 24,
+    searchIconSize: isVerySmallScreen ? 20 : 24,
+    chevronSize: isVerySmallScreen ? 20 : 24,
+    handleBarWidth: isVerySmallScreen ? 35 : 40,
+    borderRadius: isVerySmallScreen ? 20 : 24,
+    cardBorderRadius: isVerySmallScreen ? 14 : 16,
+    itemBorderRadius: isVerySmallScreen ? 10 : 12,
+    horizontalPadding: isVerySmallScreen ? 12 : 16,
+    verticalPadding: isVerySmallScreen ? 10 : 12,
+    marginBottom: isVerySmallScreen ? 10 : 12,
+    searchInputHeight: isVerySmallScreen ? 32 : 36,
+    scrollMarginTop: isVerySmallScreen ? 0 : 0,
+    paddingBottom: isVerySmallScreen ? 100 : 120,
+  };
+};
+
+const responsive = getResponsiveValues();
+
 const STATE_MAP = {
   CA: 'California',
   NY: 'New York',
   TX: 'Texas',
   FL: 'Florida',
   WA: 'Washington',
-  // add more as needed
 };
 
-// Compute status‐bar height (Android vs. iOS)
-const STATUS_BAR_HEIGHT =
-  Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44;
-const HEADER_IMAGE_HEIGHT = 200; // Actual image height (excluding status bar)
-const TOTAL_HEADER_HEIGHT = HEADER_IMAGE_HEIGHT + STATUS_BAR_HEIGHT;
+const TOTAL_HEADER_HEIGHT = responsive.headerImageHeight + responsive.statusBarHeight;
 
-const BOTTOM_SHEET_HEIGHT = height * 0.77;
 const CATEGORY_IMAGES = {
   Animal: require('../../assets/animal.png'),
   Arts: require('../../assets/art.png'),
@@ -60,7 +80,6 @@ export default function VolunteerCarousel() {
   const route = useRoute();
   const { user } = useContext(AuthContext);
 
-  // Retrieve category ("reference") and state code from route params
   const reference = route.params?.category || 'Animal';
   const stateCode = route.params?.stateCode || 'CA';
   const stateName = STATE_MAP[stateCode] || stateCode;
@@ -70,20 +89,17 @@ export default function VolunteerCarousel() {
   const [expandedSections, setExpandedSections] = useState({});
   const animValuesRef = useRef({});
 
-  // For search functionality
   const [showSearch, setShowSearch] = useState(false);
   const [searchText, setSearchText] = useState('');
   const scrollRef = useRef(null);
-  const sectionLayouts = useRef({}); // { [sectionTitle]: yOffset }
+  const sectionLayouts = useRef({});
 
-  // Compute matching counties based on searchText
   const matchingCounties = sections
     .map((sec) => sec.title)
     .filter((title) =>
       title.toLowerCase().includes(searchText.trim().toLowerCase())
     );
 
-  // Fetch and group all orgs for this category & state
   const fetchOrgs = async () => {
     setLoading(true);
     try {
@@ -94,7 +110,6 @@ export default function VolunteerCarousel() {
       const q = query(collection(db, 'volunteer_organizations'), ...clauses);
       const snap = await getDocs(q);
 
-      // Group by county name (trimmed), eliminating duplicates
       const byCounty = {};
       snap.forEach((doc) => {
         const data = doc.data();
@@ -104,7 +119,6 @@ export default function VolunteerCarousel() {
         byCounty[rawCounty][key] = data;
       });
 
-      // Convert into sorted array of { title: "X County", data: [ … ] }
       const sortedCounties = Object.keys(byCounty)
         .sort((a, b) => a.localeCompare(b))
         .map((countyKey) => {
@@ -118,7 +132,6 @@ export default function VolunteerCarousel() {
 
       setSections(sortedCounties);
 
-      // Initialize animated values for each county section
       sortedCounties.forEach((sec) => {
         if (!animValuesRef.current[sec.title]) {
           animValuesRef.current[sec.title] = new Animated.Value(0);
@@ -135,7 +148,6 @@ export default function VolunteerCarousel() {
     fetchOrgs();
   }, [reference, stateName]);
 
-  // Toggle expand/collapse of a given county section
   const toggleSection = (title) => {
     const isExpanded = !!expandedSections[title];
     const animV = animValuesRef.current[title];
@@ -160,24 +172,20 @@ export default function VolunteerCarousel() {
     }
   };
 
-  // Navigate to LiveOps screen
   const handleLiveOps = () => {
     navigation.navigate('LiveOps');
   };
 
-  // Navigate to DisplayScreen for a given org
   const handleOrgPress = (org) => {
     navigation.navigate('DisplayScreen', { item: org });
   };
 
-  // Handle search submission: find best match and scroll
   const onSubmitSearch = () => {
     const query = searchText.trim().toLowerCase();
     if (!query) {
       Alert.alert('Enter county name');
       return;
     }
-    // Take first match if exists
     if (matchingCounties.length > 0) {
       const matchKey = matchingCounties[0];
       const yOffset = sectionLayouts.current[matchKey];
@@ -200,7 +208,6 @@ export default function VolunteerCarousel() {
     );
   }
 
-  // Pick header background image based on category, fallback if missing
   const headerBgImage = CATEGORY_IMAGES[reference] || CATEGORY_IMAGES.Animal;
 
   return (
@@ -211,7 +218,6 @@ export default function VolunteerCarousel() {
         translucent
       />
 
-      {/* Full‐width Header Image (behind status bar, no tint) */}
       <ImageBackground
         source={headerBgImage}
         style={[
@@ -226,9 +232,8 @@ export default function VolunteerCarousel() {
             style={styles.backButton}
             activeOpacity={0.8}
           >
-            {/* White circle around back arrow */}
             <View style={styles.backCircle}>
-              <Ionicons name="chevron-back" size={24} color="#000" />
+              <Ionicons name="chevron-back" size={responsive.backIconSize} color="#000" />
             </View>
           </TouchableOpacity>
 
@@ -253,12 +258,8 @@ export default function VolunteerCarousel() {
                       <TouchableOpacity
                         key={title}
                         onPress={() => {
-                          const yOffset =
-                            sectionLayouts.current[title];
-                          if (
-                            yOffset !== undefined &&
-                            scrollRef.current
-                          ) {
+                          const yOffset = sectionLayouts.current[title];
+                          if (yOffset !== undefined && scrollRef.current) {
                             scrollRef.current.scrollTo({
                               y: yOffset,
                               animated: true,
@@ -285,11 +286,9 @@ export default function VolunteerCarousel() {
             )}
           </View>
 
-          {/* Search / Close Icon */}
           <TouchableOpacity
             onPress={() => {
               if (showSearch) {
-                // Close out of search mode
                 setShowSearch(false);
                 setSearchText('');
               } else {
@@ -301,15 +300,14 @@ export default function VolunteerCarousel() {
           >
             <Ionicons
               name={showSearch ? 'close-outline' : 'search-outline'}
-              size={24}
+              size={responsive.searchIconSize}
               color="#FFF"
             />
           </TouchableOpacity>
         </View>
       </ImageBackground>
 
-      {/* Bottom Sheet: full‐width, elevated above header */}
-      <View style={[styles.bottomSheet, { height: BOTTOM_SHEET_HEIGHT }]}>
+      <View style={[styles.bottomSheet, { height: responsive.bottomSheetHeight }]}>
         <View style={styles.handleBar} />
 
         <ScrollView
@@ -335,12 +333,9 @@ export default function VolunteerCarousel() {
                   key={section.title}
                   style={styles.countyCard}
                   onLayout={(e) => {
-                    // Record the Y offset of this section
-                    sectionLayouts.current[section.title] =
-                      e.nativeEvent.layout.y;
+                    sectionLayouts.current[section.title] = e.nativeEvent.layout.y;
                   }}
                 >
-                  {/* County Header */}
                   <TouchableOpacity
                     onPress={() => toggleSection(section.title)}
                     style={styles.countyHeader}
@@ -357,15 +352,13 @@ export default function VolunteerCarousel() {
                           : 'organizations'}
                       </Text>
                     </View>
-                    {/* Dropdown icon */}
                     <Ionicons
                       name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                      size={24}
+                      size={responsive.chevronSize}
                       color="#333"
                     />
                   </TouchableOpacity>
 
-                  {/* Expanded organization list */}
                   {isExpanded && (
                     <Animated.View
                       style={[
@@ -399,8 +392,6 @@ export default function VolunteerCarousel() {
               );
             })
           )}
-
-      
         </ScrollView>
       </View>
     </View>
@@ -413,7 +404,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFEFEF',
   },
 
-  // Loading Screen
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -426,7 +416,6 @@ const styles = StyleSheet.create({
     color: '#333',
   },
 
-  // Header Image + Overlay (covers status bar)
   headerImage: {
     position: 'absolute',
     top: 0,
@@ -434,19 +423,19 @@ const styles = StyleSheet.create({
   },
   headerOverlay: {
     flex: 1,
-    marginTop: STATUS_BAR_HEIGHT,
+    marginTop: responsive.statusBarHeight,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    height: HEADER_IMAGE_HEIGHT,
+    paddingHorizontal: responsive.horizontalPadding,
+    height: responsive.headerImageHeight,
   },
   backButton: {
     padding: 6,
   },
   backCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: responsive.backCircleSize,
+    height: responsive.backCircleSize,
+    borderRadius: responsive.backCircleSize / 2,
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -454,6 +443,7 @@ const styles = StyleSheet.create({
   headerTextContainer: {
     flex: 1,
     alignItems: 'center',
+      justifyContent: 'center',
   },
   headerTitle: {
     fontSize: RFPercentage(3),
@@ -466,7 +456,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Search elements
   searchButton: {
     padding: 6,
   },
@@ -476,7 +465,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   searchInput: {
-    height: 36,
+    height: responsive.searchInputHeight,
     paddingHorizontal: 10,
     fontSize: RFPercentage(1.8),
     color: '#000',
@@ -497,20 +486,19 @@ const styles = StyleSheet.create({
     color: '#333',
   },
 
-  // Bottom Sheet
   bottomSheet: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: '#FFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: responsive.borderRadius,
+    borderTopRightRadius: responsive.borderRadius,
     elevation: 8,
     zIndex: 10,
   },
   handleBar: {
-    width: 40,
+    width: responsive.handleBarWidth,
     height: 4,
     backgroundColor: '#CCC',
     borderRadius: 2,
@@ -518,17 +506,15 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
 
-  // ScrollView Container
   scrollView: {
     flex: 1,
-    marginTop: TOTAL_HEADER_HEIGHT - HEADER_IMAGE_HEIGHT - 30, // push content below header
+    marginTop: responsive.scrollMarginTop,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 120, // extra space so live button isn’t covered
+    paddingHorizontal: responsive.horizontalPadding,
+    paddingBottom: responsive.paddingBottom,
   },
 
-  // Empty State
   emptyState: {
     marginTop: 30,
     alignItems: 'center',
@@ -543,11 +529,10 @@ const styles = StyleSheet.create({
     color: '#AAA',
   },
 
-  // County Card
   countyCard: {
-    marginBottom: 12,
+    marginBottom: responsive.marginBottom,
     backgroundColor: '#FAFAFA',
-    borderRadius: 16,
+    borderRadius: responsive.cardBorderRadius,
     borderWidth: 1,
     borderColor: '#ECECEC',
     overflow: 'hidden',
@@ -555,8 +540,8 @@ const styles = StyleSheet.create({
   countyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: responsive.verticalPadding,
+    paddingHorizontal: responsive.horizontalPadding,
   },
   countyInfo: {
     flex: 1,
@@ -572,7 +557,6 @@ const styles = StyleSheet.create({
     color: '#777',
   },
 
-  // Expanded Orgs Container
   orgsContainer: {
     paddingTop: 4,
     paddingBottom: 8,
@@ -581,10 +565,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: responsive.horizontalPadding,
     marginHorizontal: 8,
     marginBottom: 6,
-    borderRadius: 12,
+    borderRadius: responsive.itemBorderRadius,
     backgroundColor: '#F7F7F7',
   },
   orgTitle: {
@@ -593,7 +577,6 @@ const styles = StyleSheet.create({
     color: '#444',
   },
 
-  // Live Opportunities
   liveWrap: {
     marginTop: 20,
     alignItems: 'center',

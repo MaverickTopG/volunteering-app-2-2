@@ -1,5 +1,3 @@
-// /src/screens/ShowScreen.js
-
 import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
@@ -23,17 +21,39 @@ import { RFPercentage } from 'react-native-responsive-fontsize';
 
 const { width, height } = Dimensions.get('window');
 
-// Simple map from two‐letter state codes to full names
+const getResponsiveValues = () => {
+  const screenRatio = width / height;
+  const isVerySmallScreen = width < 405;
+  const isSmallScreen = width < 410;
+  const isMediumScreen = width >= 440 && width < 600;
+  
+  return {
+    statusBarHeight: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : isVerySmallScreen ? 40 : isMediumScreen ? 20 : 44,
+    headerImageHeight: isVerySmallScreen ? 160 : isMediumScreen ? 250 : 140,
+    bottomSheetHeight: height * (isVerySmallScreen ? 0.78 : 0.77),
+    backCircleSize: isVerySmallScreen ? 32 : 36,
+    backIconSize: isVerySmallScreen ? 20 : 24,
+    borderRadius: isVerySmallScreen ? 20 : 24,
+    cardBorderRadius: isVerySmallScreen ? 14 : 16,
+    horizontalPadding: isVerySmallScreen ? 12 : 16,
+    verticalPadding: isVerySmallScreen ? 16 : 20,
+    marginBottom: isVerySmallScreen ? 12 : 16,
+    scrollMarginTop: isVerySmallScreen ? 0 : 0,
+    paddingBottom: isVerySmallScreen ? 40 : 60,
+    handleBarWidth: isVerySmallScreen ? 35 : 40,
+  };
+};
+
+const responsive = getResponsiveValues();
+
 const STATE_MAP = {
   CA: 'California',
   NY: 'New York',
   TX: 'Texas',
   FL: 'Florida',
   WA: 'Washington',
-  // add more as needed
 };
 
-// Category → header image URLs
 const CATEGORY_IMAGES = {
   Animal: require('../../assets/animal.png'),
   Arts: require('../../assets/art.png'),
@@ -45,40 +65,27 @@ const CATEGORY_IMAGES = {
   Seniors: require('../../assets/seniors.png'),
   Tech: require('../../assets/tech.png'),
 };
+
 const DEFAULT_HEADER_IMAGE = require('../../assets/animal.png');
-
-// Compute status‐bar height (Android vs. iOS)
-const STATUS_BAR_HEIGHT =
-  Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 44;
-const HEADER_IMAGE_HEIGHT = 200; // Actual image height (excluding status bar)
-const TOTAL_HEADER_HEIGHT = HEADER_IMAGE_HEIGHT + STATUS_BAR_HEIGHT;
-
-const BOTTOM_SHEET_HEIGHT = height * 0.77;
+const TOTAL_HEADER_HEIGHT = responsive.headerImageHeight + responsive.statusBarHeight;
 
 export default function ShowScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useContext(AuthContext);
 
-  // "item" passed via route params (organization object)
   const item = route.params?.item || {};
-
-  // If the item has a "reference" field (category), pick its header image
   const category = item.reference || 'Animal';
   const headerBgImage = CATEGORY_IMAGES[category] || DEFAULT_HEADER_IMAGE;
 
-  // Color palette defaults (can be overridden by theme)
   const DEFAULT_PALETTE = [
-    '#F7F7F7', // background behind cards (greyish white)
-    '#FFFFFF', // card & header bg (pure white)
-    '#FFFFFF', // button bg
-    '#333333', // text/icons
+    '#F7F7F7',
+    '#FFFFFF',
+    '#FFFFFF',
+    '#333333',
   ];
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
 
-
-
-  // ─── Open maps with the address (matching MapScreen’s behavior) ───────
   const openMaps = () => {
     if (!item.address) return;
 
@@ -86,10 +93,8 @@ export default function ShowScreen() {
     let url = '';
 
     if (Platform.OS === 'ios') {
-      // Use the Apple Maps URI scheme for directions
       url = `maps://?daddr=${encodedAddress}`;
     } else {
-      // Android: use Google Maps navigation intent
       url = `google.navigation:q=${encodedAddress}`;
     }
 
@@ -98,7 +103,6 @@ export default function ShowScreen() {
         if (supported) {
           return Linking.openURL(url);
         } else {
-          // Fallback: open Google Maps web directions
           const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
           return Linking.openURL(webUrl);
         }
@@ -106,7 +110,6 @@ export default function ShowScreen() {
       .catch(() => Alert.alert('Error', 'Unable to open maps.'));
   };
 
-  // ─── Copy email to clipboard ────────────────────────────────────────
   const copyToClipboard = (text) => {
     Clipboard.setStringAsync(text)
       .then(() => {
@@ -117,7 +120,6 @@ export default function ShowScreen() {
       });
   };
 
-  // Handle "Visit Website" button tap
   const handleVisit = () => {
     if (!item.website) return;
     let url = item.website;
@@ -141,7 +143,6 @@ export default function ShowScreen() {
         backgroundColor="transparent"
       />
 
-      {/* ─── HEADER IMAGE ────────────────────────────────────── */}
       <ImageBackground
         source={headerBgImage}
         style={[
@@ -157,7 +158,7 @@ export default function ShowScreen() {
             activeOpacity={0.8}
           >
             <View style={[styles.backCircle, { backgroundColor: palette[1] }]}>
-              <Ionicons name="chevron-back" size={24} color="#000" />
+              <Ionicons name="chevron-back" size={responsive.backIconSize} color="#000" />
             </View>
           </TouchableOpacity>
 
@@ -171,11 +172,10 @@ export default function ShowScreen() {
         </View>
       </ImageBackground>
 
-      {/* ─── BOTTOM SHEET ────────────────────────────────────── */}
       <View
         style={[
           styles.bottomSheet,
-          { height: BOTTOM_SHEET_HEIGHT, backgroundColor: palette[0] },
+          { height: responsive.bottomSheetHeight, backgroundColor: palette[0] },
         ]}
       >
         <View style={styles.handleBar} />
@@ -185,7 +185,6 @@ export default function ShowScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* ─── DESCRIPTION CARD ─────────────────────────── */}
           <View style={[styles.card, { backgroundColor: palette[1] }]}>
             <Text style={[styles.sectionLabel, { color: palette[3] }]}>
               Description
@@ -195,7 +194,6 @@ export default function ShowScreen() {
             </Text>
           </View>
 
-          {/* ─── ADDRESS CARD ─────────────────────────────── */}
           {item.address && (
             <View style={[styles.card, { backgroundColor: palette[1] }]}>
               <Text style={[styles.sectionLabel, { color: palette[3] }]}>
@@ -209,7 +207,6 @@ export default function ShowScreen() {
             </View>
           )}
 
-          {/* ─── CONTACT CARD ─────────────────────────────── */}
           {item.email && (
             <View style={[styles.card, { backgroundColor: palette[1] }]}>
               <Text style={[styles.sectionLabel, { color: palette[3] }]}>
@@ -229,7 +226,6 @@ export default function ShowScreen() {
             </View>
           )}
 
-          {/* ─── VISIT WEBSITE BUTTON ──────────────────────── */}
           {item.website && (
             <TouchableOpacity
               style={[styles.visitBtn, { backgroundColor: palette[2] }]}
@@ -258,19 +254,19 @@ const styles = StyleSheet.create({
   },
   headerOverlay: {
     flex: 1,
-    marginTop: STATUS_BAR_HEIGHT,
+    marginTop: responsive.statusBarHeight,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    height: HEADER_IMAGE_HEIGHT,
+    paddingHorizontal: responsive.horizontalPadding,
+    height: responsive.headerImageHeight,
   },
   backButton: {
     padding: 6,
   },
   backCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: responsive.backCircleSize,
+    height: responsive.backCircleSize,
+    borderRadius: responsive.backCircleSize / 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -292,13 +288,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: responsive.borderRadius,
+    borderTopRightRadius: responsive.borderRadius,
     elevation: 8,
     zIndex: 10,
   },
   handleBar: {
-    width: 40,
+    width: responsive.handleBarWidth,
     height: 4,
     backgroundColor: 'black',
     borderRadius: 2,
@@ -307,18 +303,18 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    marginTop: TOTAL_HEADER_HEIGHT - HEADER_IMAGE_HEIGHT - 30,
+    marginTop: responsive.scrollMarginTop,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingHorizontal: responsive.horizontalPadding,
+    paddingBottom: responsive.paddingBottom,
     backgroundColor: 'transparent',
   },
 
   card: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: responsive.cardBorderRadius,
+    padding: responsive.verticalPadding,
+    marginBottom: responsive.marginBottom,
     backgroundColor: '#FFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -353,7 +349,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     paddingVertical: 14,
     alignItems: 'center',
-    marginHorizontal: 16,
+    marginHorizontal: responsive.horizontalPadding,
     marginTop: 12,
   },
   visitTxt: {

@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
+  StatusBar,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -22,10 +23,29 @@ import { AuthContext } from './AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
-const guidelineBaseWidth = 428;
-const guidelineBaseHeight = 926;
-const scale  = (s) => (width  / guidelineBaseWidth)  * s;
-const vScale = (s) => (height / guidelineBaseHeight) * s;
+
+const getResponsiveValues = () => {
+  const screenRatio = width / height;
+  const isVerySmallScreen = width < 405;
+  const isSmallScreen = width < 410;
+  const isMediumScreen = width >= 440 && width < 600;
+     
+  return {
+    statusBarHeight: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : isVerySmallScreen ? 40 : isMediumScreen ? 20 : 44,
+    headerImageHeight: isVerySmallScreen ? 160 : isMediumScreen ? 250 : 140,
+    bottomSheetHeight: height * (isVerySmallScreen ? 0.78 : 0.77),
+    backCircleSize: isVerySmallScreen ? 32 : 36,
+    backIconSize: isVerySmallScreen ? 20 : 24,
+    borderRadius: isVerySmallScreen ? 20 : 24,
+    cardBorderRadius: isVerySmallScreen ? 14 : 16,
+    horizontalPadding: isVerySmallScreen ? 12 : 16,
+    verticalPadding: isVerySmallScreen ? 16 : 20,
+    marginBottom: isVerySmallScreen ? 12 : 16,
+    scrollMarginTop: isVerySmallScreen ? 0 : 0,
+    paddingBottom: isVerySmallScreen ? 40 : 60,
+    handleBarWidth: isVerySmallScreen ? 35 : 40,
+  };
+};
 
 export default function RegisterScreen() {
   const [email,    setEmail]    = useState('');
@@ -33,6 +53,7 @@ export default function RegisterScreen() {
   const [isVisible, setIsVisible] = useState(false);
   const { signUp } = useContext(AuthContext);
   const nav        = useNavigation();
+  const responsive = getResponsiveValues();
 
   const handleRegister = async () => {
     if (!email.trim() || !password) {
@@ -73,30 +94,56 @@ export default function RegisterScreen() {
             />
 
             {/* BACK BUTTON */}
-            <TouchableOpacity style={styles.backButton} onPress={() => nav.goBack()}>
-              <View style={styles.backCircle}>
-                <Ionicons name="chevron-back" size={scale(20)} color="#444" />
+            <TouchableOpacity style={[styles.backButton, {
+              top: Platform.OS === 'android' ? responsive.statusBarHeight + 10 : responsive.statusBarHeight + 10,
+              left: responsive.horizontalPadding + 4,
+            }]} onPress={() => nav.goBack()}>
+              <View style={[styles.backCircle, {
+                width: responsive.backCircleSize,
+                height: responsive.backCircleSize,
+                borderRadius: responsive.backCircleSize / 2,
+              }]}>
+                <Ionicons name="chevron-back" size={responsive.backIconSize} color="#444" />
               </View>
             </TouchableOpacity>
 
             {/* MAIN FORM - centered vertically */}
-            <View style={styles.content}>
-              <Text style={styles.header}>
+            <View style={[styles.content, {
+              paddingHorizontal: responsive.horizontalPadding * 2,
+            }]}>
+              <Text style={[styles.header, {
+                fontSize: width < 405 ? 28 : width >= 440 && width < 600 ? 36 : 32,
+                marginBottom: responsive.verticalPadding * 1.5,
+                lineHeight: width < 405 ? 34 : width >= 440 && width < 600 ? 44 : 38,
+              }]}>
                 Create your{'\n'}NexoLink account
               </Text>
 
               {/* Email */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Email</Text>
-                <View style={styles.inputWrapper}>
+              <View style={[styles.inputContainer, {
+                marginBottom: responsive.marginBottom + 4,
+              }]}>
+                <Text style={[styles.inputLabel, {
+                  fontSize: width < 405 ? 13 : 14,
+                  marginBottom: responsive.marginBottom / 2,
+                }]}>Email</Text>
+                <View style={[styles.inputWrapper, {
+                  borderRadius: responsive.borderRadius + 1,
+                  paddingHorizontal: responsive.horizontalPadding,
+                  height: width < 405 ? 44 : width >= 440 && width < 600 ? 52 : 48,
+                }]}>
                   <Ionicons
                     name="mail-outline"
-                    size={scale(20)}
+                    size={width < 405 ? 18 : 20}
                     color="#888"
-                    style={styles.inputIcon}
+                    style={[styles.inputIcon, {
+                      marginRight: responsive.horizontalPadding / 2,
+                    }]}
                   />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, {
+                      fontSize: width < 405 ? 15 : 16,
+                    }]}
                     placeholder="you@example.com"
                     placeholderTextColor="#AAA"
                     keyboardType="email-address"
@@ -108,17 +155,30 @@ export default function RegisterScreen() {
               </View>
 
               {/* Password */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Password</Text>
-                <View style={styles.inputWrapper}>
+              <View style={[styles.inputContainer, {
+                marginBottom: responsive.marginBottom + 4,
+              }]}>
+                <Text style={[styles.inputLabel, {
+                  fontSize: width < 405 ? 13 : 14,
+                  marginBottom: responsive.marginBottom / 2,
+                }]}>Password</Text>
+                <View style={[styles.inputWrapper, {
+                  borderRadius: responsive.borderRadius + 1,
+                  paddingHorizontal: responsive.horizontalPadding,
+                  height: width < 405 ? 44 : width >= 440 && width < 600 ? 52 : 48,
+                }]}>
                   <Ionicons
                     name="lock-closed-outline"
-                    size={scale(20)}
+                    size={width < 405 ? 18 : 20}
                     color="#888"
-                    style={styles.inputIcon}
+                    style={[styles.inputIcon, {
+                      marginRight: responsive.horizontalPadding / 2,
+                    }]}
                   />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, {
+                      fontSize: width < 405 ? 15 : 16,
+                    }]}
                     placeholder="••••••••"
                     placeholderTextColor="#AAA"
                     secureTextEntry={!isVisible}
@@ -127,11 +187,11 @@ export default function RegisterScreen() {
                   />
                   <TouchableOpacity
                     onPress={() => setIsVisible(v => !v)}
-                    style={{ marginLeft: scale(8) }}
+                    style={{ marginLeft: responsive.horizontalPadding / 2 }}
                   >
                     <Ionicons
                       name={isVisible ? 'eye-outline' : 'eye-off-outline'}
-                      size={scale(20)}
+                      size={width < 405 ? 18 : 20}
                       color="#888"
                     />
                   </TouchableOpacity>
@@ -142,16 +202,26 @@ export default function RegisterScreen() {
               <TouchableOpacity
                 onPress={handleRegister}
                 activeOpacity={0.8}
-                style={styles.loginButton}
+                style={[styles.loginButton, {
+                  borderRadius: responsive.borderRadius + 1,
+                  height: width < 405 ? 46 : width >= 440 && width < 600 ? 54 : 50,
+                  marginBottom: responsive.marginBottom + 4,
+                }]}
               >
-                <Text style={styles.loginText}>REGISTER</Text>
+                <Text style={[styles.loginText, {
+                  fontSize: width < 405 ? 15 : 16,
+                }]}>REGISTER</Text>
               </TouchableOpacity>
 
               {/* LOGIN PROMPT */}
               <View style={styles.signupContainer}>
-                <Text style={styles.signupText}>Already have an account?</Text>
+                <Text style={[styles.signupText, {
+                  fontSize: width < 405 ? 13 : 14,
+                }]}>Already have an account?</Text>
                 <TouchableOpacity onPress={() => nav.navigate('Login')}>
-                  <Text style={styles.signupLink}> Login</Text>
+                  <Text style={[styles.signupLink, {
+                    fontSize: width < 405 ? 13 : 14,
+                  }]}> Login</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -203,14 +273,9 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? scale(30) : scale(50),
-    left: scale(20),
     zIndex: 10,
   },
   backCircle: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: scale(20),
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -223,33 +288,23 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',         // <-- center vertically
-    paddingHorizontal: scale(30),
     zIndex: 3,
   },
   header: {
-    fontSize: scale(32),
     fontWeight: '700',
     color: '#333',
     textAlign: 'center',
-    marginBottom: vScale(30),
-    lineHeight: scale(40),
   },
   inputContainer: {
-    marginBottom: vScale(20),
   },
   inputLabel: {
-    fontSize: scale(14),
     color: '#555',
-    marginBottom: vScale(6),
     fontWeight: '500',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF',
-    borderRadius: scale(25),
-    paddingHorizontal: scale(16),
-    height: vScale(48),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -257,21 +312,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   inputIcon: {
-    marginRight: scale(8),
   },
   input: {
     flex: 1,
-    fontSize: scale(16),
     color: '#333',
     paddingVertical: 0,
   },
   loginButton: {
     backgroundColor: '#333',
-    borderRadius: scale(25),
-    height: vScale(50),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: vScale(20),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -280,7 +330,6 @@ const styles = StyleSheet.create({
   },
   loginText: {
     color: '#FFF',
-    fontSize: scale(16),
     fontWeight: '700',
     letterSpacing: 1,
   },
@@ -291,11 +340,9 @@ const styles = StyleSheet.create({
   },
   signupText: {
     color: '#666',
-    fontSize: scale(14),
   },
   signupLink: {
     color: '#333',
-    fontSize: scale(14),
     fontWeight: '600',
     textDecorationLine: 'underline',
   },

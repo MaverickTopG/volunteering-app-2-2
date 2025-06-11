@@ -20,10 +20,27 @@ import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from './AuthContext';
 
 const { width, height } = Dimensions.get('window');
-const baseW = 428;
-const baseH = 926;
-const scale = s => (width / baseW) * s;
-const vScale = s => (height / baseH) * s;
+const isTablet = width >= 768;
+const isLandscape = width > height;
+
+// Enhanced responsive scaling with breakpoints
+const getResponsiveValue = (mobile, tablet = mobile, landscape = mobile) => {
+  if (isLandscape) return landscape;
+  if (isTablet) return tablet;
+  return mobile;
+};
+
+// Responsive scaling functions
+const guidelineBaseWidth = 428;
+const guidelineBaseHeight = 926;
+const scale = (size, factor = 1) => {
+  const scaleFactor = isTablet ? 1.2 : 1;
+  return (width / guidelineBaseWidth) * size * scaleFactor * factor;
+};
+const vScale = (size, factor = 1) => {
+  const scaleFactor = isTablet ? 1.1 : 1;
+  return (height / guidelineBaseHeight) * size * scaleFactor * factor;
+};
 
 export default function DeleteScreen() {
   const [email, setEmail] = useState('');
@@ -44,6 +61,8 @@ export default function DeleteScreen() {
       Alert.alert('Error', 'Could not delete. Check your credentials.');
     }
   };
+
+  const styles = getStyles();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -76,120 +95,172 @@ export default function DeleteScreen() {
         </TouchableOpacity>
 
         {/* Main form */}
-        <View style={styles.content}>
-          <Text style={styles.header}>Don't Go!</Text>
+        <View style={styles.contentWrapper}>
+          <View style={styles.content}>
+            <Text style={styles.header}>Don't Go!</Text>
 
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="mail-outline"
-                size={scale(20)}
-                color="#888"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="you@example.com"
-                placeholderTextColor="#AAA"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-              />
-            </View>
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={scale(20)}
-                color="#888"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor="#AAA"
-                secureTextEntry={!visible}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setVisible(v => !v)}
-                style={{ marginLeft: scale(8) }}
-              >
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <View style={styles.inputWrapper}>
                 <Ionicons
-                  name={visible ? 'eye-outline' : 'eye-off-outline'}
+                  name="mail-outline"
                   size={scale(20)}
                   color="#888"
+                  style={styles.inputIcon}
                 />
-              </TouchableOpacity>
+                <TextInput
+                  style={styles.input}
+                  placeholder="you@example.com"
+                  placeholderTextColor="#AAA"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
             </View>
-          </View>
 
-          {/* Delete Button */}
-          <TouchableOpacity
-            onPress={handleDelete}
-            activeOpacity={0.8}
-            style={styles.deleteButton}
-          >
-            <LinearGradient
-              colors={['#ff3b3b', '#ff6b6b']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.deleteGradient}
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={scale(20)}
+                  color="#888"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor="#AAA"
+                  secureTextEntry={!visible}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity
+                  onPress={() => setVisible(v => !v)}
+                  style={styles.eyeButton}
+                >
+                  <Ionicons
+                    name={visible ? 'eye-outline' : 'eye-off-outline'}
+                    size={scale(20)}
+                    color="#888"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Delete Button */}
+            <TouchableOpacity
+              onPress={handleDelete}
+              activeOpacity={0.8}
+              style={styles.deleteButton}
             >
-              <Text style={styles.deleteText}>Delete Account</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-        
+              <LinearGradient
+                colors={['#ff3b3b', '#ff6b6b']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.deleteGradient}
+              >
+                <Text style={styles.deleteText}>Delete Account</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = () => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F8F8',
   },
-
-  // Background blobs
   topRightBlob: {
     position: 'absolute',
-    top: -height * 0.15,
-    right: -width * 0.3,
-    width: width * 0.8,
-    height: width * 0.8,
-    borderRadius: (width * 0.8) / 2,
+    top: getResponsiveValue(
+      -height * 0.15,    // mobile
+      -height * 0.12,    // tablet
+      -height * 0.10     // landscape
+    ),
+    right: getResponsiveValue(
+      -width * 0.3,      // mobile
+      -width * 0.25,     // tablet
+      -width * 0.20      // landscape
+    ),
+    width: getResponsiveValue(
+      width * 0.8,       // mobile
+      width * 0.6,       // tablet
+      width * 0.5        // landscape
+    ),
+    height: getResponsiveValue(
+      width * 0.8,       // mobile
+      width * 0.6,       // tablet
+      width * 0.5        // landscape
+    ),
+    borderRadius: getResponsiveValue(
+      (width * 0.8) / 2,  // mobile
+      (width * 0.6) / 2,  // tablet
+      (width * 0.5) / 2   // landscape
+    ),
     backgroundColor: 'rgba(200,230,255,0.3)',
     zIndex: 0,
   },
   bottomLeftBlob: {
     position: 'absolute',
-    bottom: -height * 0.15,
-    left: -width * 0.3,
-    width: width * 0.75,
-    height: width * 0.75,
-    borderRadius: (width * 0.75) / 2,
+    bottom: getResponsiveValue(
+      -height * 0.15,    // mobile
+      -height * 0.12,    // tablet
+      -height * 0.10     // landscape
+    ),
+    left: getResponsiveValue(
+      -width * 0.3,      // mobile
+      -width * 0.25,     // tablet
+      -width * 0.20      // landscape
+    ),
+    width: getResponsiveValue(
+      width * 0.75,      // mobile
+      width * 0.55,      // tablet
+      width * 0.45       // landscape
+    ),
+    height: getResponsiveValue(
+      width * 0.75,      // mobile
+      width * 0.55,      // tablet
+      width * 0.45       // landscape
+    ),
+    borderRadius: getResponsiveValue(
+      (width * 0.75) / 2, // mobile
+      (width * 0.55) / 2, // tablet
+      (width * 0.45) / 2  // landscape
+    ),
     backgroundColor: 'rgba(255,230,200,0.3)',
     zIndex: 0,
   },
-
-  // Diagonal image & overlay
   diagonalImage: {
     position: 'absolute',
-    width: width * 2.4,
-    height: width * 1.4,
-    top: height * 0.8,
-    left: width * 0.2,
+    width: getResponsiveValue(
+      width * 2.4,       // mobile (keeping original values)
+      width * 2.0,       // tablet
+      width * 1.8        // landscape
+    ),
+    height: getResponsiveValue(
+      width * 1.4,       // mobile (keeping original values)
+      width * 1.2,       // tablet
+      width * 1.0        // landscape
+    ),
+    top: getResponsiveValue(
+      height * 0.8,      // mobile (keeping original values)
+      height * 0.75,     // tablet
+      height * 0.7       // landscape
+    ),
+    left: getResponsiveValue(
+      width * 0.2,       // mobile (keeping original values)
+      width * 0.15,      // tablet
+      width * 0.1        // landscape
+    ),
     opacity: 0.15,
     transform: [{ rotate: '45deg' }],
     zIndex: 1,
@@ -198,12 +269,18 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 2,
   },
-
-  // Back button
   backButton: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? scale(30) : scale(50),
-    left: scale(20),
+    top: getResponsiveValue(
+      Platform.OS === 'android' ? scale(30) : scale(50),
+      Platform.OS === 'android' ? scale(40) : scale(60),
+      Platform.OS === 'android' ? scale(25) : scale(45)
+    ),
+    left: getResponsiveValue(
+      scale(20),         // mobile
+      scale(30),         // tablet
+      scale(25)          // landscape
+    ),
     zIndex: 10,
   },
   backCircle: {
@@ -219,32 +296,63 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
-  // Main form content
-  content: {
+  contentWrapper: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: scale(30),
-    paddingTop: vScale(0),
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveValue(
+      scale(30),         // mobile
+      scale(60),         // tablet
+      scale(40)          // landscape
+    ),
     zIndex: 3,
   },
+  content: {
+    width: '100%',
+    maxWidth: getResponsiveValue(
+      400,               // mobile
+      500,               // tablet
+      600                // landscape
+    ),
+    ...(isLandscape && !isTablet && {
+      paddingVertical: vScale(20),
+    }),
+  },
   header: {
-    fontSize: scale(32),
+    fontSize: getResponsiveValue(
+      scale(32),         // mobile
+      scale(38),         // tablet
+      scale(28)          // landscape
+    ),
     fontWeight: '700',
     color: '#333',
     textAlign: 'center',
-    marginBottom: vScale(40),
-    lineHeight: scale(40),
+    marginBottom: getResponsiveValue(
+      vScale(40),        // mobile
+      vScale(50),        // tablet
+      vScale(30)         // landscape
+    ),
+    lineHeight: getResponsiveValue(
+      scale(40),         // mobile
+      scale(46),         // tablet
+      scale(34)          // landscape
+    ),
   },
-
-  // Input fields
   inputContainer: {
-    marginBottom: vScale(20),
+    marginBottom: getResponsiveValue(
+      vScale(20),        // mobile
+      vScale(25),        // tablet
+      vScale(18)         // landscape
+    ),
   },
   inputLabel: {
     fontSize: scale(14),
     color: '#555',
-    marginBottom: vScale(6),
+    marginBottom: getResponsiveValue(
+      vScale(6),         // mobile
+      vScale(8),         // tablet
+      vScale(5)          // landscape
+    ),
     fontWeight: '500',
   },
   inputWrapper: {
@@ -253,7 +361,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderRadius: scale(25),
     paddingHorizontal: scale(16),
-    height: vScale(48),
+    height: getResponsiveValue(
+      vScale(48),        // mobile
+      vScale(52),        // tablet
+      vScale(44)         // landscape
+    ),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -269,14 +381,24 @@ const styles = StyleSheet.create({
     color: '#333',
     paddingVertical: 0,
   },
-
-  // Delete button
+  eyeButton: {
+    marginLeft: scale(8),
+    padding: scale(4),
+  },
   deleteButton: {
-    marginBottom: vScale(20),
+    marginBottom: getResponsiveValue(
+      vScale(20),        // mobile
+      vScale(25),        // tablet
+      vScale(18)         // landscape
+    ),
   },
   deleteGradient: {
     borderRadius: scale(25),
-    height: vScale(50),
+    height: getResponsiveValue(
+      vScale(50),        // mobile
+      vScale(55),        // tablet
+      vScale(48)         // landscape
+    ),
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#ff6b6b',
@@ -290,13 +412,5 @@ const styles = StyleSheet.create({
     fontSize: scale(16),
     fontWeight: '700',
     letterSpacing: 1,
-  },
-
-  // Cancel link
-  cancelLink: {
-    color: '#666',
-    textAlign: 'center',
-    fontSize: scale(14),
-    textDecorationLine: 'underline',
   },
 });

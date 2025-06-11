@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Image,
   ImageBackground,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -18,6 +19,29 @@ const { width, height } = Dimensions.get('window');
 // Replace these with your actual asset paths:
 // const spaceshipImage = require('../assets/spaceship.png');
 const backgroundImage = require('../assets/bg.png');
+
+const getResponsiveValues = () => {
+  const screenRatio = width / height;
+  const isVerySmallScreen = width < 405;
+  const isSmallScreen = width < 410;
+  const isMediumScreen = width >= 440 && width < 600;
+     
+  return {
+    statusBarHeight: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : isVerySmallScreen ? 40 : isMediumScreen ? 20 : 44,
+    headerImageHeight: isVerySmallScreen ? 160 : isMediumScreen ? 250 : 140,
+    bottomSheetHeight: height * (isVerySmallScreen ? 0.78 : 0.77),
+    backCircleSize: isVerySmallScreen ? 32 : 36,
+    backIconSize: isVerySmallScreen ? 20 : 24,
+    borderRadius: isVerySmallScreen ? 20 : 24,
+    cardBorderRadius: isVerySmallScreen ? 14 : 16,
+    horizontalPadding: isVerySmallScreen ? 12 : 16,
+    verticalPadding: isVerySmallScreen ? 16 : 20,
+    marginBottom: isVerySmallScreen ? 12 : 16,
+    scrollMarginTop: isVerySmallScreen ? 0 : 0,
+    paddingBottom: isVerySmallScreen ? 40 : 60,
+    handleBarWidth: isVerySmallScreen ? 35 : 40,
+  };
+};
 
 /**
  * FloatingParticle:
@@ -125,6 +149,7 @@ const FloatingParticle = ({ delay, duration, size }) => {
 
 const NexolinkLoginScreen = ({ navigation }) => {
   const buttonScale = useRef(new Animated.Value(1)).current;
+  const responsive = getResponsiveValues();
 
   const handleButtonPress = (callback) => {
     Animated.sequence([
@@ -190,28 +215,47 @@ const NexolinkLoginScreen = ({ navigation }) => {
         </View>
 
         {/* Logo & Title (shifted up by 15% of screen height) */}
-        <View style={[styles.logoSection, { marginTop: -(height * 0.15) }]}>
+        <View style={[styles.logoSection, { 
+          marginTop: -(height * 0.15),
+          paddingHorizontal: responsive.horizontalPadding,
+          paddingTop: responsive.verticalPadding,
+        }]}>
           {/* <Image
             source={spaceshipImage}
             style={[styles.logoImage, { tintColor: '#FFF' }]}
             resizeMode="contain"
           /> */}
-          <Text style={styles.appTitle}>Track Volunteer Hours</Text>
+          <Text style={[styles.appTitle, {
+            fontSize: width < 405 ? 35 : width >= 440 && width < 600 ? 46 : 42,
+          }]}>Track Volunteer Hours</Text>
         </View>
 
         {/* Bottom section */}
-        <View style={styles.bottomSection}>
+        <View style={[styles.bottomSection, {
+          paddingHorizontal: responsive.horizontalPadding * 2,
+          paddingBottom: responsive.paddingBottom,
+          bottom: -(height * 0.03), // Move buttons down 15%
+        }]}>
           <TouchableOpacity onPress={handleSignup} activeOpacity={0.8}>
-            <Text style={styles.headerButtonText}>SIGNUP</Text>
+            <Text style={[styles.headerButtonText, {
+              fontSize: width < 405 ? 18 : 20,
+              marginBottom: responsive.marginBottom * 2.5,
+            }]}>SIGNUP</Text>
           </TouchableOpacity>
 
           <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
             <TouchableOpacity
-              style={[styles.button, styles.loginButton]}
+              style={[styles.button, styles.loginButton, {
+                borderRadius: responsive.borderRadius + 4,
+                height: width < 405 ? 50 : 56,
+                marginBottom: width < 405 ? 110 : width >= 440 && width < 600 ? 100 : 90,
+              }]}
               onPress={() => handleButtonPress(handleLogin)}
               activeOpacity={0.8}
             >
-              <Text style={styles.loginButtonText}>LOGIN</Text>
+              <Text style={[styles.loginButtonText, {
+                fontSize: width < 405 ? 15 : 18,
+              }]}>LOGIN</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -252,8 +296,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
   },
   logoImage: {
     width: 120,
@@ -262,7 +304,6 @@ const styles = StyleSheet.create({
     // The tintColor '#FFF' in the component will turn this white
   },
   appTitle: {
-    fontSize: 48,
     fontWeight: '700',
     color: '#FFF',        // White text
     letterSpacing: 2,
@@ -276,27 +317,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent', // allow background image behind
-    paddingHorizontal: 30,
     paddingTop: 20,
-    paddingBottom: 40,
     alignItems: 'center',
   },
   headerButtonText: {
-    fontSize: 20,
-    color: '#FFF',       // White “SIGNUP” text
+    color: '#FFF',       // White "SIGNUP" text
     fontWeight: '600',
-    marginBottom: 40,
   },
 
   // White button with black text
   button: {
-    width: width - 60,
+    width: width,
     maxWidth: 300,
-    height: 56,
-    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -304,10 +338,8 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: '#FFF',  // White background
-    marginBottom: 90,
   },
   loginButtonText: {
-    fontSize: 18,
     fontWeight: '600',
     color: '#000',           // Black text inside button
     letterSpacing: 1,

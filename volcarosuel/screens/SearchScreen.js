@@ -1,5 +1,3 @@
-// /src/screens/VolunteerCausesScreen.js
-
 import React, { useRef, useState } from "react";
 import {
   View,
@@ -18,14 +16,33 @@ import { Ionicons } from "@expo/vector-icons";
 
 const { width, height } = Dimensions.get("window");
 
-//── GRID LAYOUT CONSTANTS ───────────────────────────────────────────
-// Two columns: each card is ITEM_WIDTH wide. We leave ITEM_MARGIN
-// on the left/right of each card, plus ITEM_MARGIN between cards.
-const ITEM_MARGIN = 8; 
-const ITEM_WIDTH = (width - ITEM_MARGIN * 3) / 2; // two cards + three margins
-const ITEM_ASPECT = 4 / 3; // aspect ratio: width : height = 4 : 3
+const getResponsiveValues = () => {
+  const screenRatio = width / height;
+  const isSmallScreen = width < 400;
+  const isMediumScreen = width >= 400 && width < 450;
+  
+  return {
+    itemMargin: isSmallScreen ? 6 : 8,
+    headerTopPercentage: screenRatio > 0.5 ? "8%" : "10%",
+    gridHeaderTopPercentage: screenRatio > 0.5 ? "3%" : "5%",
+    cardWidthMultiplier: isSmallScreen ? 0.85 : 0.8,
+    cardHeightMultiplier: isSmallScreen ? 0.65 : 0.6,
+    headerHeight: isSmallScreen ? 50 : 56,
+    gridHeaderHeight: isSmallScreen ? 80 : 96,
+    carouselFontSize: isSmallScreen ? 28 : isMediumScreen ? 30 : 32,
+    gridFontSize: isSmallScreen ? 24 : isMediumScreen ? 26 : 28,
+    cardTitleSize: isSmallScreen ? 28 : isMediumScreen ? 30 : 32,
+    gridCardTitleSize: isSmallScreen ? 14 : 16,
+    topOffset: isSmallScreen ? 40 : 60,
+    cardTopOffset: isSmallScreen ? "-3%" : "-5%",
+  };
+};
 
-// Nine cause images
+const responsive = getResponsiveValues();
+const ITEM_MARGIN = responsive.itemMargin;
+const ITEM_WIDTH = (width - ITEM_MARGIN * 3) / 2;
+const ITEM_ASPECT = 4 / 3;
+
 const data = [
   require("../../assets/animal.png"),
   require("../../assets/art.png"),
@@ -38,7 +55,6 @@ const data = [
   require("../../assets/tech.png"),
 ];
 
-// Nine cause names
 const causeNames = [
   "Animal",
   "Arts",
@@ -56,18 +72,14 @@ export default function VolunteerCausesScreen() {
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  // false = carousel mode, true = grid mode
   const [isGridView, setIsGridView] = useState(false);
 
-  // Carousel: update index on swipe end
   const onMomentumScrollEnd = (e) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const newIndex = Math.round(offsetX / width);
     setCurrentIndex(newIndex);
   };
 
-  // Navigate to category detail
   const navigateToCategory = (index) => {
     const causeId = causeNames[index];
     navigation.navigate("Carousel", {
@@ -76,12 +88,10 @@ export default function VolunteerCausesScreen() {
     });
   };
 
-  // Toggle between carousel and grid
   const toggleView = () => {
     setIsGridView((prev) => !prev);
   };
 
-  // Render a single carousel card
   const renderCarouselItem = ({ item, index }) => (
     <View style={styles.fullScreenItem}>
       <TouchableOpacity
@@ -97,14 +107,10 @@ export default function VolunteerCausesScreen() {
     </View>
   );
 
-  // Render all nine cards in a 3×3 grid by manually chunking into rows of 2
   const renderGrid = () => {
-    // Calculate how far down to push the grid so it sits below the header
     const statusBarHeight = StatusBar.currentHeight || 0;
-    const headerHeight = 56;
-    const topOffset = statusBarHeight + headerHeight+60;
+    const topOffset = statusBarHeight + responsive.gridHeaderHeight + responsive.topOffset;
 
-    // Break data into rows of two indices each
     const rows = [];
     for (let i = 0; i < data.length; i += 2) {
       if (i + 1 < data.length) {
@@ -119,14 +125,13 @@ export default function VolunteerCausesScreen() {
         style={styles.gridScrollView}
         contentContainerStyle={{
           paddingTop: topOffset,
-          paddingBottom: 100, // enough bottom padding so last card can scroll up
+          paddingBottom: 100,
         }}
         showsVerticalScrollIndicator={false}
       >
         {rows.map((rowIndices, rowIndex) => (
           <View key={rowIndex} style={styles.gridRow}>
             {rowIndices.length === 2 ? (
-              // Two cards side by side
               rowIndices.map((idx) => (
                 <TouchableOpacity
                   key={idx}
@@ -145,7 +150,6 @@ export default function VolunteerCausesScreen() {
                 </TouchableOpacity>
               ))
             ) : (
-              // Single (last) card: center it in its row
               <View style={styles.gridSingleWrapper}>
                 <TouchableOpacity
                   key={rowIndices[0]}
@@ -181,9 +185,7 @@ export default function VolunteerCausesScreen() {
       />
 
       {!isGridView ? (
-        // ── CAROUSEL MODE ───────────────────────────────────────────────
         <>
-          {/* 1) Blurred background behind each card */}
           <View style={StyleSheet.absoluteFill}>
             {data.map((src, idx) => {
               const inputRange = [
@@ -208,7 +210,6 @@ export default function VolunteerCausesScreen() {
             })}
           </View>
 
-          {/* 2) Absolute header (over the blurred background) */}
           <View style={styles.headerContainerCarousel}>
             <Text style={styles.headerTitleCarousel}>Volunteer Causes</Text>
             <TouchableOpacity
@@ -220,7 +221,6 @@ export default function VolunteerCausesScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* 3) Horizontal FlatList for carousel cards */}
           <Animated.FlatList
             ref={scrollRef}
             data={data}
@@ -238,7 +238,6 @@ export default function VolunteerCausesScreen() {
             renderItem={renderCarouselItem}
           />
 
-          {/* 4) Left/Right navigation arrows */}
           {currentIndex > 0 && (
             <TouchableOpacity
               style={styles.leftArrow}
@@ -273,9 +272,7 @@ export default function VolunteerCausesScreen() {
           )}
         </>
       ) : (
-        // ── GRID MODE ───────────────────────────────────────────────────
         <>
-          {/* 1) Absolute header over a white background */}
           <View style={styles.headerContainerGrid}>
             <Text style={styles.headerTitleGrid}>Volunteer Causes</Text>
             <TouchableOpacity
@@ -287,7 +284,6 @@ export default function VolunteerCausesScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* 2) Scrollable 3×3 grid of nine cards */}
           {renderGrid()}
         </>
       )}
@@ -296,19 +292,17 @@ export default function VolunteerCausesScreen() {
 }
 
 const styles = StyleSheet.create({
-  // ── SCREEN CONTAINER ─────────────────────────────────────────────
   container: {
     flex: 1,
-    backgroundColor: "#FFF", // ensure pure white background in grid mode
+    backgroundColor: "#FFF",
   },
 
-  // ── CAROUSEL HEADER (ABSOLUTE) ───────────────────────────────────
   headerContainerCarousel: {
     position: "absolute",
-    top: StatusBar.currentHeight || 60,
+    top: responsive.headerTopPercentage,
     left: 16,
     right: 16,
-    height: 56,
+    height: responsive.headerHeight,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -319,7 +313,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     color: "#FFF",
-    fontSize: 28,
+    fontSize: responsive.carouselFontSize,
     fontWeight: "700",
     textShadowColor: "rgba(0,0,0,0.3)",
     textShadowOffset: { width: 0, height: 2 },
@@ -331,7 +325,6 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 
-  // ── CAROUSEL ITEM ─────────────────────────────────────────────────
   fullScreenItem: {
     width,
     height,
@@ -339,8 +332,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cardWrapper: {
-    width: width * 0.8,
-    height: height * 0.6,
+    width: width * responsive.cardWidthMultiplier,
+    height: height * responsive.cardHeightMultiplier,
     borderRadius: 16,
     overflow: "hidden",
     shadowColor: "#000",
@@ -348,13 +341,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 12,
-    top:-40
-    
+    top: responsive.cardTopOffset,
   },
   cardImage: {
     width: "100%",
     height: "100%",
-    
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -363,7 +354,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cardTitle: {
-    fontSize: 32,
+    fontSize: responsive.cardTitleSize,
     color: "#FFF",
     fontWeight: "700",
     textShadowColor: "rgba(0,0,0,0.5)",
@@ -372,24 +363,23 @@ const styles = StyleSheet.create({
   },
   leftArrow: {
     position: "absolute",
-    left: 2,
+    left: "0.5%",
     top: height / 2 - 16,
     zIndex: 20,
   },
   rightArrow: {
     position: "absolute",
-    right: 2,
+    right: "0.5%",
     top: height / 2 - 16,
     zIndex: 20,
   },
 
-  // ── GRID HEADER (ABSOLUTE) ────────────────────────────────────────
   headerContainerGrid: {
     position: "absolute",
-    top: StatusBar.currentHeight || 60,
+    top: responsive.gridHeaderTopPercentage,
     left: 0,
     right: 0,
-    height: 96,
+    height: responsive.gridHeaderHeight,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -402,7 +392,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     color: "#000",
-    fontSize: 28,
+    fontSize: responsive.gridFontSize,
     fontWeight: "700",
   },
   menuButtonGrid: {
@@ -411,7 +401,6 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 
-  // ── GRID MODE: 3×3 SMALL RECTANGULAR CARDS ────────────────────────
   containerGrid: {
     flex: 1,
     backgroundColor: "#FFF",
@@ -433,8 +422,7 @@ const styles = StyleSheet.create({
   },
   gridCardWrapper: {
     width: ITEM_WIDTH,
-    height: ITEM_WIDTH * ITEM_ASPECT * (3/4), 
-    // to maintain 4:3 (width:height), use height = width * 3/4
+    height: ITEM_WIDTH * ITEM_ASPECT * (3/4),
     borderRadius: 12,
     overflow: "hidden",
     backgroundColor: "#FFF",
@@ -456,7 +444,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   gridCardTitle: {
-    fontSize: 16,
+    fontSize: responsive.gridCardTitleSize,
     color: "#FFF",
     fontWeight: "600",
     textShadowColor: "rgba(0,0,0,0.4)",
