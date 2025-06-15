@@ -45,24 +45,24 @@ const ITEM_ASPECT = 4 / 3;
 
 const data = [
   require("../../assets/animal.png"),
+  require("../../assets/advocacy.png"),
   require("../../assets/art.png"),
   require("../../assets/education.png"),
   require("../../assets/enviroment.png"),
   require("../../assets/family.png"),
   require("../../assets/hospital.png"),
-  require("../../assets/library.png"),
   require("../../assets/seniors.png"),
   require("../../assets/tech.png"),
 ];
 
 const causeNames = [
   "Animal",
+  "Advocacy & Change",
   "Arts",
   "Education",
   "Environment",
   "Family",
   "Hospital",
-  "Library",
   "Seniors",
   "Tech",
 ];

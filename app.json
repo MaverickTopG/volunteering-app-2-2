@@ -4,11 +4,11 @@
     "slug": "snack-e35a9482-38e0-4709-8097-c86cd1817f3e",
     "version": "3.5.2",
     "orientation": "portrait",
-    "icon": "./assets/app_logo.jpg",
+    "icon": "./assets/new_icon.png",
     "userInterfaceStyle": "light",
     "jsEngine": "hermes",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash2.png",
       "resizeMode": "cover",
       "backgroundColor": "#000000"
     },
@@ -44,7 +44,8 @@
     },
     "plugins": [
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+            "expo-dev-client"
     ]
   }
 }

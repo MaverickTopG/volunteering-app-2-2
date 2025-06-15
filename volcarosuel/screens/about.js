@@ -106,9 +106,9 @@ const AboutScreen = () => {
 
         {/* Partnership Section */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Community Partnership</Text>
+          <Text style={styles.cardTitle}>Community Outreach</Text>
           <Text style={styles.cardText}>
-            We partner with local organizations, schools, and nonprofits to help you find new opportunities and stay connected. Our easy-to-use logging system ensures your hours are accurately recorded, and our milestone badges help you reflect on the real impact you're having.
+            We curate a list of local organizations, schools, and nonprofits to help you find new opportunities and stay connected. Our easy-to-use logging system ensures your hours are accurately recorded, and our milestone badges help you reflect on the real impact you're having.
           </Text>
         </View>
 

@@ -61,8 +61,7 @@ export default function RegisterScreen() {
     }
     try {
       await signUp({ email: email.trim(), password });
-      Alert.alert('Success', 'Account created successfully.');
-      // nav.navigate('VolunteerDashboard');
+       nav.navigate('VolunteerLogs');
     } catch (error) {
       console.error('Registration failed:', error);
       Alert.alert('Error', 'Registration failed. ' + (error.message || ''));

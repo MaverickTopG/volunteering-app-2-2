@@ -18,6 +18,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { RFPercentage } from 'react-native-responsive-fontsize';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../auth/firebase';
 import { AuthContext } from '../../auth/AuthContext';
@@ -26,31 +27,32 @@ const { width, height } = Dimensions.get('window');
 
 const getResponsiveValues = () => {
   const screenRatio = width / height;
-  const isVerySmallScreen = width < 400;
+  const isVerySmallScreen = width < 405;
   const isSmallScreen = width < 410;
   const isMediumScreen = width >= 440 && width < 600;
-  
+  const isLargeScreen = width >= 428 && width <= 430; // iPhone 14 Pro Max, 15 Pro Max (6.7")
+
   return {
-    statusBarHeight: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : isSmallScreen ? 20 : 25,
-    headerImageHeight: isVerySmallScreen ? 200 : isMediumScreen ? 250 : 160,
+    statusBarHeight: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : isVerySmallScreen ? 40 : isMediumScreen ? 20 : 44,
+    headerImageHeight:
+      isVerySmallScreen ? 160 :
+        isMediumScreen ? 250 :
+          isLargeScreen ? 190 : 140,
+    searchInputHeight: isVerySmallScreen ? 36 : 40,
+    searchIconSize: isVerySmallScreen ? 28 : 32,
     bottomSheetHeight: height * (isVerySmallScreen ? 0.78 : 0.77),
     backCircleSize: isVerySmallScreen ? 32 : 36,
     backIconSize: isVerySmallScreen ? 20 : 24,
-    searchIconSize: isVerySmallScreen ? 20 : 24,
-    chevronSize: isVerySmallScreen ? 20 : 24,
-    handleBarWidth: isVerySmallScreen ? 35 : 40,
     borderRadius: isVerySmallScreen ? 20 : 24,
     cardBorderRadius: isVerySmallScreen ? 14 : 16,
-    itemBorderRadius: isVerySmallScreen ? 10 : 12,
     horizontalPadding: isVerySmallScreen ? 12 : 16,
-    verticalPadding: isVerySmallScreen ? 10 : 12,
-    marginBottom: isVerySmallScreen ? 10 : 12,
-    searchInputHeight: isVerySmallScreen ? 32 : 36,
+    verticalPadding: isVerySmallScreen ? 16 : 20,
+    marginBottom: isVerySmallScreen ? 12 : 16,
     scrollMarginTop: isVerySmallScreen ? 0 : 0,
-    paddingBottom: isVerySmallScreen ? 100 : 120,
+    paddingBottom: isVerySmallScreen ? 40 : 60,
+    handleBarWidth: isVerySmallScreen ? 35 : 40,
   };
 };
-
 const responsive = getResponsiveValues();
 
 const STATE_MAP = {
@@ -65,6 +67,7 @@ const TOTAL_HEADER_HEIGHT = responsive.headerImageHeight + responsive.statusBarH
 
 const CATEGORY_IMAGES = {
   Animal: require('../../assets/animal.png'),
+  "Advocacy & Change": require('../../assets/advocacy.png'),
   Arts: require('../../assets/art.png'),
   Education: require('../../assets/education.png'),
   Environment: require('../../assets/enviroment.png'),
@@ -94,11 +97,66 @@ export default function VolunteerCarousel() {
   const scrollRef = useRef(null);
   const sectionLayouts = useRef({});
 
+  // Animation values for background movement
+  const backgroundAnimX = useRef(new Animated.Value(0)).current;
+  const backgroundAnimY = useRef(new Animated.Value(0)).current;
+  const backgroundScale = useRef(new Animated.Value(1.2)).current;
+
   const matchingCounties = sections
     .map((sec) => sec.title)
     .filter((title) =>
       title.toLowerCase().includes(searchText.trim().toLowerCase())
     );
+
+  // Start background animation
+  useEffect(() => {
+    const startBackgroundAnimation = () => {
+      const createRandomAnimation = () => {
+        // Calculate safe movement bounds based on scale
+        const currentScale = 1.2 + Math.random() * 0.8;
+        const scaleFactor = currentScale - 1; // Extra area due to scaling
+        const safetyMargin = 20; // Additional safety margin
+
+        // Calculate maximum safe movement (accounting for scale and safety)
+        const maxMoveX = (width * scaleFactor * 0.5) - safetyMargin;
+        const maxMoveY = (height * scaleFactor * 0.5) - safetyMargin;
+
+        // Ensure minimum movement bounds
+        const minMove = 10;
+        const finalMaxMoveX = Math.max(minMove, maxMoveX);
+        const finalMaxMoveY = Math.max(minMove, maxMoveY);
+
+        const randomX = (Math.random() - 0.5) * 2 * finalMaxMoveX;
+        const randomY = (Math.random() - 0.5) * 2 * finalMaxMoveY;
+        const randomScale = currentScale;
+        const duration = 6000 + Math.random() * 3000;
+        Animated.parallel([
+          Animated.timing(backgroundAnimX, {
+            toValue: randomX,
+            duration: duration,
+            useNativeDriver: true,
+          }),
+          Animated.timing(backgroundAnimY, {
+            toValue: randomY,
+            duration: duration,
+            useNativeDriver: true,
+          }),
+          Animated.timing(backgroundScale, {
+            toValue: randomScale,
+            duration: duration,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Start next random animation
+          createRandomAnimation();
+        });
+      };
+
+      createRandomAnimation();
+    };
+
+    startBackgroundAnimation();
+  }, []);
 
   const fetchOrgs = async () => {
     setLoading(true);
@@ -227,15 +285,21 @@ export default function VolunteerCarousel() {
         imageStyle={{ resizeMode: 'cover' }}
       >
         <View style={styles.headerOverlay}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-            activeOpacity={0.8}
-          >
-            <View style={styles.backCircle}>
-              <Ionicons name="chevron-back" size={responsive.backIconSize} color="#000" />
-            </View>
-          </TouchableOpacity>
+          <View style={styles.backCircle}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              activeOpacity={0.8}
+            >
+              <View style={styles.backCircle}>
+              
+                  <View style={styles.backCircleContent}>
+                    <Ionicons name="chevron-back" size={responsive.searchIconSize} color="#FFFFFF" />
+                  </View>
+              
+              </View>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.headerTextContainer}>
             {showSearch ? (
@@ -307,92 +371,118 @@ export default function VolunteerCarousel() {
         </View>
       </ImageBackground>
 
+      {/* Bottom Sheet with Animated Blurred Background */}
       <View style={[styles.bottomSheet, { height: responsive.bottomSheetHeight }]}>
-        <View style={styles.handleBar} />
+        {/* Animated Background Image */}
+        <View style={styles.backgroundContainer}>
+          <Animated.View
+            style={[
+              styles.animatedBackground,
+              {
+                transform: [
+                  { translateX: backgroundAnimX },
+                  { translateY: backgroundAnimY },
+                  { scale: backgroundScale },
+                ],
+              },
+            ]}
+          >
+            <ImageBackground
+              source={headerBgImage}
+              style={styles.backgroundImage}
+              imageStyle={{ resizeMode: 'cover' }}
+            />
+          </Animated.View>
+        </View>
 
-        <ScrollView
-          ref={scrollRef}
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {sections.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>🐾</Text>
-              <Text style={styles.emptyStateText}>
-                No opportunities found
-              </Text>
-            </View>
-          ) : (
-            sections.map((section) => {
-              const isExpanded = !!expandedSections[section.title];
-              const animV = animValuesRef.current[section.title];
+        {/* Blur Overlay */}
+        <BlurView intensity={60} style={styles.blurOverlay}>
+          <View style={styles.handleBar} />
 
-              return (
-                <View
-                  key={section.title}
-                  style={styles.countyCard}
-                  onLayout={(e) => {
-                    sectionLayouts.current[section.title] = e.nativeEvent.layout.y;
-                  }}
-                >
-                  <TouchableOpacity
-                    onPress={() => toggleSection(section.title)}
-                    style={styles.countyHeader}
-                    activeOpacity={0.8}
+          <ScrollView
+            ref={scrollRef}
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {sections.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateIcon}>🐾</Text>
+                <Text style={styles.emptyStateText}>
+                  No opportunities found
+                </Text>
+              </View>
+            ) : (
+              sections.map((section) => {
+                const isExpanded = !!expandedSections[section.title];
+                const animV = animValuesRef.current[section.title];
+
+                return (
+                  <View
+                    key={section.title}
+                    style={styles.countyCard}
+                    onLayout={(e) => {
+                      sectionLayouts.current[section.title] = e.nativeEvent.layout.y;
+                    }}
                   >
-                    <View style={styles.countyInfo}>
-                      <Text style={styles.countyName}>
-                        {section.title}
-                      </Text>
-                      <Text style={styles.countyCount}>
-                        {section.data.length}{' '}
-                        {section.data.length === 1
-                          ? 'organization'
-                          : 'organizations'}
-                      </Text>
-                    </View>
-                    <Ionicons
-                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                      size={responsive.chevronSize}
-                      color="#333"
-                    />
-                  </TouchableOpacity>
-
-                  {isExpanded && (
-                    <Animated.View
-                      style={[
-                        styles.orgsContainer,
-                        {
-                          opacity: animV,
-                          transform: [{ scale: animV }],
-                        },
-                      ]}
+                    <TouchableOpacity
+                      onPress={() => toggleSection(section.title)}
+                      style={styles.countyHeader}
+                      activeOpacity={0.8}
                     >
-                      {section.data.map((org, idx) => (
-                        <TouchableOpacity
-                          key={idx}
-                          onPress={() => handleOrgPress(org)}
-                          style={styles.organizationItem}
-                          activeOpacity={0.8}
-                        >
-                          <Text style={styles.orgTitle}>
-                            {org.title}
-                          </Text>
-                          <Ionicons
-                            name="chevron-forward"
-                            size={20}
-                            color="#AAA"
-                          />
-                        </TouchableOpacity>
-                      ))}
-                    </Animated.View>
-                  )}
-                </View>
-              );
-            })
-          )}
-        </ScrollView>
+                      <View style={styles.countyInfo}>
+                        <Text style={styles.countyName}>
+                          {section.title}
+                        </Text>
+                        <Text style={styles.countyCount}>
+                          {section.data.length}{' '}
+                          {section.data.length === 1
+                            ? 'organization'
+                            : 'organizations'}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={24}
+                        color="#FFFFFF"
+                      />
+                    </TouchableOpacity>
+
+                    {isExpanded && (
+                      <Animated.View
+                        style={[
+                          styles.orgsContainer,
+                          {
+                            opacity: animV,
+                            transform: [{ scale: animV }],
+                          },
+                        ]}
+                      >
+                        {section.data.map((org, idx) => (
+                          <TouchableOpacity
+                            key={idx}
+                            onPress={() => handleOrgPress(org)}
+                            style={styles.organizationItem}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={styles.orgTitle}>
+                              {org.title}
+                            </Text>
+                            <Ionicons
+                              name="chevron-forward"
+                              size={20}
+                              color="#E1D9D1"
+                            />
+                          </TouchableOpacity>
+                        ))}
+                      </Animated.View>
+                    )}
+                  </View>
+                );
+              })
+            )}
+          </ScrollView>
+        </BlurView>
       </View>
     </View>
   );
@@ -433,17 +523,22 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   backCircle: {
-    width: responsive.backCircleSize,
-    height: responsive.backCircleSize,
-    borderRadius: responsive.backCircleSize / 2,
-    backgroundColor: '#FFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  width: responsive.backCircleSize,
+  height: responsive.backCircleSize,
+  borderRadius: responsive.backCircleSize / 2,
+  overflow: 'hidden',
+},
+backCircleContent: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(255, 255, 255, 0.0)',
+},
   headerTextContainer: {
     flex: 1,
     alignItems: 'center',
-      justifyContent: 'center',
+    justifyContent: 'center',
+    marginHorizontal: responsive.backCircleSize, // Add this line to account for both back and search buttons
   },
   headerTitle: {
     fontSize: RFPercentage(3),
@@ -491,16 +586,43 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFF',
     borderTopLeftRadius: responsive.borderRadius,
     borderTopRightRadius: responsive.borderRadius,
     elevation: 8,
     zIndex: 10,
+    overflow: 'hidden',
   },
+
+  // New styles for animated background
+  backgroundContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
+  animatedBackground: {
+    position: 'absolute',
+    top: -50,
+    left: -50,
+    right: -50,
+    bottom: -50,
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  blurOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+
   handleBar: {
     width: responsive.handleBarWidth,
     height: 4,
-    backgroundColor: '#CCC',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 2,
     alignSelf: 'center',
     marginVertical: 8,
@@ -521,20 +643,20 @@ const styles = StyleSheet.create({
   },
   emptyStateIcon: {
     fontSize: 48,
-    color: '#CCC',
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   emptyStateText: {
     marginTop: 12,
     fontSize: RFPercentage(2.2),
-    color: '#AAA',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
 
   countyCard: {
     marginBottom: responsive.marginBottom,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: responsive.cardBorderRadius,
     borderWidth: 1,
-    borderColor: '#ECECEC',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     overflow: 'hidden',
   },
   countyHeader: {
@@ -549,12 +671,12 @@ const styles = StyleSheet.create({
   countyName: {
     fontSize: RFPercentage(2.2),
     fontWeight: '600',
-    color: '#333',
+    color: '#FFF',
     marginBottom: 2,
   },
   countyCount: {
     fontSize: RFPercentage(1.6),
-    color: '#777',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
 
   orgsContainer: {
@@ -568,13 +690,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: responsive.horizontalPadding,
     marginHorizontal: 8,
     marginBottom: 6,
-    borderRadius: responsive.itemBorderRadius,
-    backgroundColor: '#F7F7F7',
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   orgTitle: {
     flex: 1,
     fontSize: RFPercentage(2),
-    color: '#444',
+    color: '#FFF',
   },
 
   liveWrap: {

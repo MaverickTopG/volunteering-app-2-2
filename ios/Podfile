@@ -4,24 +4,29 @@ require File.join(File.dirname(`node --print "require.resolve('react-native/pack
 require 'json'
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
-ENV['RCT_NEW_ARCH_ENABLED'] = podfile_properties['newArchEnabled'] == 'true' ? '1' : '0'
+# Disable New Architecture if unstable
+ENV['RCT_NEW_ARCH_ENABLED'] = '0'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
 
 platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
-install! 'cocoapods', :deterministic_uuids => false
+install! 'cocoapods',
+  :deterministic_uuids => false,
+  :build_parallel      => false
 
 prepare_react_native_project!
 
 target 'NexoLink' do
   use_expo_modules!
 
-  # Disable modular headers for ReactCommon to avoid duplicate module definitions
-  pod 'ReactCommon', path: '../node_modules/react-native/ReactCommon', modular_headers: false
-  pod 'ReactCommon/turbomodule/core', path: '../node_modules/react-native/ReactCommon', modular_headers: false
-
-  # Enable modular headers for FirebaseCoreInternal and GoogleUtilities for Swift interoperability
+  # Swift pods requiring modular headers
+  pod 'GoogleUtilities',    modular_headers: true
   pod 'FirebaseCoreInternal', modular_headers: true
-  pod 'GoogleUtilities', modular_headers: true
+
+  # Static pods for ReactCommon to avoid duplicate modulemaps
+  pod 'ReactCommon',                  path: '../node_modules/react-native/ReactCommon',           modular_headers: false
+  pod 'ReactCommon/turbomodule/core', path: '../node_modules/react-native/ReactCommon',           modular_headers: false
+  # Static pod for Yoga (layout engine)
+  pod 'Yoga',                         path: '../node_modules/react-native/ReactCommon/yoga',      modular_headers: false
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"]
@@ -30,24 +35,22 @@ target 'NexoLink' do
       'node',
       '--no-warnings',
       '--eval',
-      'require(require.resolve(\'expo-modules-autolinking\', { paths: [require.resolve(\'expo/package.json\')] }))(process.argv.slice(1))',
+      "require(require.resolve('expo-modules-autolinking',{paths:[require.resolve('expo/package.json')]}))(process.argv.slice(1))",
       'react-native-config',
       '--json',
       '--platform',
       'ios'
     ]
   end
-
   config = use_native_modules!(config_command)
 
-  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
-  use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
-
+  # React Native core
   use_react_native!(
     path: config[:reactNativePath],
     hermes_enabled: podfile_properties['expo.jsEngine'].nil? || podfile_properties['expo.jsEngine'] == 'hermes',
+    new_arch_enabled: false,
     app_path: "#{Pod::Config.instance.installation_root}/..",
-    privacy_file_aggregation_enabled: podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
+    privacy_file_aggregation_enabled: podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false'
   )
 
   post_install do |installer|
@@ -55,10 +58,17 @@ target 'NexoLink' do
       installer,
       config[:reactNativePath],
       mac_catalyst_enabled: false,
-      ccache_enabled: podfile_properties['apple.ccacheEnabled'] == 'true',
+      ccache_enabled: podfile_properties['apple.ccacheEnabled'] == 'true'
     )
 
-    # Prevent code signing of resource bundles on Xcode 14+ when building for devices
+    # Prevent module merging errors by unifying DEFINES_MODULE
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['DEFINES_MODULE'] = 'NO'
+      end
+    end
+
+    # Prevent code signing of resource bundles on Xcode 14+
     installer.target_installation_results.pod_target_installation_results.each do |_pod_name, result|
       result.resource_bundle_targets.each do |res_target|
         res_target.build_configurations.each do |config|

@@ -16,6 +16,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Svg, { Circle } from 'react-native-svg';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { BlurView } from 'expo-blur';
 
 import { auth, db } from '../../auth/firebase';
 import {
@@ -73,7 +74,7 @@ export default function VolunteerBadgesScreen() {
   const [loading, setLoading]             = useState(false);
   const [showAllProgress, setShowAllProgress] = useState(false);
 
-  // Animated “pulse” for each badge
+  // Animated "pulse" for each badge
   const animatedValuesRef = useRef({});
   useEffect(() => {
     const vals = {};
@@ -223,6 +224,85 @@ export default function VolunteerBadgesScreen() {
   // Helper to check if a given route is active
   const isActiveRoute = (routeName) => route.name === routeName;
 
+  // ─── Demo Background Content Component ──────────────────────────────
+  const DemoBackgroundContent = () => (
+    <>
+      {/* HERO SECTION */}
+      <View style={styles.heroSection}>
+        <View style={styles.totalBadgesContainer}>
+          <View style={styles.badgeCountCircle}>
+            <Text style={styles.totalBadgesNumber}>0</Text>
+          </View>
+          <Text style={styles.totalBadgesLabel}>Badges Unlocked</Text>
+          <Text style={styles.totalHoursText}>0 volunteer hours</Text>
+        </View>
+
+        <View style={styles.featuredRow}>
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <View key={'demo-fav-' + idx} style={styles.featuredBadgeContainer}>
+              <View style={styles.featuredBadgeBorder}>
+                <Ionicons name="help-circle-outline" size={32} color="#D1D5DB" />
+              </View>
+              <Text style={[styles.featuredBadgeTitle, { color: '#9CA3AF' }]}>
+                Favorite
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* "Your Next Badge" */}
+      <View style={styles.sectionContainer}>
+        <View style={styles.nextBadgeHeader}>
+          <Text style={styles.nextBadgeTitle}>Your Next Badge</Text>
+          <Text style={styles.nextBadgeSeeAll}>See All</Text>
+        </View>
+
+        <View style={styles.nextBadgeList}>
+          {BADGE_DEFINITIONS.slice(0, 4).map(info => (
+            <View key={info.id}>
+              <View style={styles.progressRow}>
+                <View style={[styles.rowIconWrapper, styles.rowIconLocked]}>
+                  <Ionicons name={info.icon} size={24} color="#9CA3AF" />
+                  <ProgressRing percentage={0} size={70} strokeWidth={4} />
+                </View>
+
+                <View style={styles.rowTextContainer}>
+                  <Text style={styles.rowBadgeTitle}>{info.title}</Text>
+                  <Text style={styles.rowBadgeSubtitle}>
+                    {`${info.target} hours to go`}
+                  </Text>
+                  <View style={styles.smallProgressBar}>
+                    <View style={[styles.smallProgressFill, { width: '0%' }]} />
+                  </View>
+                  <Text style={styles.rowProgressNumbers}>
+                    {`0 / ${info.target} hrs`}
+                  </Text>
+                </View>
+
+                <View style={styles.rowButtonWrapper}>
+                  <View style={styles.rowBadgeLockedIcon}>
+                    <Ionicons name="lock-closed" size={16} color="#9CA3AF" />
+                  </View>
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* MOTIVATION */}
+      <View style={styles.motivationSection}>
+        <Text style={styles.motivationTitle}>Keep Going!</Text>
+        <Text style={styles.motivationText}>
+          Every hour of volunteering makes a difference. You're building a stronger community! 🌟
+        </Text>
+      </View>
+
+      <View style={styles.bottomPadding} />
+    </>
+  );
+
   // ─── If checking auth, show loader ───────────────────────────────────
   if (checkingAuth) {
     return (
@@ -348,7 +428,7 @@ export default function VolunteerBadgesScreen() {
                 </View>
               </View>
 
-              {/* “Your Next Badge” */}
+              {/* "Your Next Badge" */}
               <View style={styles.sectionContainer}>
                 <View style={styles.nextBadgeHeader}>
                   <Text style={styles.nextBadgeTitle}>Your Next Badge</Text>
@@ -405,7 +485,7 @@ export default function VolunteerBadgesScreen() {
               <View style={styles.motivationSection}>
                 <Text style={styles.motivationTitle}>Keep Going!</Text>
                 <Text style={styles.motivationText}>
-                  Every hour of volunteering makes a difference. You’re building
+                  Every hour of volunteering makes a difference. You're building
                   a stronger community! 🌟
                 </Text>
               </View>
@@ -415,12 +495,34 @@ export default function VolunteerBadgesScreen() {
           )}
         </ScrollView>
       ) : (
-        // ── Not logged in prompt ─────────────────────────────────────
-        <View style={[styles.container, styles.centerContent]}>
-          <Ionicons name="ribbon-outline" size={80} color="#FF6B35" />
-          <Text style={styles.notLoggedInText}>
-            Login to access badges
-          </Text>
+        // ── Background UI with Blur Overlay for Not Logged In ──────────
+        <View style={styles.container}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <DemoBackgroundContent />
+          </ScrollView>
+          
+          {/* Blur Overlay */}
+          <BlurView intensity={80} tint="light" style={styles.blurOverlay}>
+            <View style={styles.loginPromptContainer}>
+              <View style={styles.loginIconContainer}>
+                <Ionicons name="ribbon-outline" size={80} color="#FF6B35" />
+              </View>
+              <Text style={styles.loginPromptTitle}>Login to Access Badges</Text>
+              <Text style={styles.loginPromptSubtitle}>
+                Flaunt your volunteering skills with amazing badges!
+              </Text>
+              <TouchableOpacity 
+                style={styles.loginButton}
+                onPress={() => {
+                  // Navigate to login screen or show login modal
+                  // You can customize this based on your app's navigation structure
+                  navigation.navigate('Login');
+                }}
+              >
+                <Text style={styles.loginButtonText}>Get Started</Text>
+              </TouchableOpacity>
+            </View>
+          </BlurView>
         </View>
       )}
     </SafeAreaView>
@@ -547,9 +649,7 @@ function ProgressRing({ percentage, size = 70, strokeWidth = 4 }) {
       </Svg>
     </View>
   );
-}
-
-const styles = StyleSheet.create({
+}const styles = StyleSheet.create({
   // ── Container ───────────────────────────────────────────────────────
   container: {
     flex: 1,
@@ -668,7 +768,7 @@ const styles = StyleSheet.create({
   },
   featuredBadgeContainer: {
     alignItems: 'center',
-    width: (width - 80) / 3,
+    width: '30%', // Approximation of (width - 80) / 3
   },
   featuredBadgeBorder: {
     width: 64,
@@ -687,7 +787,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ── “Your Next Badge” Section ───────────────────────────────────────
+  // ── "Your Next Badge" Section ───────────────────────────────────────
   sectionContainer: {
     paddingHorizontal: 20,
     backgroundColor: '#FFFFFF',
@@ -709,7 +809,9 @@ const styles = StyleSheet.create({
     color: '#FF6B35',
     fontWeight: '600',
   },
-  nextBadgeList: {},
+  nextBadgeList: {
+    // Empty style object as placeholder
+  },
 
   // ── Badge Progress Row ──────────────────────────────────────────────
   progressRow: {
@@ -721,27 +823,27 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 2,
+    elevation: 1,
     marginBottom: 12,
   },
   rowIconWrapper: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 16,
     position: 'relative',
   },
-  rowIconClaimed: {
-    backgroundColor: '#FF6B35',
+  rowIconLocked: {
+    backgroundColor: '#F3F4F6',
   },
   rowIconReady: {
-    backgroundColor: '#FFF1F0',
+    backgroundColor: '#FEF3E2',
   },
-  rowIconLocked: {
-    backgroundColor: '#F9FAFB',
+  rowIconClaimed: {
+    backgroundColor: '#FF6B35',
   },
   rowTextContainer: {
     flex: 1,
@@ -759,15 +861,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   smallProgressBar: {
-    height: 6,
+    height: 4,
     backgroundColor: '#E5E7EB',
-    borderRadius: 3,
-    marginBottom: 6,
-    overflow: 'hidden',
+    borderRadius: 2,
+    marginBottom: 4,
   },
   smallProgressFill: {
     height: '100%',
     backgroundColor: '#FF6B35',
+    borderRadius: 2,
   },
   rowProgressNumbers: {
     fontSize: 12,
@@ -783,11 +885,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
   },
   rowClaimButtonText: {
     color: '#FFFFFF',
@@ -810,54 +907,107 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // ── Small heart for favorites ───────────────────────────────────────
   smallHeart: {
     position: 'absolute',
-    top: 12,
-    right: 16,
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
     elevation: 2,
   },
 
-  // ── MOTIVATION ─────────────────────────────────────────────────────
+  // ── MOTIVATION SECTION ─────────────────────────────────────────────
   motivationSection: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    padding: 20,
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     borderRadius: 16,
-    alignItems: 'center',
+    marginHorizontal: 20,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    alignItems: 'center',
   },
   motivationTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 8,
   },
   motivationText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 24,
   },
 
-  // ── Not logged in prompt ────────────────────────────────────────────
-  notLoggedInText: {
-    marginTop: 16,
-    fontSize: 18,
-    color: '#FF6B35',
-    fontWeight: '500',
+  // ── BLUR OVERLAY & LOGIN PROMPT ────────────────────────────────────
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loginPromptContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+    borderRadius: 24,
+    alignItems: 'center',
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  loginIconContainer: {
+    marginBottom: 24,
+  },
+  loginPromptTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loginPromptSubtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  loginButton: {
+    backgroundColor: '#FF6B35',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 28,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 
-  // ── Bottom padding ──────────────────────────────────────────────────
+  // ── BOTTOM PADDING ─────────────────────────────────────────────────
   bottomPadding: {
     height: 80,
   },

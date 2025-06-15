@@ -59,8 +59,6 @@ export default function LoginScreen() {
     }
     try {
       await signIn(email.trim(), password);
-      Alert.alert('Success', 'Logged in successfully.');
-      // nav.navigate('VolunteerDashboard');
     } catch {
       Alert.alert('Error', 'Invalid credentials.');
     }

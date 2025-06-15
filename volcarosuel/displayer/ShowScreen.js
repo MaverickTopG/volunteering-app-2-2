@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,13 @@ import {
   Linking,
   Alert,
   Platform,
+  Animated,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
+import { BlurView } from 'expo-blur';
 import { AuthContext } from '../../auth/AuthContext';
 import { RFPercentage } from 'react-native-responsive-fontsize';
 
@@ -26,10 +28,14 @@ const getResponsiveValues = () => {
   const isVerySmallScreen = width < 405;
   const isSmallScreen = width < 410;
   const isMediumScreen = width >= 440 && width < 600;
-  
+  const isLargeScreen = width >= 428 && width <= 430; // iPhone 14 Pro Max, 15 Pro Max (6.7")
+
   return {
     statusBarHeight: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : isVerySmallScreen ? 40 : isMediumScreen ? 20 : 44,
-    headerImageHeight: isVerySmallScreen ? 160 : isMediumScreen ? 250 : 140,
+    headerImageHeight:
+      isVerySmallScreen ? 160 :
+        isMediumScreen ? 250 :
+          isLargeScreen ? 190 : 140,
     bottomSheetHeight: height * (isVerySmallScreen ? 0.78 : 0.77),
     backCircleSize: isVerySmallScreen ? 32 : 36,
     backIconSize: isVerySmallScreen ? 20 : 24,
@@ -40,10 +46,11 @@ const getResponsiveValues = () => {
     marginBottom: isVerySmallScreen ? 12 : 16,
     scrollMarginTop: isVerySmallScreen ? 0 : 0,
     paddingBottom: isVerySmallScreen ? 40 : 60,
-    handleBarWidth: isVerySmallScreen ? 35 : 40,
+    handleBarWidth: isVerySmallScreen ? 35 : 40, 
+    searchIconSize: isVerySmallScreen ? 28 : 32,
+
   };
 };
-
 const responsive = getResponsiveValues();
 
 const STATE_MAP = {
@@ -85,6 +92,61 @@ export default function ShowScreen() {
     '#333333',
   ];
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
+
+  // Animation values for the background image
+  const translateXAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1.2)).current;
+
+  useEffect(() => {
+    // Create random movement animation
+    const createRandomAnimation = () => {
+      // Calculate safe movement bounds based on scale
+      const currentScale = 1.2 + Math.random() * 0.8;
+      const scaleFactor = currentScale - 1; // Extra area due to scaling
+      const safetyMargin = 20; // Additional safety margin
+
+      // Calculate maximum safe movement (accounting for scale and safety)
+      const maxMoveX = (width * scaleFactor * 0.5) - safetyMargin;
+      const maxMoveY = (height * scaleFactor * 0.5) - safetyMargin;
+
+      // Ensure minimum movement bounds
+      const minMove = 10;
+      const finalMaxMoveX = Math.max(minMove, maxMoveX);
+      const finalMaxMoveY = Math.max(minMove, maxMoveY);
+
+      const randomX = (Math.random() - 0.5) * 2 * finalMaxMoveX;
+      const randomY = (Math.random() - 0.5) * 2 * finalMaxMoveY;
+      const randomScale = currentScale;
+      const duration = 6000 + Math.random() * 3000;
+      return Animated.parallel([
+        Animated.timing(translateXAnim, {
+          toValue: randomX,
+          duration: duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: randomY,
+          duration: duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: randomScale,
+          duration: duration,
+          useNativeDriver: true,
+        }),
+      ]);
+    };
+
+    // Start continuous random animation
+    const runContinuousAnimation = () => {
+      createRandomAnimation().start(() => {
+        runContinuousAnimation();
+      });
+    };
+
+    runContinuousAnimation();
+  }, []);
 
   const openMaps = () => {
     if (!item.address) return;
@@ -143,6 +205,7 @@ export default function ShowScreen() {
         backgroundColor="transparent"
       />
 
+      {/* Header Image */}
       <ImageBackground
         source={headerBgImage}
         style={[
@@ -157,8 +220,8 @@ export default function ShowScreen() {
             style={styles.backButton}
             activeOpacity={0.8}
           >
-            <View style={[styles.backCircle, { backgroundColor: palette[1] }]}>
-              <Ionicons name="chevron-back" size={responsive.backIconSize} color="#000" />
+            <View style={[styles.backCircle]}>
+              <Ionicons name="chevron-back" size={responsive.searchIconSize} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
 
@@ -172,11 +235,36 @@ export default function ShowScreen() {
         </View>
       </ImageBackground>
 
-      <View
+      {/* Animated Background Image for Bottom Sheet */}
+      <View style={styles.bottomSheetBackgroundContainer}>
+        <Animated.View
+          style={[
+            styles.animatedImageContainer,
+            {
+              transform: [
+                { translateX: translateXAnim },
+                { translateY: translateYAnim },
+                { scale: scaleAnim },
+              ],
+            },
+          ]}
+        >
+          <ImageBackground
+            source={headerBgImage}
+            style={styles.bottomSheetBackground}
+            imageStyle={{ resizeMode: 'cover' }}
+          />
+        </Animated.View>
+      </View>
+
+      {/* Bottom Sheet with Blur */}
+      <BlurView
+        intensity={50}
         style={[
           styles.bottomSheet,
-          { height: responsive.bottomSheetHeight, backgroundColor: palette[0] },
+          { height: responsive.bottomSheetHeight },
         ]}
+        tint="light"
       >
         <View style={styles.handleBar} />
 
@@ -185,7 +273,7 @@ export default function ShowScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View style={[styles.card, { backgroundColor: palette[1] }]}>
+          <View style={[styles.card, { backgroundColor: 'rgba(255, 255, 255, 0.9)' }]}>
             <Text style={[styles.sectionLabel, { color: palette[3] }]}>
               Description
             </Text>
@@ -195,7 +283,7 @@ export default function ShowScreen() {
           </View>
 
           {item.address && (
-            <View style={[styles.card, { backgroundColor: palette[1] }]}>
+            <View style={[styles.card, { backgroundColor: 'rgba(255, 255, 255, 0.9)' }]}>
               <Text style={[styles.sectionLabel, { color: palette[3] }]}>
                 Address
               </Text>
@@ -208,7 +296,7 @@ export default function ShowScreen() {
           )}
 
           {item.email && (
-            <View style={[styles.card, { backgroundColor: palette[1] }]}>
+            <View style={[styles.card, { backgroundColor: 'rgba(255, 255, 255, 0.9)' }]}>
               <Text style={[styles.sectionLabel, { color: palette[3] }]}>
                 Contact
               </Text>
@@ -228,7 +316,7 @@ export default function ShowScreen() {
 
           {item.website && (
             <TouchableOpacity
-              style={[styles.visitBtn, { backgroundColor: palette[2] }]}
+              style={[styles.visitBtn, { backgroundColor: 'rgba(255, 255, 255, 0.9)' }]}
               onPress={handleVisit}
             >
               <Text style={[styles.visitTxt, { color: palette[3] }]}>
@@ -237,7 +325,7 @@ export default function ShowScreen() {
             </TouchableOpacity>
           )}
         </ScrollView>
-      </View>
+      </BlurView>
     </View>
   );
 }
@@ -283,6 +371,28 @@ const styles = StyleSheet.create({
     width: 32,
   },
 
+  // New styles for animated background
+  bottomSheetBackgroundContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: responsive.bottomSheetHeight,
+    overflow: 'hidden',
+  },
+  animatedImageContainer: {
+    position: 'absolute',
+    top: -50,
+    left: -50,
+    right: -50,
+    bottom: -50,
+  },
+  bottomSheetBackground: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+
   bottomSheet: {
     position: 'absolute',
     bottom: 0,
@@ -292,11 +402,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: responsive.borderRadius,
     elevation: 8,
     zIndex: 10,
+    overflow: 'hidden',
   },
   handleBar: {
     width: responsive.handleBarWidth,
     height: 4,
-    backgroundColor: 'black',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 2,
     alignSelf: 'center',
     marginVertical: 8,
@@ -315,7 +426,6 @@ const styles = StyleSheet.create({
     borderRadius: responsive.cardBorderRadius,
     padding: responsive.verticalPadding,
     marginBottom: responsive.marginBottom,
-    backgroundColor: '#FFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
