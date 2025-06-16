@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "expo start --dev-client",
-    "android": "expo run:android",
+    "android": "expo run:android --device Pixel_9_Pro_API_36",
     "ios": "expo run:ios",
     "web": "expo start --web"
   },
@@ -23,8 +23,8 @@
     "@react-navigation/native": "^6.1.0",
     "@react-navigation/native-stack": "^6.11.0",
     "@react-navigation/stack": "^6.3.23",
-    "@rnmapbox/maps": "^10.1.38",
     "@supabase/supabase-js": "^2.45.4",
+    "anser": "^2.3.2",
     "axios": "^1.9.0",
     "cheerio": "^1.1.0",
     "compare-versions": "^6.1.1",

@@ -27,7 +27,6 @@ import LoginScreen from "../../auth/LoginScreen";
 import RegisterScreen from "../../auth/RegisterScreen";
 import DeleteScreen from "../../auth/deleteScreen";
 import MapScreen from "../screens/MapScreen";
-import ProfileScreen from "../screens/ProfileScreen";
 import NexolinkLoginScreen from "../../auth/selectscreen";
 import AccountStackNavigator from "../screens/AccountScreen";
 import StatsScreen from "../screens/AccountScreen";

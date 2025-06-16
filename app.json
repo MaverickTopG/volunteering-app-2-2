@@ -34,7 +34,7 @@
     "android": {
       "versionCode": 2,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/new_icon.png",
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.ayanshsingh.nexo"

@@ -1,6 +1,6 @@
 // /src/screens/StatsScreen.js
 
-import React from 'react';
+import React, { useEffect, useRef, useContext } from 'react';
 import {
   View,
   Text,
@@ -10,248 +10,296 @@ import {
   StatusBar,
   ScrollView,
   Linking,
+  Animated,
+  Dimensions,
+  Image,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { AuthContext } from '../../auth/AuthContext';
 
-const StatsScreen = () => {
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// Dimensions
+const DIAMETER   = SCREEN_W;        // full-width circle
+const RADIUS     = DIAMETER / 2;
+const WRAPPER_H  = RADIUS;          // show only top half
+const CARD_BASE  = 100;
+const CARD_SIZE  = CARD_BASE * 2; // 150 × 2.25 = 337.5
+
+// Category images
+const CATEGORY_IMAGES = {
+  Animal: require('../../assets/animal.png'),
+  'Advocacy & Change': require('../../assets/advocacy.png'),
+  Arts: require('../../assets/art.png'),
+  Education: require('../../assets/education.png'),
+  Environment: require('../../assets/enviroment.png'),
+  Family: require('../../assets/family.png'),
+  Hospital: require('../../assets/hospital.png'),
+  Library: require('../../assets/library.png'),
+  Seniors: require('../../assets/seniors.png'),
+  Tech: require('../../assets/tech.png'),
+};
+
+const cardData = Object.entries(CATEGORY_IMAGES).map(([title, image], i) => ({
+  id: i,
+  title,
+  image,
+}));
+
+export default function StatsScreen() {
   const navigation = useNavigation();
-  const route = useRoute();
+  const route      = useRoute();
+  const { user }   = useContext(AuthContext);
 
-  // Helper to check if a given route is active
-  const isActiveRoute = (routeName) => route.name === routeName;
+  // Rotation animation
+  const rotation = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotation, {
+        toValue: 1,
+        duration: 10000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, [rotation]);
+
+  // Interpolate degrees
+  const spinDeg     = rotation.interpolate({ inputRange:[0,1], outputRange:['0deg','360deg'] });
+  const antiSpinDeg = rotation.interpolate({ inputRange:[0,1], outputRange:['0deg','-360deg'] });
+
+  // Tabs
+  const isBadges = route.name === 'Badges';
+  const isStats  = route.name === 'Stats';
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF"/>
 
-      {/* ─── HEADER ──────────────────────────────────────────────────── */}
+      {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Account</Text>
-        <View style={styles.headerSpacer} />
       </View>
 
-      {/* ─── TAB BAR ──────────────────────────────────────────────────── */}
-
-      <View style={styles.buttonRow}>
-        {/* Badges Button */}
+      {/* TAB BAR */}
+      <View style={styles.tabRow}>
         <TouchableOpacity
-          style={[
-            styles.singleButton,
-            isActiveRoute('Account') && styles.activeButton,
-          ]}
-          onPress={() => {
-            if (!isActiveRoute('Account')) {
-              navigation.getParent()?.navigate('Badges');
-            }
-          }}
-          activeOpacity={0.7}
+          style={[styles.tabBtn, isBadges && styles.tabActive]}
+          onPress={() => !isBadges && navigation.navigate('Badges')}
         >
-          <Text
-            style={[
-              styles.buttonText,
-              isActiveRoute('Badges') ? styles.activeButtonText : styles.inactiveButtonText,
-            ]}
-          >
+          <Text style={isBadges ? styles.tabTxtActive : styles.tabTxtInactive}>
             Badges
           </Text>
         </TouchableOpacity>
-
-        {/* Account Button */}
         <TouchableOpacity
-          style={[
-            styles.singleButton,
-            isActiveRoute('Stats') && styles.activeButton,
-          ]}
-          onPress={() => {
-            if (!isActiveRoute('Stats')) {
-              navigation.getParent()?.navigate('Stats');
-            }
-          }}
-          activeOpacity={0.7}
+          style={[styles.tabBtn, isStats && styles.tabActive]}
+          onPress={() => !isStats && navigation.navigate('Stats')}
         >
-          <Text
-            style={[
-              styles.buttonText,
-              isActiveRoute('Stats') ? styles.activeButtonText : styles.inactiveButtonText,
-            ]}
-          >
+          <Text style={isStats ? styles.tabTxtActive : styles.tabTxtInactive}>
             Account
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* ─── MAIN CONTENT ────────────────────────────────────────────── */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {/* MAIN CONTENT */}
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: WRAPPER_H }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* LINK CARDS */}
         <View style={styles.linksGrid}>
-          {/* ABOUT CARD */}
           <TouchableOpacity
             style={[styles.linkCard, { backgroundColor: '#FF6B35' }]}
             onPress={() => navigation.navigate('About')}
           >
-            <Ionicons
-              name="information-circle-outline"
-              size={32}
-              color="#FFFFFF"
-            />
-            <Text style={[styles.linkCardValue, { color: '#FFFFFF' }]}>
-              About
-            </Text>
-            <Text style={[styles.linkCardLabel, { color: '#FFFFFF' }]}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="information-circle-outline" size={28} color="#FFF" />
+            </View>
+            <Text style={[styles.linkTitle, { color: '#FFF' }]}>About</Text>
+            <Text style={[styles.linkSubtitle, { color: '#FFF' }]}>
               Learn more about NexoLink
             </Text>
           </TouchableOpacity>
-
-          {/* PRIVACY POLICY CARD */}
           <TouchableOpacity
             style={[styles.linkCard, { backgroundColor: '#4285F4' }]}
-            onPress={() => {
-              const url = 'https://mavericktopg.github.io/privacy_policy.html';
-              Linking.canOpenURL(url)
-                .then((supported) => {
-                  if (supported) {
-                    return Linking.openURL(url);
-                  }
-                })
-                .catch((err) => console.error('An error occurred', err));
-            }}
+            onPress={() => Linking.openURL('https://mavericktopg.github.io/privacy_policy.html')}
           >
-            <Ionicons name="document-text-outline" size={32} color="#FFFFFF" />
-            <Text style={[styles.linkCardValue, { color: '#FFFFFF' }]}>
-              Privacy Policy
-            </Text>
-            <Text style={[styles.linkCardLabel, { color: '#FFFFFF' }]}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="document-text-outline" size={28} color="#FFF" />
+            </View>
+            <Text style={[styles.linkTitle, { color: '#FFF' }]}>Privacy Policy</Text>
+            <Text style={[styles.linkSubtitle, { color: '#FFF' }]}>
               View our privacy policy
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* ─── THANK YOU MESSAGE ──────────────────────────────────────── */}
-        <View style={styles.thankYouContainer}>
-          <Text style={styles.thankYouText}>
+        {/* THANK YOU */}
+        <View style={styles.thanks}>
+          <Text style={styles.thanksTxt}>
             Thank you for using NexoLink! We appreciate your support.
           </Text>
         </View>
 
-        {/* Bottom padding so nothing gets overlapped */}
-        <View style={{ height: 40 }} />
+        {/* LOGO */}
+        {/* <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../assets/new_icon.png')} // Replace with your actual logo path
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View> */}
       </ScrollView>
+
+      {/* CIRCLE + CARDS at bottom, showing top half */}
+      <View style={styles.carouselWrapper}>
+        {/* invisible circle background to define geometry */}
+        <View style={styles.circleBg} />
+
+        {/* cards around the circle */}
+        {cardData.map((card, i) => {
+          const baseDeg = (i / cardData.length) * 360;
+          const baseDegStr = `${baseDeg}deg`;
+
+          return (
+            <Animated.View
+              key={card.id}
+              style={[
+                styles.cardWrapper,
+                {
+                  transform: [
+                    // center origin
+                    { translateX: RADIUS - CARD_SIZE/2 },
+                    { translateY: RADIUS - CARD_SIZE/2 },
+                    // dynamic rotation
+                    { rotate: spinDeg },
+                    // static offset
+                    { rotate: baseDegStr },
+                    // push outward
+                    { translateY: -RADIUS },
+                  ],
+                },
+              ]}
+            >
+              {/* keep the image upright by undoing the spin+offset */}
+              <Animated.View
+                style={{ transform: [{ rotate: antiSpinDeg }, { rotate: `-${baseDeg}deg` }] }}
+              >
+                <Image source={card.image} style={styles.cardImage} />
+              </Animated.View>
+            </Animated.View>
+          );
+        })}
+      </View>
     </SafeAreaView>
   );
-};
-
-export default StatsScreen;
+}
 
 const styles = StyleSheet.create({
-  // ── SCREEN CONTAINER ─────────────────────────────────────────────
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
+  container: { flex: 1, backgroundColor: '#FFF' },
 
-  // ── HEADER ───────────────────────────────────────────────────────
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', // center title
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    padding: SCREEN_W * 0.04,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderColor: '#EEE',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000000',
+  headerTitle: { fontSize: SCREEN_W * 0.05, fontWeight: '600', color: '#000' },
+
+  tabRow:{
+    flexDirection:'row',
+    marginHorizontal: SCREEN_W * 0.04,
+    marginTop: SCREEN_H * 0.015,
   },
-  headerSpacer: {
-    position: 'absolute',
-    right: 20,
-    width: 40,
-    height: 40,
+  tabBtn:{
+    flex:1,
+    paddingVertical: SCREEN_H * 0.015,
+    marginHorizontal: SCREEN_W * 0.01,
+    borderRadius: SCREEN_W * 0.06,
+    alignItems:'center',
+  },
+  tabActive:{ borderWidth: 2, borderColor:'#000' },
+  tabTxtActive:   { color:'#000', fontWeight:'600', fontSize: SCREEN_W * 0.04 },
+  tabTxtInactive: { color:'#666', fontSize: SCREEN_W * 0.04 },
+
+  content:{
+    paddingHorizontal: SCREEN_W * 0.04,
+    paddingTop: SCREEN_H * 0.015,
   },
 
-  // ── TAB BAR ───────────────────────────────────────────────────────
-  buttonRow: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    marginVertical: 16,
+  linksGrid:{
+    flexDirection:'row',
+    justifyContent:'space-between',
+    marginBottom: SCREEN_H * 0.03,
   },
-  singleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    marginHorizontal: 4,
+  linkCard:{
+    width:'48%',
+    borderRadius: SCREEN_W * 0.04,
+    padding: SCREEN_W * 0.06,
+    alignItems:'center',
+    elevation:3,
+    shadowColor:'#000',
+    shadowOpacity:0.1,
+    shadowRadius:4,
+  },
+  linkTitle:   { fontSize: SCREEN_W * 0.045, fontWeight:'600', marginTop: SCREEN_H * 0.01 },
+  linkSubtitle:{ fontSize: SCREEN_W * 0.03, textAlign:'center', marginTop: SCREEN_H * 0.005, opacity:0.9 },
+
+  thanks: { 
+    marginBottom: SCREEN_H * 0.04, 
+    alignItems: 'center' 
+  },
+  thanksTxt: { 
+    fontSize: SCREEN_W * 0.035, 
+    color: '#666', 
+    textAlign: 'center' 
+  },
+
+  logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 25,
-    backgroundColor: 'transparent',
+    marginBottom: SCREEN_H * 0.05,
   },
-  activeButton: {
-    borderWidth: 2,
-    borderColor: '#000000',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  activeButtonText: {
-    color: '#000000',
-  },
-  inactiveButtonText: {
-    color: '#666666',
+  logo: {
+    width: SCREEN_W * 0.25,
+    height: SCREEN_W * 0.25,
+    borderRadius:20
   },
 
-
-  // ── MAIN CONTENT WRAPPER ─────────────────────────────────────────
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 0,
-  },
-
-  // ── LINKS GRID 2×2 ───────────────────────────────────────────────
-  linksGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  linkCard: {
-    width: '48%',
-    borderRadius: 12,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+  iconContainer: {
+    width: SCREEN_W * 0.12,
+    height: SCREEN_W * 0.12,
+    borderRadius: SCREEN_W * 0.06,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  linkCardValue: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 12,
-  },
-  linkCardLabel: {
-    fontSize: 12,
-    marginTop: 4,
-    textAlign: 'center',
-    opacity: 0.9,
+    justifyContent: 'center',
+    marginBottom: SCREEN_H * 0.005,
   },
 
-  // ── THANK YOU SECTION ─────────────────────────────────────────────
-  thankYouContainer: {
-    marginTop: 16,
-    marginBottom: 24,
-    paddingHorizontal: 10,
-    alignItems: 'center',
+  carouselWrapper:{
+    position:'absolute',
+    bottom:0,
+    left:0,
+    width: SCREEN_W,
+    height: WRAPPER_H,
+    overflow:'visible',
   },
-  thankYouText: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 20,
+  circleBg:{
+    position:'absolute',
+    width: DIAMETER,
+    height: DIAMETER,
+    borderRadius: RADIUS,
+    top: 0,    // show the top half
+    left: 0,
+  },
+  cardWrapper:{
+    position:'absolute',
+    width: CARD_SIZE,
+    height: CARD_SIZE,
+  },
+  cardImage:{
+    width: CARD_SIZE,
+    height: CARD_SIZE,
+    borderRadius: SCREEN_W * 0.04,
   },
 });

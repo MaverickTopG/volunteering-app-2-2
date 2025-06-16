@@ -511,16 +511,7 @@ export default function VolunteerBadgesScreen() {
               <Text style={styles.loginPromptSubtitle}>
                 Flaunt your volunteering skills with amazing badges!
               </Text>
-              <TouchableOpacity 
-                style={styles.loginButton}
-                onPress={() => {
-                  // Navigate to login screen or show login modal
-                  // You can customize this based on your app's navigation structure
-                  navigation.navigate('Login');
-                }}
-              >
-                <Text style={styles.loginButtonText}>Get Started</Text>
-              </TouchableOpacity>
+              
             </View>
           </BlurView>
         </View>
