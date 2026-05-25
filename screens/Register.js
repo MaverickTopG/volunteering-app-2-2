@@ -19,9 +19,9 @@ export default class Register extends Component {
       .then(async userCredential => {
         const user = userCredential.user;
         await setDoc(doc(db, 'users', user.uid), {
+          email,
           firstName,
           lastName,
-          email,
         });
         this.props.navigation.navigate('Login');
       })
