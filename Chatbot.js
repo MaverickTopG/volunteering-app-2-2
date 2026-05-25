@@ -59,6 +59,7 @@ function Chatbot() {
       method: "POST",
       headers: {
         "Authorization": "Bearer " + API_KEY,
+        "Accept": "application/json",
         "Content-Type": "application/json"
       },
       body: JSON.stringify(apiRequestBody)
