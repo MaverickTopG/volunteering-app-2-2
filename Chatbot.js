@@ -12,7 +12,7 @@ const systemMessage = { //  Explain things like you're talking to a software pro
 function Chatbot() {
   const [messages, setMessages] = useState([
     {
-      message: "Hello, I'm Ordix! How can I help you?",
+      message: "Hello, I'm Ordix! How can I help you today?",
       sentTime: "just now",
       sender: "ChatGPT",
       direction: "incoming"
