@@ -22,7 +22,7 @@ export default class Login extends Component {
         <TextInput
           style={styles.input}
           onChangeText={email => this.setState({ email })}
-          placeholder="Email"
+          placeholder="Email address"
           placeholderTextColor="#CCCCCC"
           value={this.state.email}
         />
