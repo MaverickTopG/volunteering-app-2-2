@@ -88,7 +88,7 @@ function Chatbot() {
               keyExtractor={(item, index) => index.toString()}
             />
           </MessageList>
-          <MessageInput placeholder="Type message here" onSend={handleSend} />        
+          <MessageInput placeholder="Type a message here" onSend={handleSend} />        
         </ChatContainer>
       </MainContainer>
     </View>
