@@ -4,13 +4,13 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBRSUTf2mCRuAXV6mjqUk_5UWsql8Azr3g",
-  authDomain: "storytelling-53b62.firebaseapp.com",
-  databaseURL: "https://storytelling-53b62-default-rtdb.firebaseio.com",
-  projectId: "volunteering-app-70788",
-  storageBucket: "volunteering-app-70788.appspot.com",
+  appId: "1:94824584734:ios:b7c7039bfd3a1e31b6000f",
   messagingSenderId: "94824584734",
-  appId: "1:94824584734:ios:b7c7039bfd3a1e31b6000f"
+  storageBucket: "volunteering-app-70788.appspot.com",
+  projectId: "volunteering-app-70788",
+  databaseURL: "https://storytelling-53b62-default-rtdb.firebaseio.com",
+  authDomain: "storytelling-53b62.firebaseapp.com",
+  apiKey: "AIzaSyBRSUTf2mCRuAXV6mjqUk_5UWsql8Azr3g"
 };
 
 const app = initializeApp(firebaseConfig);
