@@ -6,7 +6,7 @@ import { getFirestore } from 'firebase/firestore';
 const firebaseConfig = {
   apiKey: "AIzaSyBRSUTf2mCRuAXV6mjqUk_5UWsql8Azr3g",
   authDomain: "storytelling-53b62.firebaseapp.com",
-  databaseURL: "https://storytelling-53b62-default-rtdb.firebaseio.com",
+  databaseURL: "https://storytelling-53b62-default-rtdb.firebaseio.com/staging",
   projectId: "volunteering-app-70788",
   storageBucket: "volunteering-app-70788.appspot.com",
   messagingSenderId: "94824584734",
