@@ -25,7 +25,7 @@ export default class BottomTab extends React.Component {
     let theme, name, image;
     await firebase
       .database()
-      .ref("/users/" + firebase.auth().currentUser.uid)
+      .ref("/environment-users/" + firebase.auth().currentUser.uid)
       .on("value", function (snapshot) {
         theme = snapshot.val().current_theme;
         name = `${snapshot.val().first_name}`
